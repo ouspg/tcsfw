@@ -218,6 +218,15 @@ class IPFlow(Flow):
     @classmethod
     def parse_from_json(cls, value: Dict) -> 'IPFlow':
         """Parse event from a string"""
+        # Form 1
+        protocol = "udp" if "udp" in value else "tcp" if "tcp" in value else None
+        if protocol:
+            p_value = value[protocol]
+            s_hw, s_ip, s_port = p_value["source"]
+            t_hw, t_ip, t_port = p_value["target"]
+            return IPFlow(NO_EVIDENCE, (HWAddress(s_hw), IPAddress.new(s_ip), s_port),
+                          (HWAddress(t_hw), IPAddress.new(t_ip), t_port), protocol=Protocol.get_protocol(protocol))
+        # Form 2
         protocol = Protocol.get_protocol(value["protocol"])
         s_ip, s_port = IPAddress.parse_with_port(value["source"])
         t_ip, t_port = IPAddress.parse_with_port(value["target"])
