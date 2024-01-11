@@ -56,7 +56,7 @@ class BatchImporter:
 
         if file_name.lower().endswith(".pcap"):
             # read flows from pcap
-            reader = PCAPReader(self.interface.get_system, info.source_name)
+            reader = PCAPReader(self.interface.get_system(), file_name)
             reader.source = info.source
             reader.interface = self.interface
             return reader.parse(Raw.stream(stream, name=file_name))
