@@ -27,7 +27,7 @@ class BatchImporter:
 
     def _import_batch(self, file: pathlib.Path):
         """Import a batch of files from a directory or zip file recursively."""
-        self.logger.debug(f"scanning {file.as_posix()}")
+        self.logger.info(f"scanning {file.as_posix()}")
         if file.is_dir():
             meta_file = file / "00meta.json"
             if meta_file.is_file():
@@ -42,7 +42,7 @@ class BatchImporter:
             # recursively scan the directory
             for child in file.iterdir():
                 if info and child.is_file():
-                    self.logger.debug(f"processing {child.as_posix()}")
+                    self.logger.info(f"processing {child.as_posix()}")
                     with child.open("rb") as f:
                         self._do_process(f, child.name, info)
                 else:
