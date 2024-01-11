@@ -31,7 +31,7 @@ def test_dns_pcap():
     m = SystemMatcher(sb.system)
 
     s = sb.system
-    PCAPReader.inspect(pathlib.Path("tests/samples/dns.pcap"), s)
+    PCAPReader.inspect(pathlib.Path("tests/samples/pcap/dns.pcap"), s)
     hosts = s.get_hosts()
     assert len(hosts) == 10
 
@@ -52,7 +52,7 @@ def test_dns_large_pcap():
     sb.any() / DNS
     m = SystemMatcher(sb.system)
     s = sb.system
-    PCAPReader.inspect(pathlib.Path("tests/samples/dns-large-set.pcap"), s)
+    PCAPReader.inspect(pathlib.Path("tests/samples/pcap/dns-large-set.pcap"), s)
     hosts = sorted(s.get_hosts(), key=lambda h: -len(h.addresses))
     assert len(hosts) == 85
     h = hosts[0]
@@ -67,7 +67,7 @@ def test_dns_large_pcap2():
     sb.any() / DNS
     m = SystemMatcher(sb.system)
     s = sb.system
-    PCAPReader.inspect(pathlib.Path("tests/samples/dns-large-set2.pcap"), s)
+    PCAPReader.inspect(pathlib.Path("tests/samples/pcap/dns-large-set2.pcap"), s)
     hosts = sorted(s.get_hosts(), key=lambda h: -len(h.addresses))
     assert len(hosts) == 18
     hs = set([h.name for h in hosts])
