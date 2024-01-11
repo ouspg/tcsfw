@@ -9,7 +9,6 @@ def test_import_batch_a():
     im = BatchImporter(SystemMatcher(sb.system))
     im.import_batch(pathlib.Path("tests/samples/batch/batch-a"))
     conn = sb.system.get_connections()
-
     assert len(conn) == 2
 
 
