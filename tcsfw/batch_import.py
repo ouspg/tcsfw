@@ -32,8 +32,11 @@ class BatchImporter:
             meta_file = file / "00meta.json"
             if meta_file.is_file():
                 # the directory has data files
-                with meta_file.open("rb") as f:
-                    info = FileMetaInfo.parse_from_stream(f)
+                if meta_file.stat().st_size == 0:
+                    info = FileMetaInfo() # meta_file is empty
+                else:
+                    with meta_file.open("rb") as f:
+                        info = FileMetaInfo.parse_from_stream(f)
             else:
                 info = None
             # recursively scan the directory
@@ -70,8 +73,8 @@ class BatchImporter:
 
 class FileMetaInfo:
     """Batch file information."""
-    def __init__(self, file_type: str):
-        self.file_type = file_type
+    def __init__(self, file_type=None):
+        self.file_type = self.UNSPECIFIED if file_type is None else file_type
         self.source = EvidenceNetworkSource(file_type)
 
     UNSPECIFIED = "unspecified"     # unspecified file type
