@@ -4,11 +4,13 @@ import ipaddress
 import itertools
 import json
 import logging
+import pathlib
 import sys
 from typing import Tuple, Dict, Callable, Optional, Union, Self, List, Type
 
 from tcsfw.address import AnyAddress, HWAddress, IPAddress, EndpointAddress, Protocol, Addresses, \
     DNSName, IPAddresses, HWAddresses
+from tcsfw.batch_import import BatchImporter
 from tcsfw.claim import Claim
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest
@@ -185,8 +187,8 @@ class Builder(SystemBuilder):
     def __init__(self, name="Unnamed system"):
         super().__init__(name)
         parser = argparse.ArgumentParser()
+        parser.add_argument("--read", "-r", action="append", help="Read tool output from files or directories")
         parser.add_argument("--def-loads", "-L", type=str, help="Comma-separated list of tools to load")
-        parser.add_argument("--tool", action="append", help="Run tool by name, arguments after 'name::'")
         parser.add_argument("--set-ip", action="append", help="Set DNS-name for entity, format 'name=ip, ...'")
         parser.add_argument("--ip-packet", action="append", help="Add fake IP packet (JSON)")
         parser.add_argument("--output", "-o", help="Output format")
@@ -228,8 +230,9 @@ class Builder(SystemBuilder):
             for ip in ips.split(","):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
 
-        for tool_cmd in self.args.tool or []:
-            ToolLoader.load_by_command(registry, cc, tool_cmd)
+        batch_import = BatchImporter(registry)
+        for in_file in self.args.read or []:
+            batch_import.import_batch(pathlib.Path(in_file))
 
         if self.args.ip_packet:
             # custom IP flows
