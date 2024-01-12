@@ -19,7 +19,7 @@ class NMAPScan(BaseFileCheckTool):
         self.tool.name = "Nmap scan"
         self.data_file_suffix = ".xml"
 
-    def read_data_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         system = self.system
 
         with data_file.open() as file:

@@ -20,7 +20,7 @@ class ZEDReader(BaseFileCheckTool):
         self.tool.name = "ZED Attack Proxy"
         self.data_file_suffix = ".json"
 
-    def read_data_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         evidence = Evidence(source)
 
         with data_file.open() as f:
