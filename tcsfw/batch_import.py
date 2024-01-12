@@ -7,6 +7,7 @@ from typing import Dict, Optional
 from framing.raw_data import Raw
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import EvidenceNetworkSource
+from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.traffic import IPFlow
 from enum import StrEnum
@@ -93,6 +94,12 @@ class BatchImporter:
                 reader.interface = self.interface
                 raw = Raw.stream(stream, name=file_name, request_size=1 << 20)
                 return reader.parse(raw)
+
+            if file_ext == ".xml" and info.file_type == BatchFileType.NMAP:
+                # read NMAP from xml
+                reader = NMAPScan(self.interface.get_system())
+                return reader.read_stream(stream, self.interface, info.source)
+
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
 
@@ -110,6 +117,7 @@ class BatchFileType(StrEnum):
     """Batch file type"""
     UNSPECIFIED = "unspecified"
     CAPTURE = "capture"
+    NMAP = "nmap"
 
     @classmethod
     def parse(cls, value: Optional[str]):
