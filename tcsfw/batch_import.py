@@ -41,7 +41,7 @@ class BatchImporter:
                     except Exception as e:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
             else:
-                info = None
+                info = FileMetaInfo()
             # recursively scan the directory
             for child in file.iterdir():
                 if child == meta_file:
@@ -53,7 +53,7 @@ class BatchImporter:
                 if postfix in {"~"}:
                     continue
                 if info and child.is_file():
-                    self.logger.info(f"processing {child.as_posix()}")
+                    self.logger.info(f"processing ({info.label}) {child.as_posix()}")
                     with child.open("rb") as f:
                         self._do_process(f, child, info)
                 else:
@@ -89,7 +89,8 @@ class BatchImporter:
 
 class FileMetaInfo:
     """Batch file information."""
-    def __init__(self, file_type=None):
+    def __init__(self, label="", file_type=None):
+        self.label = label
         self.file_type = self.UNSPECIFIED if file_type is None else file_type
         self.source = EvidenceNetworkSource(file_type)
 
@@ -104,10 +105,11 @@ class FileMetaInfo:
     @classmethod
     def parse_from_json(cls, json: Dict) -> 'FileMetaInfo':
         """Parse from JSON"""
-        file_type = str(json.get("file_type")) or cls.UNSPECIFIED
-        r = cls(file_type=file_type)
+        label = str(json.get("label", ""))
+        file_type = str(json.get("file_type", cls.UNSPECIFIED))
+        r = cls(label, file_type)
         r.source.name = str(json.get("source_name")) or r.source.name
         return r
 
     def __repr__(self) -> str:
-        return f"file_type = {self.file_type}"
+        return f"file_type: {self.file_type}, label: {self.label}"
