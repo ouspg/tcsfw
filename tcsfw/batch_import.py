@@ -1,3 +1,4 @@
+from ast import Set
 import json
 import logging
 import pathlib
@@ -12,8 +13,9 @@ from tcsfw.traffic import IPFlow
 
 class BatchImporter:
     """Batch importer for importing a batch of files from a directory."""
-    def __init__(self, interface: EventInterface):
+    def __init__(self, interface: EventInterface, filter: 'LabelFilter' = None):
         self.interface = interface
+        self.filter = filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
 
     def import_batch(self, file: pathlib.Path):
@@ -42,7 +44,9 @@ class BatchImporter:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
             else:
                 info = FileMetaInfo()
-            # recursively scan the directory
+
+            # list files/directories to process
+            proc_list = []
             for child in file.iterdir():
                 if child == meta_file:
                     continue
@@ -52,7 +56,17 @@ class BatchImporter:
                 postfix = child.name[-1:]
                 if postfix in {"~"}:
                     continue
+                proc_list.append(child)
+
+            # filter by label
+            skip_processing = not self.filter.filter(info.label)
+
+            # recursively scan the directory
+            for child in proc_list:
                 if info and child.is_file():
+                    if skip_processing:
+                        self.logger.info(f"skipping ({info.label}) {child.as_posix()}")
+                        continue
                     self.logger.info(f"processing ({info.label}) {child.as_posix()}")
                     with child.open("rb") as f:
                         self._do_process(f, child, info)
@@ -113,3 +127,34 @@ class FileMetaInfo:
 
     def __repr__(self) -> str:
         return f"file_type: {self.file_type}, label: {self.label}"
+
+
+class LabelFilter:
+    """Filter labels"""
+    def __init__(self, label_specification="") -> None:
+        """Initialize the filter"""
+        spec = label_specification.strip()
+        self.explicit_include = True
+        self.included: Set[str] = set()
+        self.excluded: Set[str] = set()
+        if spec == "":
+            return
+        for index, d in enumerate(spec.split(",")):
+            remove = d.startswith("^")
+            if remove:
+                # remove label
+                if index == 0:
+                    self.explicit_include = False
+                self.excluded.add(d[1:])
+            else:
+                # include label
+                self.included.add(d)
+        intersect = self.included.intersection(self.excluded)
+        if intersect:
+            raise ValueError(f"Labels in both included and excluded: {intersect}")
+
+    def filter(self, label: str) -> bool:
+        """Filter the label"""
+        if self.explicit_include:
+            return label in self.included
+        return label not in self.excluded
