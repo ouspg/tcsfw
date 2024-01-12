@@ -3,12 +3,13 @@ import json
 import logging
 import pathlib
 import io
-from typing import Dict
+from typing import Dict, Optional
 from framing.raw_data import Raw
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.traffic import IPFlow
+from enum import StrEnum
 
 
 class BatchImporter:
@@ -77,11 +78,11 @@ class BatchImporter:
         """Process the file as stream"""
         file_name = file_path.name
         try:
-            if info.file_type == FileMetaInfo.CAPTURE and file_name.lower().endswith(".json"):
+            if file_name.lower().endswith(".json") and info.file_type == BatchFileType.CAPTURE:
                 # read flows from json
                 return self._process_pcap_json(stream)
 
-            if file_name.lower().endswith(".pcap"):
+            if file_name.lower().endswith(".pcap") and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
                 # read flows from pcap
                 reader = PCAPReader(self.interface.get_system(), file_name)
                 reader.source = info.source
@@ -101,15 +102,28 @@ class BatchImporter:
             self.interface.connection(flow)
 
 
+class BatchFileType(StrEnum):
+    """Batch file type"""
+    UNSPECIFIED = "unspecified"
+    CAPTURE = "capture"
+
+    @classmethod
+    def parse(cls, value: Optional[str]):
+        """Parse from string"""
+        if not value:
+            return cls.UNSPECIFIED
+        for t in cls:
+            if t.value == value:
+                return t
+        raise ValueError(f"Unknown batch file type: {value}")
+
+
 class FileMetaInfo:
     """Batch file information."""
-    def __init__(self, label="", file_type=None):
+    def __init__(self, label="", file_type=BatchFileType.UNSPECIFIED):
         self.label = label
-        self.file_type = self.UNSPECIFIED if file_type is None else file_type
+        self.file_type = file_type
         self.source = EvidenceNetworkSource(file_type)
-
-    UNSPECIFIED = "unspecified"     # unspecified file type
-    CAPTURE = "capture"             # traffic capture  
 
     @classmethod
     def parse_from_stream(cls, stream: io.BytesIO) -> 'FileMetaInfo':
@@ -120,7 +134,7 @@ class FileMetaInfo:
     def parse_from_json(cls, json: Dict) -> 'FileMetaInfo':
         """Parse from JSON"""
         label = str(json.get("label", ""))
-        file_type = str(json.get("file_type", cls.UNSPECIFIED))
+        file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
         r.source.name = str(json.get("source_name")) or r.source.name
         return r
