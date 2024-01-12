@@ -80,12 +80,13 @@ class BatchImporter:
     def _do_process(self, stream: io.BytesIO, file_path: pathlib.Path, info: 'FileMetaInfo'):
         """Process the file as stream"""
         file_name = file_path.name
+        file_ext = file_path.suffix.lower()
         try:
-            if file_name.lower().endswith(".json") and info.file_type == BatchFileType.CAPTURE:
+            if file_ext == ".json" and info.file_type == BatchFileType.CAPTURE:
                 # read flows from json
                 return self._process_pcap_json(stream)
 
-            if file_name.lower().endswith(".pcap") and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
+            if file_ext == ".pcap" and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
                 # read flows from pcap
                 reader = PCAPReader(self.interface.get_system(), file_name)
                 reader.source = info.source
