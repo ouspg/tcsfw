@@ -91,7 +91,7 @@ class BaseFileCheckTool(CheckTool):
             elif data_file.suffix == me.data_file_suffix:
                 source.base_ref = data_file.absolute().as_posix()  # just override base reference
                 source.timestamp = datetime.fromtimestamp(os.path.getmtime(data_file))
-                me._check_file(data_file, interface, source)
+                me.read_data_file(data_file, interface, source)
 
         for f in self.base_files:
             if self.data_file_suffix and f.is_dir() and (f / self.tool_label).is_dir():
@@ -99,7 +99,7 @@ class BaseFileCheckTool(CheckTool):
                 f = f / self.tool_label  # look
             read_file(f)
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def read_data_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         raise NotImplementedError()
 
 

@@ -20,7 +20,7 @@ class MITMLogReader(BaseFileCheckTool):
         self.tool.name = "MITM tool"
         self.data_file_suffix = ".log"
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def read_data_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         """Read a log file"""
         evidence = Evidence(source, tail_ref=data_file.as_posix())
         names = set()

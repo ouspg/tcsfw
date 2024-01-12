@@ -24,7 +24,7 @@ class TSharkReader(BaseFileCheckTool):
         # current frame
         self.source: Optional[EvidenceSource] = None
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def read_data_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         self.read(data_file, interface, source)
 
     def read(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
