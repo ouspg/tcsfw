@@ -145,14 +145,17 @@ class FileMetaInfo:
 
 class LabelFilter:
     """Filter labels"""
-    def __init__(self, label_specification="") -> None:
+    def __init__(self, label_specification: Optional[str] = None) -> None:
         """Initialize the filter"""
-        spec = label_specification.strip()
         self.explicit_include = True
         self.included: Set[str] = set()
         self.excluded: Set[str] = set()
-        if spec == "":
+        if label_specification is None:
+            self.explicit_include = False  # all included
             return
+        spec = label_specification.strip()
+        if spec == "":
+            return  # all excluded
         for index, d in enumerate(spec.split(",")):
             remove = d.startswith("^")
             if remove:

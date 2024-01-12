@@ -230,7 +230,7 @@ class Builder(SystemBuilder):
             for ip in ips.split(","):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
 
-        batch_import = BatchImporter(registry, filter=LabelFilter(self.args.def_loads or ""))
+        batch_import = BatchImporter(registry, filter=LabelFilter(self.args.def_loads))
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
