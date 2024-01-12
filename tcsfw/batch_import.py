@@ -41,6 +41,8 @@ class BatchImporter:
                 info = None
             # recursively scan the directory
             for child in file.iterdir():
+                if child == meta_file:
+                    continue
                 if info and child.is_file():
                     self.logger.info(f"processing {child.as_posix()}")
                     with child.open("rb") as f:
