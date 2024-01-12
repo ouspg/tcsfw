@@ -65,6 +65,9 @@ class BatchImporter:
             # recursively scan the directory
             for child in proc_list:
                 if info and child.is_file():
+                    if not info.default_include and info.label not in self.filter.included:
+                        self.logger.debug(f"skipping (default=False) {child.as_posix()}")
+                        continue # skip file if not explicitly included
                     if skip_processing:
                         self.logger.info(f"skipping ({info.label}) {child.as_posix()}")
                         continue
@@ -123,6 +126,7 @@ class FileMetaInfo:
     def __init__(self, label="", file_type=BatchFileType.UNSPECIFIED):
         self.label = label
         self.file_type = file_type
+        self.default_include = True
         self.source = EvidenceNetworkSource(file_type)
 
     @classmethod
@@ -136,6 +140,7 @@ class FileMetaInfo:
         label = str(json.get("label", ""))
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
+        r.default_include = bool(json.get("include", True))
         r.source.name = str(json.get("source_name")) or r.source.name
         return r
 
