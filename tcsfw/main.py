@@ -10,7 +10,7 @@ from typing import Tuple, Dict, Callable, Optional, Union, Self, List, Type
 
 from tcsfw.address import AnyAddress, HWAddress, IPAddress, EndpointAddress, Protocol, Addresses, \
     DNSName, IPAddresses, HWAddresses
-from tcsfw.batch_import import BatchImporter
+from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim import Claim
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest
@@ -230,7 +230,7 @@ class Builder(SystemBuilder):
             for ip in ips.split(","):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
 
-        batch_import = BatchImporter(registry)
+        batch_import = BatchImporter(registry, filter=LabelFilter(self.args.def_loads or ""))
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
@@ -250,7 +250,7 @@ class Builder(SystemBuilder):
                 sl_s = ", ".join(sorted(set([s.loader_name for s in sl])))
                 print(f"{label:<20} {sl_s}")
             return
-        loaders = EvidenceLoader.load_selected(self.args.def_loads, all_loaders)
+        loaders = EvidenceLoader.load_selected("", all_loaders) # FIXME: Filtering by batch_import!
         for ln in loaders:  # only selected tools are loaded
             ln.load(registry, cc)
 
