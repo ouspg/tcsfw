@@ -33,15 +33,16 @@ class BatchImporter:
         """Import a batch of files from a directory or zip file recursively."""
         self.logger.info(f"scanning {file.as_posix()}")
         if file.is_dir():
+            dir_name = file.name
             meta_file = file / "00meta.json"
             if meta_file.is_file():
                 # the directory has data files
                 if meta_file.stat().st_size == 0:
-                    info = FileMetaInfo() # meta_file is empty
+                    info = FileMetaInfo(dir_name) # meta_file is empty
                 else:
                     try:
                         with meta_file.open("rb") as f:
-                            info = FileMetaInfo.parse_from_stream(f)
+                            info = FileMetaInfo.parse_from_stream(f, dir_name)
                     except Exception as e:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
             else:
@@ -139,14 +140,14 @@ class FileMetaInfo:
         self.source = EvidenceNetworkSource(file_type)
 
     @classmethod
-    def parse_from_stream(cls, stream: io.BytesIO) -> 'FileMetaInfo':
+    def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':
         """Parse from stream"""
-        return cls.parse_from_json(json.load(stream))
+        return cls.parse_from_json(json.load(stream), directory_name)
 
     @classmethod
-    def parse_from_json(cls, json: Dict) -> 'FileMetaInfo':
+    def parse_from_json(cls, json: Dict, directory_name: str) -> 'FileMetaInfo':
         """Parse from JSON"""
-        label = str(json.get("label", ""))
+        label = str(json.get("label", directory_name))
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
         r.default_include = bool(json.get("include", True))
