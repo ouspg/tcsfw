@@ -35,8 +35,11 @@ class BatchImporter:
                 if meta_file.stat().st_size == 0:
                     info = FileMetaInfo() # meta_file is empty
                 else:
-                    with meta_file.open("rb") as f:
-                        info = FileMetaInfo.parse_from_stream(f)
+                    try:
+                        with meta_file.open("rb") as f:
+                            info = FileMetaInfo.parse_from_stream(f)
+                    except Exception as e:
+                        raise ValueError(f"Error in {meta_file.as_posix()}") from e
             else:
                 info = None
             # recursively scan the directory
@@ -46,23 +49,27 @@ class BatchImporter:
                 if info and child.is_file():
                     self.logger.info(f"processing {child.as_posix()}")
                     with child.open("rb") as f:
-                        self._do_process(f, child.name, info)
+                        self._do_process(f, child, info)
                 else:
                     self._import_batch(child)
 
-    def _do_process(self, stream: io.BytesIO, file_name: str, info: 'FileMetaInfo'):
+    def _do_process(self, stream: io.BytesIO, file_path: pathlib.Path, info: 'FileMetaInfo'):
         """Process the file as stream"""
-        if info.file_type == FileMetaInfo.CAPTURE and file_name.lower().endswith(".json"):
-            # read flows from json
-            return self._process_pcap_json(stream)
+        file_name = file_path.name
+        try:
+            if info.file_type == FileMetaInfo.CAPTURE and file_name.lower().endswith(".json"):
+                # read flows from json
+                return self._process_pcap_json(stream)
 
-        if file_name.lower().endswith(".pcap"):
-            # read flows from pcap
-            reader = PCAPReader(self.interface.get_system(), file_name)
-            reader.source = info.source
-            reader.interface = self.interface
-            raw = Raw.stream(stream, name=file_name, request_size=1 << 20)
-            return reader.parse(raw)
+            if file_name.lower().endswith(".pcap"):
+                # read flows from pcap
+                reader = PCAPReader(self.interface.get_system(), file_name)
+                reader.source = info.source
+                reader.interface = self.interface
+                raw = Raw.stream(stream, name=file_name, request_size=1 << 20)
+                return reader.parse(raw)
+        except Exception as e:
+            raise ValueError(f"Error in {file_name}") from e
 
         raise ValueError(f"Unsupported file '{file_name}' and type {info.file_type}")
 
