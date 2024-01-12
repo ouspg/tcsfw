@@ -46,6 +46,12 @@ class BatchImporter:
             for child in file.iterdir():
                 if child == meta_file:
                     continue
+                prefix = child.name[:1]
+                if prefix in {".", "_"}:
+                    continue
+                postfix = child.name[-1:]
+                if postfix in {"~"}:
+                    continue
                 if info and child.is_file():
                     self.logger.info(f"processing {child.as_posix()}")
                     with child.open("rb") as f:
