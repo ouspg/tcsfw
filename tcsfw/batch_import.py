@@ -61,7 +61,8 @@ class BatchImporter:
             reader = PCAPReader(self.interface.get_system(), file_name)
             reader.source = info.source
             reader.interface = self.interface
-            return reader.parse(Raw.stream(stream, name=file_name))
+            raw = Raw.stream(stream, name=file_name, request_size=1 << 20)
+            return reader.parse(raw)
 
         raise ValueError(f"Unsupported file '{file_name}' and type {info.file_type}")
 
