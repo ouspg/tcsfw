@@ -27,7 +27,7 @@ from tcsfw.traffic import IPFlow, EvidenceSource, Evidence, EthernetFlow, Flow, 
 
 
 class PCAPReader(BaseFileCheckTool):
-    def __init__(self, system: IoTSystem, name=""):
+    def __init__(self, system: IoTSystem, name="PCAP reader"):
         super().__init__("pcap", system)
         self.data_file_suffix = ".pcap"
         if name:
