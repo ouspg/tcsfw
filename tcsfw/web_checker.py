@@ -1,5 +1,6 @@
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
+import re
 from typing import Tuple, List
 
 import requests
@@ -20,20 +21,24 @@ class WebChecker(BaseFileCheckTool):
         super().__init__("web", system)  # no extension really
         self.data_file_suffix = ".http"
         self.tool.name = "Web check"
+        self.regexp = re.compile(r'^HTTP\/.*? (\d\d\d)(.*)$')
 
     def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         if file_name.endswith(self.data_file_suffix):
             file_name = file_name[:-len(self.data_file_suffix)]
         f_url = urllib.parse.unquote(file_name)
 
-        ok = True  # FIXME: resolve the value
-        status = "200 OK"  # FIXME: resolve the value
+        with TextIOWrapper(data) as f:
+            stat_line = self.regexp.match(f.readline())
+            status_code = int(stat_line.group(1))
+            status_text = f"{status_code}{stat_line.group(2).strip()}"
+            ok = status_code == 200
 
         for key, url in self.system.online_resources.items():
             if f_url != url:
                 continue
-            self.logger.info("checked on-line resource %s", url)
-            kv = Properties.DOCUMENT_AVAILABILITY.append_key(key).value(Verdict.PASS if ok else Verdict.FAIL, status)
+            self.logger.info("web link %s: %s", url, status_text)
+            kv = Properties.DOCUMENT_AVAILABILITY.append_key(key).value(Verdict.PASS if ok else Verdict.FAIL, status_text)
             source.timestamp = datetime.now()  # FIXME: get timestamp from the file
             evidence = Evidence(source, url)
             ev = PropertyEvent(evidence, self.system, kv)
