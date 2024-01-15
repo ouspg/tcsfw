@@ -131,7 +131,8 @@ class BatchImporter:
                 reader = ZEDReader(self.interface.get_system())
 
             if reader:
-                return reader.read_stream(stream, file_name, self.interface, info.source)
+                ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix(), label=reader.tool_label)
+                return reader.read_stream(stream, file_name, self.interface, ev)
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
@@ -164,8 +165,9 @@ class BatchImporter:
             address = tool.file_name_map.get(fn.name)
             if address:
                 self.logger.info(f"processing ({info.file_type}) {fn.as_posix()}")
+                ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix(), label=tool.tool_label)
                 with fn.open("rb") as f:
-                    tool.process_file(address, f, self.interface, info.source)
+                    tool.process_file(address, f, self.interface, ev)
                 unmapped.remove(fn.name)
             else:
                 self.logger.debug(f"unknown file name {fn.as_posix()}")
@@ -236,7 +238,6 @@ class FileMetaInfo:
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
         r.default_include = bool(json.get("include", True))
-        r.source.name = str(json.get("source_name")) or r.source.name
         return r
 
     def __repr__(self) -> str:

@@ -733,6 +733,10 @@ class EvidenceNetworkSource(EvidenceSource):
         self.address_map = address_map or {}
         self.activity_map = activity_map or {}
 
-    def rename(self, name: str) -> Self:
-        return EvidenceNetworkSource(name, self.base_ref, self.label,
-                                     self.address_map, self.activity_map)
+    def rename(self, name: Optional[str] = None, base_ref: Optional[str] = None,
+               label: Optional[str] = None) -> Self:
+        return EvidenceNetworkSource(
+            self.name if name is None else name,
+            self.base_ref if base_ref is None else base_ref,
+            self.label if label is None else label,
+            self.address_map, self.activity_map)
