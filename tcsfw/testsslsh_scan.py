@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 import pathlib
 from typing import Dict, List, Optional
@@ -19,14 +20,14 @@ class TestSSLScan(EndpointCheckTool):
         self.tool.name = "Testssl.sh"
         self.data_file_suffix = ".json"
         self.property_key = Properties.PROTOCOL.append_key("tls")
+        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Service)
 
-    def _check_entity(self,  endpoint: AnyAddress, data_file: pathlib.Path, interface: EventInterface,
+    def process_file(self,  endpoint: AnyAddress, data_file: BytesIO, interface: EventInterface,
                       source: EvidenceSource):
-        with data_file.open() as f:
-            raw = json.load(f)
+        raw = json.load(data_file)
         evi = Evidence(source)
         self.do_scan(interface, endpoint, raw, evi)
 

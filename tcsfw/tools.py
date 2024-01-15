@@ -1,9 +1,10 @@
+from io import BytesIO
 import json
 import logging
 import os.path
 import pathlib
 from datetime import datetime
-from typing import Optional, List, Dict, Iterable, Tuple, Set, Self
+from typing import BinaryIO, Optional, List, Dict, Iterable, Tuple, Set, Self
 
 from tcsfw.address import DNSName, IPAddress, AnyAddress, Addresses
 from tcsfw.entity import ClaimAuthority, Entity
@@ -107,65 +108,60 @@ class EndpointCheckTool(CheckTool):
     """Check a service endpoint"""
     def __init__(self, tool_label: str, system: IoTSystem):
         super().__init__(tool_label, system)
-        self.known_files: Dict[Addressable, pathlib.Path] = {}
+        # map from file names into addressable entities
+        self.file_name_map: Dict[str, Addressable] = {}
 
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        source = source.rename(self.tool.name)
-        self._add_base_files(arguments)
-        for ent, path in self.known_files.items():
-            add = Addresses.get_prioritized(ent.get_addresses())
-            if not add:
-                raise Exception(f"No known address for {ent} to scan {path.as_posix()}")
-            source.timestamp = datetime.fromtimestamp(os.path.getmtime(path))
-            source.base_ref = path.as_posix()
-            self._check_entity(add, path, interface, source)
-
+    def _create_file_name_map(self):
+        """Create file name map"""
         for host in self.system.get_hosts(include_external=False):
             if host.status.verdict not in {Verdict.NOT_SEEN, Verdict.PASS}:
                 continue
             if self._filter_node(host):
                 # scan hosts
-                self._scan_addresses(host, host.addresses, interface, source)
+                self._map_addressable(host)
                 continue
             for s in host.children:
                 if s.status.verdict not in {Verdict.NOT_SEEN, Verdict.PASS}:
                     continue
                 if self._filter_node(s):
-                    self._scan_addresses(s, s.get_addresses(), interface, source)
+                    self._map_addressable(s)
 
-    def _scan_addresses(self, entity: Addressable, addresses: Iterable[AnyAddress], interface: EventInterface,
-                        source: EvidenceSource):
-        """Scan addresses from a source"""
-        self.logger.debug("Check for %s", entity)
+    def _map_addressable(self, entity: Addressable):
+        """Map addressable entity to file names"""
         # First pass is DNS names, then IP addresses
+        addresses = entity.get_addresses()
         ads_sorted = [a for a in addresses if isinstance(a.get_host(), DNSName)]
         ads_sorted.extend([a for a in addresses if isinstance(a.get_host(), IPAddress)])
         for a in ads_sorted:
-            a_file = self._get_file_by_endpoint(a)
-            if a_file:
-                self.logger.info("Scan %s", a_file.as_posix())
-                source.timestamp = datetime.fromtimestamp(os.path.getmtime(a_file))
-                source.base_ref = a_file.as_posix()
-                self._check_entity(a, a_file, interface, source)
+            a_file_name = self._get_file_by_endpoint(a) 
+            if a_file_name not in self.file_name_map:
+                self.file_name_map[a_file_name] = a
 
-    def _get_file_by_endpoint(self, address: AnyAddress) -> Optional[pathlib.Path]:
+    def _get_file_by_endpoint(self, address: AnyAddress) -> Optional[str]:
         """Get data file by endpoint and tool label"""
         assert self.data_file_suffix, f"Data file suffix not set for {self}"
         host = address.get_host()
         pp = address.get_protocol_port()
         if pp is None:
-            n = f"{self.tool_label}/{host}{self.data_file_suffix}"
+            n = f"{host}{self.data_file_suffix}"
         else:
-            n = f"{self.tool_label}/{host}.{pp[0].value.lower()}.{pp[1]}{self.data_file_suffix}"
-        return self._get_file_by_name(n)
+            n = f"{host}.{pp[0].value.lower()}.{pp[1]}{self.data_file_suffix}"
+        return n
 
     def _filter_node(self, node: NetworkNode) -> bool:
         """Filter checked entities"""
         return True
 
+    def process_file(self,  endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
+        """Process file from stream"""
+        raise NotImplementedError()
+
     def _check_entity(self,  endpoint: AnyAddress, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         """Check entity with data"""
-        raise NotImplementedError()
+        raise NotImplementedError("Deprecated")
+
+    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
+        raise NotImplementedError("run_tools is deprecated")
 
 
 class NodeCheckTool(CheckTool):

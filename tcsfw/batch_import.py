@@ -3,12 +3,13 @@ import json
 import logging
 import pathlib
 import io
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from framing.raw_data import Raw
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
+from tcsfw.testsslsh_scan import TestSSLScan
 from tcsfw.traffic import IPFlow
 from enum import StrEnum
 
@@ -64,9 +65,18 @@ class BatchImporter:
             # filter by label
             skip_processing = not self.filter.filter(info.label)
 
+            if not info.process_individually():
+                # some files are processed at once
+                if skip_processing:
+                    self.logger.info(f"skipping ({info.label}) data files")
+                    return
+                self._do_process_files(proc_list, info)
+
             # recursively scan the directory
             for child in proc_list:
                 if info and child.is_file():
+                    if not info.process_individually():
+                        continue
                     if not info.default_include and info.label not in self.filter.included:
                         self.logger.debug(f"skipping (default=False) {child.as_posix()}")
                         continue # skip file if not explicitly included
@@ -106,6 +116,24 @@ class BatchImporter:
 
         raise ValueError(f"Unsupported file '{file_name}' and type {info.file_type}")
 
+    def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo'):
+        """Process files"""
+        if info.file_type == BatchFileType.TESTSSL:
+            tool = TestSSLScan(self.interface.get_system())
+        else:
+            raise ValueError(f"Unsupported file type {info.file_type}")
+        for fn in files:
+            if not fn.is_file():
+                continue  # directories called later
+            address = tool.file_name_map.get(fn.name)
+            if address:
+                self.logger.info(f"processing ({info.file_type}) {fn.as_posix()}")
+                with fn.open("rb") as f:
+                    tool.process_file(address, f, self.interface, info.source)
+            else:
+                self.logger.debug(f"no file found {fn.as_posix()}")
+
+
     def _process_pcap_json(self, stream: io.BytesIO):
         """Read traffic from json"""
         json_data = json.load(stream)
@@ -119,6 +147,7 @@ class BatchFileType(StrEnum):
     UNSPECIFIED = "unspecified"
     CAPTURE = "capture"
     NMAP = "nmap"
+    TESTSSL = "testssl"
 
     @classmethod
     def parse(cls, value: Optional[str]):
@@ -138,6 +167,10 @@ class FileMetaInfo:
         self.file_type = file_type
         self.default_include = True
         self.source = EvidenceNetworkSource(file_type)
+
+    def process_individually(self) -> bool:
+        """Process each file individually?"""
+        return self.file_type not in {BatchFileType.TESTSSL}
 
     @classmethod
     def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':
