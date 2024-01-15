@@ -31,7 +31,6 @@ from tcsfw.property import PropertyKey, PropertyVerdict, Properties
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
-from tcsfw.tools import CustomFlowTool
 from tcsfw.traffic import EvidenceSource, Evidence
 from tcsfw.verdict import Verdict
 from tcsfw.visualizer import Visualizer, VisualizerAPI
@@ -190,7 +189,6 @@ class Builder(SystemBuilder):
         parser.add_argument("--read", "-r", action="append", help="Read tool output from files or directories")
         parser.add_argument("--def-loads", "-L", type=str, help="Comma-separated list of tools to load")
         parser.add_argument("--set-ip", action="append", help="Set DNS-name for entity, format 'name=ip, ...'")
-        parser.add_argument("--ip-packet", action="append", help="Add fake IP packet (JSON)")
         parser.add_argument("--output", "-o", help="Output format")
         parser.add_argument("--dhcp", action="store_true", help="Add default DHCP server handling")
         parser.add_argument("--dns", action="store_true", help="Add default DNS server handling")
@@ -233,11 +231,6 @@ class Builder(SystemBuilder):
         batch_import = BatchImporter(registry, filter=LabelFilter(self.args.def_loads or ""))
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
-
-        if self.args.ip_packet:
-            # custom IP flows
-            ft = CustomFlowTool(self.system).parse_flows(self.args.ip_packet)
-            self.load().other_tool(ft, as_first=True)
 
         all_loaders = {}
         for sub in self.claimSet.finish():

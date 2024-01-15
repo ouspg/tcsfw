@@ -226,25 +226,3 @@ class ComponentCheckTool(CheckTool):
     def process_file(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()
-
-
-class CustomFlowTool(CheckTool):
-    """Send some custom flows"""
-    def __init__(self, system: IoTSystem):
-        super().__init__("", system)
-        self.tool.name = "Test flows"
-        self.flows: List[Flow] = []
-
-    def parse_flows(self, flow_data: Iterable[str]) -> Self:
-        for fd in flow_data:
-            js = json.loads(fd)
-            flow = IPFlow.parse_from_json(js)
-            self.flows.append(flow)
-            if js.get("reply"):
-                self.flows.append(flow.reverse())
-        return self
-
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        for f in self.flows:
-            interface.connection(f)
-
