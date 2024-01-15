@@ -232,8 +232,8 @@ class Builder(SystemBuilder):
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
-        all_loaders = {}
-        for sub in self.claimSet.finish():
+        all_loaders = {}  # loaders by labels
+        for sub in self.claimSet.finish_loaders():
             sub.pre_load(registry, all_loaders, cc)
         for ln in self.loaders:
             for sub in ln.subs:
@@ -918,8 +918,8 @@ class ClaimBuilder:
             self._keys.append(PropertyKey("vulnz", com, cve.lower()))
         return self
 
-    def finish(self) -> SubLoader:
-        """Finish by returning loader to use"""
+    def finish_loaders(self) -> SubLoader:
+        """Finish by returning the loader to use"""
         this = self
         locations = self._locations
         keys = self._keys
@@ -958,9 +958,9 @@ class ClaimSetBuilder(BuilderInterface):
         """Ignore claims or requirements"""
         return ClaimBuilder(self, explanation, Verdict.IGNORE)
 
-    def finish(self) -> List[SubLoader]:
+    def finish_loaders(self) -> List[SubLoader]:
         """Finish"""
-        return [cb.finish() for cb in self.claim_builders]
+        return [cb.finish_loaders() for cb in self.claim_builders]
 
 
 class CookieBuilder(BuilderInterface):
