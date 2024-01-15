@@ -8,6 +8,7 @@ from framing.raw_data import Raw
 from tcsfw.android_manifest_scan import AndroidManifestScan
 from tcsfw.censys_scan import CensysScan
 from tcsfw.event_interface import EventInterface
+from tcsfw.har_scan import HARScan
 from tcsfw.mitm_log_reader import MITMLogReader
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.nmap_scan import NMAPScan
@@ -136,6 +137,8 @@ class BatchImporter:
         """Process files"""
         if info.file_type == BatchFileType.APK:
             tool = AndroidManifestScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.HAR:
+            tool = HARScan(self.interface.get_system())
         elif info.file_type == BatchFileType.TESTSSL:
             tool = TestSSLScan(self.interface.get_system())
         elif info.file_type == BatchFileType.RELEASES:
@@ -180,6 +183,7 @@ class BatchFileType(StrEnum):
     CAPTURE = "capture"
     CAPTURE_JSON = "capture-json"
     CENSYS = "censys"
+    HAR = "har"
     MITMPROXY = "mitmproxy"
     NMAP = "nmap"
     RELEASES = "releases"  # Github format
@@ -211,7 +215,8 @@ class FileMetaInfo:
     def process_individually(self) -> bool:
         """Process each file individually?"""
         return self.file_type not in {
-            BatchFileType.APK, BatchFileType.CENSYS, BatchFileType.RELEASES, BatchFileType.SPDX, BatchFileType.SSH_AUDIT,
+            BatchFileType.APK, BatchFileType.CENSYS, BatchFileType.HAR, 
+            BatchFileType.RELEASES, BatchFileType.SPDX, BatchFileType.SSH_AUDIT,
             BatchFileType.TESTSSL, BatchFileType.VULNERABILITIES}
 
     @classmethod

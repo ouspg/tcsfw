@@ -165,31 +165,28 @@ class EndpointCheckTool(CheckTool):
 
 class NodeCheckTool(CheckTool):
     """Network node check tool"""
-    def __init__(self, tool_label: str, system: IoTSystem):
+    def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
-        self.known_files: Dict[NetworkNode, pathlib.Path] = {}
+        self.data_file_suffix = data_file_suffix
+        self.file_name_map: Dict[str, NetworkNode] = {}
+        self._create_file_name_map()
 
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        source = source.rename(self.tool.name)
-        self._add_base_files(arguments)
-
-        for ent, path in self.known_files.items():
-            source.timestamp = datetime.fromtimestamp(os.path.getmtime(path))
-            source.base_ref = path.as_posix()
-            self._check_entity(ent, path, interface, source)
+    def _create_file_name_map(self):
+        """Create file name map"""
         tool = self
 
-        def check_node(node: NetworkNode):
-            if self._filter_component(node):
-                a_file = self._get_file_by_name(node.name)
-                if a_file:
-                    source.timestamp = datetime.fromtimestamp(os.path.getmtime(a_file))
-                    source.base_ref = a_file.as_posix()
-                    tool._check_entity(node, a_file, interface, source)
+        def check_component(node: NetworkNode):
             for c in node.children:
-                check_node(c)
-        if self.base_files:
-            check_node(self.system)
+                if not tool._filter_component(c):
+                    continue
+                self.file_name_map[tool._get_file_by_name(c.name)] = c
+                check_component(c)
+        check_component(self.system)
+
+
+    def process_file(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+        """Check entity with data"""
+        raise NotImplementedError()
 
     def _filter_component(self, node: NetworkNode) -> bool:
         """Filter checked entities"""

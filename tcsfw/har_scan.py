@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 import pathlib
 import urllib.parse
@@ -16,14 +17,13 @@ from tcsfw.verdict import Verdict
 
 class HARScan(NodeCheckTool):
     def __init__(self, system: IoTSystem):
-        super().__init__("har", system)
+        super().__init__("har", ".json", system)
         self.tool.name = "HAR"
 
     def _filter_component(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)
 
-    def _check_entity(self, node: NetworkNode, data_file: pathlib.Path, interface: EventInterface,
-                      source: EvidenceSource):
+    def process_file(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         host = cast(Host, node)
 
         component = Cookies.cookies_for(host)
@@ -40,8 +40,7 @@ class HARScan(NodeCheckTool):
 
         properties = set()
 
-        with data_file.open() as f:
-            raw_log = json.load(f)["log"]
+        raw_log = json.load(data_file)["log"]
 
         raw_entries = raw_log["entries"]
         for raw in raw_entries:
