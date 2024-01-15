@@ -17,7 +17,7 @@ from tcsfw.releases import ReleaseReader
 from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
-from tcsfw.tools import CheckTool
+from tcsfw.tools import CheckTool, SimpleFlowTool
 from tcsfw.traffic import EvidenceSource, IPFlow
 from enum import StrEnum
 from tcsfw.tshark_reader import TSharkReader
@@ -121,17 +121,10 @@ class BatchImporter:
         file_name = file_path.name
         file_ext = file_path.suffix.lower()
         try:
-
-            # FIXME: Refactor to use CheckTool instance
-            if file_ext == ".json" and info.file_type == BatchFileType.CAPTURE:
-                # read flows from json
-                if skip_processing:
-                    self.logger.info(f"skipping ({info.label}) {file_path.as_posix()}")
-                    return
-                return self._process_pcap_json(stream)
-
             reader = None
-            if file_ext == ".pcap" and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
+            if file_ext == ".json" and info.file_type == BatchFileType.CAPTURE:
+                reader = SimpleFlowTool(self.interface.get_system())
+            elif file_ext == ".pcap" and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
                 # read flows from pcap
                 reader = PCAPReader(self.interface.get_system())
             elif file_ext == ".json" and info.file_type == BatchFileType.CAPTURE_JSON:
@@ -186,13 +179,6 @@ class BatchImporter:
                 self.logger.info(f"unprocessed ({info.label}) file {fn.as_posix()}")
         if unmapped:
             self.logger.debug(f"no files for {sorted(unmapped)}")
-
-    def _process_pcap_json(self, stream: io.BytesIO):
-        """Read traffic from json"""
-        json_data = json.load(stream)
-        for fl in json_data.get("flows", []):
-            flow = IPFlow.parse_from_json(fl)
-            self.interface.connection(flow)
 
 
 class BatchFileType(StrEnum):

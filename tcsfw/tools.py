@@ -11,7 +11,7 @@ from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import NetworkNode, Addressable, IoTSystem, NodeComponent, Connection, Host
 from tcsfw.property import PropertyKey
-from tcsfw.traffic import EvidenceSource, Tool, Flow, IPFlow
+from tcsfw.traffic import Evidence, EvidenceSource, Tool, Flow, IPFlow
 from tcsfw.verdict import Verdict
 
 
@@ -203,3 +203,16 @@ class ComponentCheckTool(CheckTool):
                        source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()
+
+class SimpleFlowTool(BaseFileCheckTool):
+    """Simple flow tool powered by list of flows"""
+    def __init__(self, system: IoTSystem):
+        super().__init__("flow", system)
+        self.tool.name = "JSON flow reader"
+
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
+        raw_json = json.load(data)
+        for raw_flow in raw_json.get("flows", []):
+            flow = IPFlow.parse_from_json(raw_flow)
+            flow.evidence = Evidence(source)
+            interface.connection(flow)
