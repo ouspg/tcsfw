@@ -20,7 +20,7 @@ class NMAPScan(BaseFileCheckTool):
         self.tool.name = "Nmap scan"
         self.data_file_suffix = ".xml"
 
-    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         tree = ElementTree.parse(data)
 
         system = self.system

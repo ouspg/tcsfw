@@ -25,7 +25,7 @@ class TSharkReader(BaseFileCheckTool):
         # current frame
         self.source: Optional[EvidenceSource] = None
 
-    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         # not for large files, very Python-style
         raw = json.load(data)
         self.source = source
@@ -35,7 +35,7 @@ class TSharkReader(BaseFileCheckTool):
     def read(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         """Read PCAP file"""
         with data_file.open("r") as f:
-            return self.read_stream(f, interface, source)
+            return self.read_stream(f, data_file.name, interface, source)
 
     def parse(self, raw: Dict, interface: EventInterface):
         """Parse JSON"""

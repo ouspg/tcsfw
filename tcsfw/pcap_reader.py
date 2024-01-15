@@ -48,7 +48,7 @@ class PCAPReader(BaseFileCheckTool):
         r._check_file(pcap_file, Inspector(system), EvidenceSource(r.tool_label))
         return r
 
-    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         self.source = source
         self.interface = interface
         raw_data = Raw.stream(data, request_size=1024 * 1024)

@@ -21,7 +21,7 @@ class MITMLogReader(BaseFileCheckTool):
         self.tool.name = "MITM tool"
         self.data_file_suffix = ".log"
 
-    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         """Read a log file"""
         evidence = Evidence(source)
         names = set()

@@ -127,7 +127,7 @@ class BatchImporter:
                 reader = ZEDReader(self.interface.get_system())
 
             if reader:
-                return reader.read_stream(stream, self.interface, info.source)
+                return reader.read_stream(stream, file_name, self.interface, info.source)
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e

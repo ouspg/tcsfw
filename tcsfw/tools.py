@@ -97,7 +97,7 @@ class BaseFileCheckTool(CheckTool):
         with data_file.open() as file:
             self.read_stream(file, interface, source)
 
-    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         raise NotImplementedError(f"In {self.__class__.__name__}")
 
 
