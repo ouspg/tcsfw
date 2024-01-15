@@ -1,6 +1,7 @@
 import datetime
+from io import BytesIO
 import pathlib
-from typing import BinaryIO, Dict, Set, List
+from typing import Dict, Set, List
 from xml.etree import ElementTree
 
 from tcsfw.address import IPAddress, HWAddress, EndpointAddress, Protocol
@@ -19,11 +20,7 @@ class NMAPScan(BaseFileCheckTool):
         self.tool.name = "Nmap scan"
         self.data_file_suffix = ".xml"
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
-        with data_file.open() as file:
-            self.read_stream(file, interface, source)
-
-    def read_stream(self, data: BinaryIO, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
         tree = ElementTree.parse(data)
 
         system = self.system

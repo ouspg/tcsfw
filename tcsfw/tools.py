@@ -101,7 +101,11 @@ class BaseFileCheckTool(CheckTool):
             read_file(f)
 
     def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
-        raise NotImplementedError()
+        with data_file.open() as file:
+            self.read_stream(file, interface, source)
+
+    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+        raise NotImplementedError(f"In {self.__class__.__name__}")
 
 
 class EndpointCheckTool(CheckTool):

@@ -1,4 +1,5 @@
 import datetime
+from io import BytesIO
 import pathlib
 from typing import Optional, Dict, Tuple, List
 
@@ -47,10 +48,10 @@ class PCAPReader(BaseFileCheckTool):
         r._check_file(pcap_file, Inspector(system), EvidenceSource(r.tool_label))
         return r
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
         self.source = source
         self.interface = interface
-        raw_data = Raw.file(data_file)
+        raw_data = Raw.stream(data, request_size=1024 * 1024)
         try:
             self.parse(raw_data)
         finally:

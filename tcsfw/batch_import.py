@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from framing.raw_data import Raw
 from tcsfw.censys_scan import CensysScan
 from tcsfw.event_interface import EventInterface
+from tcsfw.mitm_log_reader import MITMLogReader
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
@@ -14,6 +15,9 @@ from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
 from tcsfw.traffic import IPFlow
 from enum import StrEnum
+from tcsfw.tshark_reader import TSharkReader
+
+from tcsfw.zed_reader import ZEDReader
 
 
 class BatchImporter:
@@ -100,23 +104,29 @@ class BatchImporter:
                 # read flows from json
                 return self._process_pcap_json(stream)
 
+            reader = None
             if file_ext == ".pcap" and info.file_type in {BatchFileType.UNSPECIFIED, BatchFileType.CAPTURE}:
                 # read flows from pcap
-                reader = PCAPReader(self.interface.get_system(), file_name)
-                reader.source = info.source
-                reader.interface = self.interface
-                raw = Raw.stream(stream, name=file_name, request_size=1 << 20)
-                return reader.parse(raw)
-
-            if file_ext == ".xml" and info.file_type == BatchFileType.NMAP:
+                reader = PCAPReader(self.interface.get_system())
+            elif file_ext == ".json" and info.file_type == BatchFileType.CAPTURE_JSON:
+                # read flows from JSON pcap
+                reader = TSharkReader(self.interface.get_system())
+            elif file_ext == ".log" and info.file_type == BatchFileType.MITMPROXY:
+                # read MITM from textual log
+                reader = MITMLogReader(self.interface.get_system())
+            elif file_ext == ".xml" and info.file_type == BatchFileType.NMAP:
                 # read NMAP from xml
                 reader = NMAPScan(self.interface.get_system())
+            elif file_ext == ".json" and info.file_type == BatchFileType.ZAP:
+                # read ZAP from json
+                reader = ZEDReader(self.interface.get_system())
+
+            if reader:
                 return reader.read_stream(stream, self.interface, info.source)
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
-
-        raise ValueError(f"Unsupported file '{file_name}' and type {info.file_type}")
+        self.logger.info(f"skipping unsupported '{file_name}' type {info.file_type}")
 
     def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo'):
         """Process files"""
@@ -152,10 +162,13 @@ class BatchFileType(StrEnum):
     """Batch file type"""
     UNSPECIFIED = "unspecified"
     CAPTURE = "capture"
-    NMAP = "nmap"
-    TESTSSL = "testssl"
-    SSH_AUDIT = "ssh-audit"
+    CAPTURE_JSON = "capture-json"
     CENSYS = "censys"
+    MITMPROXY = "mitmproxy"
+    NMAP = "nmap"
+    SSH_AUDIT = "ssh-audit"
+    TESTSSL = "testssl"
+    ZAP = "zap"  # ZED Attack Proxy
 
     @classmethod
     def parse(cls, value: Optional[str]):

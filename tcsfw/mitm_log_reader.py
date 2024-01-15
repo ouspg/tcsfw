@@ -1,3 +1,4 @@
+from io import BytesIO, TextIOWrapper
 import pathlib
 import re
 from typing import List
@@ -20,9 +21,9 @@ class MITMLogReader(BaseFileCheckTool):
         self.tool.name = "MITM tool"
         self.data_file_suffix = ".log"
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
+    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Read a log file"""
-        evidence = Evidence(source, tail_ref=data_file.as_posix())
+        evidence = Evidence(source)
         names = set()
 
         # Format:
@@ -30,7 +31,7 @@ class MITMLogReader(BaseFileCheckTool):
 
         matcher = re.compile(r"\[[^]]+] ([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),.*")
 
-        with data_file.open() as f:
+        with TextIOWrapper(data) as f:
             while True:
                 raw_line = f.readline()
                 if not raw_line:

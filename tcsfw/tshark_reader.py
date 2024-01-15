@@ -1,5 +1,6 @@
 import argparse
 import datetime
+from io import BytesIO
 import json
 import pathlib
 from typing import Dict, Optional, List
@@ -24,17 +25,17 @@ class TSharkReader(BaseFileCheckTool):
         # current frame
         self.source: Optional[EvidenceSource] = None
 
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
-        self.read(data_file, interface, source)
+    def read_stream(self, data: BytesIO, interface: EventInterface, source: EvidenceSource):
+        # not for large files, very Python-style
+        raw = json.load(data)
+        self.source = source
+        self.parse(raw, interface)
+        return self
 
     def read(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
         """Read PCAP file"""
         with data_file.open("r") as f:
-            # not for large files, very Python-style
-            raw = json.load(f)
-        self.source = source
-        self.parse(raw, interface)
-        return self
+            return self.read_stream(f, interface, source)
 
     def parse(self, raw: Dict, interface: EventInterface):
         """Parse JSON"""
