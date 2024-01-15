@@ -24,7 +24,7 @@ from tcsfw.inspector import Inspector
 from tcsfw.latex_output import LaTeXGenerator
 from tcsfw.main_basic import SubLoader, BuilderInterface, NodeInterface, SystemInterface, SoftwareInterface, \
     HostInterface
-from tcsfw.main_tools import EvidenceLoader, ToolLoader
+from tcsfw.main_tools import EvidenceLoader
 from tcsfw.model import Host, Service, Connection, Addressable, ConnectionType, HostType, \
     ExternalActivity, PieceOfData
 from tcsfw.property import PropertyKey, PropertyVerdict, Properties
@@ -239,13 +239,14 @@ class Builder(SystemBuilder):
             for sub in ln.subs:
                 sub.pre_load(registry, all_loaders, cc)
         if self.args.help_tools:
+            # print help and exit
             for label, sl in sorted(all_loaders.items()):
                 sl_s = ", ".join(sorted(set([s.loader_name for s in sl])))
                 print(f"{label:<20} {sl_s}")
             return
-        loaders = EvidenceLoader.load_selected("", all_loaders) # FIXME: Filtering by batch_import!
-        for ln in loaders:  # only selected tools are loaded
-            ln.load(registry, cc)
+        for ln_list in all_loaders.values():
+            for ln in ln_list:
+                ln.load(registry, cc)
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True
