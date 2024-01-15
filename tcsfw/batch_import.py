@@ -5,17 +5,21 @@ import pathlib
 import io
 from typing import Dict, List, Optional
 from framing.raw_data import Raw
+from tcsfw.android_manifest_scan import AndroidManifestScan
 from tcsfw.censys_scan import CensysScan
 from tcsfw.event_interface import EventInterface
 from tcsfw.mitm_log_reader import MITMLogReader
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
+from tcsfw.releases import ReleaseReader
+from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
 from tcsfw.traffic import IPFlow
 from enum import StrEnum
 from tcsfw.tshark_reader import TSharkReader
+from tcsfw.vulnerability_reader import VulnerabilityReader
 
 from tcsfw.zed_reader import ZEDReader
 
@@ -130,14 +134,23 @@ class BatchImporter:
 
     def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo'):
         """Process files"""
-        if info.file_type == BatchFileType.TESTSSL:
+        if info.file_type == BatchFileType.APK:
+            tool = AndroidManifestScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.TESTSSL:
             tool = TestSSLScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.RELEASES:
+            tool = ReleaseReader(self.interface.get_system())
+        elif info.file_type == BatchFileType.SPDX:
+            tool = SPDXReader(self.interface.get_system())
         elif info.file_type == BatchFileType.SSH_AUDIT:
             tool = SSHAuditScan(self.interface.get_system())
         elif info.file_type == BatchFileType.CENSYS:
             tool = CensysScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.VULNERABILITIES:
+            tool = VulnerabilityReader(self.interface.get_system())
         else:
             raise ValueError(f"Unsupported file type {info.file_type}")
+        unmapped = set(tool.file_name_map.keys())
         for fn in files:
             if not fn.is_file():
                 continue  # directories called later
@@ -146,9 +159,11 @@ class BatchImporter:
                 self.logger.info(f"processing ({info.file_type}) {fn.as_posix()}")
                 with fn.open("rb") as f:
                     tool.process_file(address, f, self.interface, info.source)
+                unmapped.remove(fn.name)
             else:
-                self.logger.debug(f"no file found {fn.as_posix()}")
-
+                self.logger.debug(f"unknown file name {fn.as_posix()}")
+        if unmapped:
+            self.logger.debug(f"no files for {sorted(unmapped)}")
 
     def _process_pcap_json(self, stream: io.BytesIO):
         """Read traffic from json"""
@@ -161,13 +176,17 @@ class BatchImporter:
 class BatchFileType(StrEnum):
     """Batch file type"""
     UNSPECIFIED = "unspecified"
+    APK = "apk"
     CAPTURE = "capture"
     CAPTURE_JSON = "capture-json"
     CENSYS = "censys"
     MITMPROXY = "mitmproxy"
     NMAP = "nmap"
+    RELEASES = "releases"  # Github format
+    SPDX = "spdx"
     SSH_AUDIT = "ssh-audit"
     TESTSSL = "testssl"
+    VULNERABILITIES = "vulnerabilities"  # BlackDuck csv output
     ZAP = "zap"  # ZED Attack Proxy
 
     @classmethod
@@ -191,7 +210,9 @@ class FileMetaInfo:
 
     def process_individually(self) -> bool:
         """Process each file individually?"""
-        return self.file_type not in {BatchFileType.TESTSSL, BatchFileType.SSH_AUDIT, BatchFileType.CENSYS}
+        return self.file_type not in {
+            BatchFileType.APK, BatchFileType.CENSYS, BatchFileType.RELEASES, BatchFileType.SPDX, BatchFileType.SSH_AUDIT,
+            BatchFileType.TESTSSL, BatchFileType.VULNERABILITIES}
 
     @classmethod
     def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':

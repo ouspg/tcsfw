@@ -38,17 +38,10 @@ class CheckTool:
             for fn in arguments.strip().split(":"):
                 self.base_files.append(pathlib.Path(fn))
 
-    def _get_file_by_name(self, name: str) -> Optional[pathlib.Path]:
+    def _get_file_by_name(self, name: str) -> str:
         """Get data file by file name, if any"""
-        for bf in self.base_files:
-            if bf.is_dir():
-                f = bf / name
-                self.logger.debug("Check if %s", f.as_posix())
-                if f.exists():
-                    return f
-            elif bf.name == name:
-                return bf
-        return None
+        assert self.data_file_suffix, f"Data file suffix not set"
+        return f"{name}{self.data_file_suffix}" 
 
     def coverage(self, data: Dict[Entity, Dict[PropertyKey, Set[Tool]]]):
         """Tell about covered entities and properties"""
@@ -210,29 +203,21 @@ class NodeCheckTool(CheckTool):
 
 class ComponentCheckTool(CheckTool):
     """Software check tool"""
-    def __init__(self, tool_label: str, system: IoTSystem):
+    def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
-        self.known_files: Dict[NodeComponent, pathlib.Path] = {}
+        self.data_file_suffix = data_file_suffix
+        self.file_name_map: Dict[str, NodeComponent] = {}
+        self._create_file_name_map()
 
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        source = source.rename(self.tool.name)
-        self._add_base_files(arguments)
-
-        for ent, path in self.known_files.items():
-            source.timestamp = datetime.fromtimestamp(os.path.getmtime(path))
-            source.base_ref = path.as_posix()
-            self._check_entity(ent, path, interface, source)
+    def _create_file_name_map(self):
+        """Create file name map"""
         tool = self
 
         def check_component(node: NetworkNode):
             for c in node.components:
                 if not tool._filter_component(c):
                     continue
-                a_file = self._get_file_by_name(c.name)
-                if a_file:
-                    source.timestamp = datetime.fromtimestamp(os.path.getmtime(a_file))
-                    source.base_ref = a_file.as_posix()
-                    tool._check_entity(c, a_file, interface, source)
+                self.file_name_map[tool._get_file_by_name(c.name)] = c
             for c in node.children:
                 check_component(c)
         check_component(self.system)
@@ -241,8 +226,7 @@ class ComponentCheckTool(CheckTool):
         """Filter checked entities"""
         return True
 
-    def _check_entity(self, component: NodeComponent, data_file: pathlib.Path, interface: EventInterface,
-                      source: EvidenceSource):
+    def process_file(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()
 
