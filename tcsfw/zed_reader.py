@@ -21,7 +21,7 @@ class ZEDReader(BaseFileCheckTool):
         self.tool.name = "ZED Attack Proxy"
         self.data_file_suffix = ".json"
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         raw_file = json.load(data)
 
         evidence = Evidence(source)
@@ -36,6 +36,8 @@ class ZEDReader(BaseFileCheckTool):
             exp = f"{self.tool.name} scan completed"
             ev = PropertyAddressEvent(evidence, ep, Properties.WEB_BEST.value(ps, explanation=exp))
             interface.property_address_update(ev)
+
+        return True
 
     def _read_alerts(self, interface: EventInterface, evidence: Evidence, endpoint: EndpointAddress, raw: List) \
             -> Set[PropertyVerdict]:

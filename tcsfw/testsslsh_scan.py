@@ -23,8 +23,8 @@ class TestSSLScan(EndpointCheckTool):
     def _filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Service)
 
-    def process_file(self,  endpoint: AnyAddress, data_file: BytesIO, interface: EventInterface,
-                      source: EvidenceSource):
+    def process_stream(self,  endpoint: AnyAddress, data_file: BytesIO, interface: EventInterface,
+                       source: EvidenceSource):
         raw = json.load(data_file)
         evi = Evidence(source)
         self.do_scan(interface, endpoint, raw, evi)

@@ -27,6 +27,10 @@ class CheckTool:
         self.send_events = True  # True to send events to interface
         self.load_baseline = False  # True to load baseline, false to check it
 
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
+        # Read a data file
+        raise NotImplementedError(f"In {self.__class__.__name__}")
+
     def _get_file_by_name(self, name: str) -> str:
         """Get data file by name"""
         assert self.data_file_suffix, f"Data file suffix not set"
@@ -71,9 +75,6 @@ class BaseFileCheckTool(CheckTool):
     def __init__(self, tool_label: str, system: IoTSystem):
         super().__init__(tool_label, system)
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
-        raise NotImplementedError(f"In {self.__class__.__name__}")
-
 
 class EndpointCheckTool(CheckTool):
     """Check a service endpoint"""
@@ -83,6 +84,14 @@ class EndpointCheckTool(CheckTool):
         self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, Addressable] = {}
         self._create_file_name_map()
+
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+        key = self.file_name_map.get(file_name)
+        if key:
+            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.process_stream(key, data, interface, source)
+            return True
+        return False
 
     def _create_file_name_map(self):
         """Create file name map"""
@@ -114,7 +123,7 @@ class EndpointCheckTool(CheckTool):
         """Filter checked entities"""
         return True
 
-    def process_file(self,  endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_stream(self,  endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Process file from stream"""
         raise NotImplementedError()
 
@@ -126,6 +135,14 @@ class NodeCheckTool(CheckTool):
         self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, NetworkNode] = {}
         self._create_file_name_map()
+
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+        key = self.file_name_map.get(file_name)
+        if key:
+            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.process_stream(key, data, interface, source)
+            return True
+        return False
 
     def _create_file_name_map(self):
         """Create file name map"""
@@ -140,7 +157,7 @@ class NodeCheckTool(CheckTool):
         check_component(self.system)
 
 
-    def process_file(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_stream(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()
 
@@ -156,6 +173,14 @@ class ComponentCheckTool(CheckTool):
         self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, NodeComponent] = {}
         self._create_file_name_map()
+
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+        key = self.file_name_map.get(file_name)
+        if key:
+            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.process_stream(key, data, interface, source)
+            return True
+        return False
 
     def _create_file_name_map(self):
         """Create file name map"""
@@ -174,6 +199,7 @@ class ComponentCheckTool(CheckTool):
         """Filter checked entities"""
         return True
 
-    def process_file(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, 
+                       source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()

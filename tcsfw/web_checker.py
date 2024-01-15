@@ -23,7 +23,7 @@ class WebChecker(BaseFileCheckTool):
         self.tool.name = "Web check"
         self.regexp = re.compile(r'^HTTP\/.*? (\d\d\d)(.*)$')
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         if file_name.endswith(self.data_file_suffix):
             file_name = file_name[:-len(self.data_file_suffix)]
         f_url = urllib.parse.unquote(file_name)
@@ -46,3 +46,5 @@ class WebChecker(BaseFileCheckTool):
             break
         else:
             self.logger.warning("file without matching resource %s", f_url)
+
+        return True

@@ -20,7 +20,7 @@ class NMAPScan(BaseFileCheckTool):
         self.tool.name = "Nmap scan"
         self.data_file_suffix = ".xml"
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         tree = ElementTree.parse(data)
 
         system = self.system
@@ -79,6 +79,8 @@ class NMAPScan(BaseFileCheckTool):
 
             # summarize the seen ports
             interface.host_scan(HostScan(evidence, ip_addr or hw_addr, host_services))
+
+        return True
 
     def _entity_coverage(self, entity: Entity) -> List[PropertyKey]:
         if isinstance(entity, IoTSystem):

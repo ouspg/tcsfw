@@ -3,7 +3,7 @@ import datetime
 from io import BytesIO
 import json
 import pathlib
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Self
 
 from tcsfw.address import HWAddress, Protocol
 from tcsfw.components import Software
@@ -25,7 +25,7 @@ class TSharkReader(BaseFileCheckTool):
         # current frame
         self.source: Optional[EvidenceSource] = None
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> Self:
         # not for large files, very Python-style
         raw = json.load(data)
         self.source = source

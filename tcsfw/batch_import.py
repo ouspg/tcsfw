@@ -131,8 +131,8 @@ class BatchImporter:
                 reader = ZEDReader(self.interface.get_system())
 
             if reader:
-                ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix(), label=reader.tool_label)
-                return reader.read_stream(stream, file_name, self.interface, ev)
+                ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix())
+                return reader.process_file(stream, file_name, self.interface, ev)
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
@@ -162,15 +162,13 @@ class BatchImporter:
         for fn in files:
             if not fn.is_file():
                 continue  # directories called later
-            address = tool.file_name_map.get(fn.name)
-            if address:
-                self.logger.info(f"processing ({info.file_type}) {fn.as_posix()}")
-                ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix(), label=tool.tool_label)
-                with fn.open("rb") as f:
-                    tool.process_file(address, f, self.interface, ev)
+            ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix())
+            with fn.open("rb") as f:
+                done = tool.process_file(f, fn.name, self.interface, ev)
+            if done:
                 unmapped.remove(fn.name)
             else:
-                self.logger.debug(f"unknown file name {fn.as_posix()}")
+                self.logger.info(f"unprocessed ({info.label}) file {fn.as_posix()}")
         if unmapped:
             self.logger.debug(f"no files for {sorted(unmapped)}")
 

@@ -23,7 +23,7 @@ class HARScan(NodeCheckTool):
     def _filter_component(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)
 
-    def process_file(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_stream(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         host = cast(Host, node)
 
         component = Cookies.cookies_for(host)

@@ -21,7 +21,7 @@ class MITMLogReader(BaseFileCheckTool):
         self.tool.name = "MITM tool"
         self.data_file_suffix = ".log"
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         """Read a log file"""
         evidence = Evidence(source)
         names = set()
@@ -60,6 +60,8 @@ class MITMLogReader(BaseFileCheckTool):
                 v = Verdict.PASS if ev == "tls_failed" else Verdict.FAIL
                 ev = PropertyEvent(evidence, c, Properties.MITM.value(v))
                 interface.property_update(ev)
+
+        return True
 
     def _entity_coverage(self, entity: Entity) -> List[PropertyKey]:
         if isinstance(entity, Connection):

@@ -23,7 +23,8 @@ class SPDXReader(ComponentCheckTool):
     def _filter_component(self, component: NodeComponent) -> bool:
         return isinstance(component, Software)
 
-    def process_file(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
+                       source: EvidenceSource):
         software = cast(Software, component)
 
         evidence = Evidence(source)

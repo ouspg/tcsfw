@@ -1,7 +1,7 @@
 import datetime
 from io import BytesIO
 import pathlib
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Self, Tuple, List
 
 from framing.backends import RawFrame
 from framing.frame_types import dns_frames
@@ -46,10 +46,10 @@ class PCAPReader(BaseFileCheckTool):
         """Inspect the given system with given pcap"""
         r = PCAPReader(system)
         with pcap_file.open("rb") as f:
-            r.read_stream(f, pcap_file.name, Inspector(system), EvidenceSource(pcap_file.name))
+            r.process_file(f, pcap_file.name, Inspector(system), EvidenceSource(pcap_file.name))
         return r
 
-    def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> Self:
         self.source = source
         self.interface = interface
         raw_data = Raw.stream(data, request_size=1024 * 1024)
