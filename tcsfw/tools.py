@@ -26,22 +26,26 @@ class CheckTool:
         self.logger = logging.getLogger(tool_label)
         self.send_events = True  # True to send events to interface
         self.load_baseline = False  # True to load baseline, false to check it
-        self.base_files: List[pathlib.Path] = []
 
     def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
         """Perform the tool action"""
         pass
 
-    def _add_base_files(self, arguments: Optional[str]):
-        """Add base files from arguments"""
-        if arguments:
-            for fn in arguments.strip().split(":"):
-                self.base_files.append(pathlib.Path(fn))
-
     def _get_file_by_name(self, name: str) -> str:
-        """Get data file by file name, if any"""
+        """Get data file by name"""
         assert self.data_file_suffix, f"Data file suffix not set"
         return f"{name}{self.data_file_suffix}" 
+
+    def _get_file_by_endpoint(self, address: AnyAddress) -> Optional[str]:
+        """Get data file by endpoint address"""
+        assert self.data_file_suffix, f"Data file suffix not set for {self}"
+        host = address.get_host()
+        pp = address.get_protocol_port()
+        if pp is None:
+            n = f"{host}{self.data_file_suffix}"
+        else:
+            n = f"{host}.{pp[0].value.lower()}.{pp[1]}{self.data_file_suffix}"
+        return n
 
     def coverage(self, data: Dict[Entity, Dict[PropertyKey, Set[Tool]]]):
         """Tell about covered entities and properties"""
@@ -70,32 +74,6 @@ class BaseFileCheckTool(CheckTool):
     """Check tool which scans set of files, no way to specify entries directly"""
     def __init__(self, tool_label: str, system: IoTSystem):
         super().__init__(tool_label, system)
-
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        source = source.rename(self.tool.name)
-        self._add_base_files(arguments)
-        me = self
-
-        def read_file(data_file: pathlib.Path):
-            if data_file.is_dir():
-                if not me.data_file_suffix:
-                    raise Exception(f"Can only specify data files here, problem with: {data_file.as_posix()}")
-                for f in data_file.iterdir():
-                    read_file(f)
-            elif data_file.suffix == me.data_file_suffix:
-                source.base_ref = data_file.absolute().as_posix()  # just override base reference
-                source.timestamp = datetime.fromtimestamp(os.path.getmtime(data_file))
-                me._check_file(data_file, interface, source)
-
-        for f in self.base_files:
-            if self.data_file_suffix and f.is_dir() and (f / self.tool_label).is_dir():
-                # look inside 'tool/' directory
-                f = f / self.tool_label  # look
-            read_file(f)
-
-    def _check_file(self, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
-        with data_file.open() as file:
-            self.read_stream(file, interface, source)
 
     def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         raise NotImplementedError(f"In {self.__class__.__name__}")
@@ -136,17 +114,6 @@ class EndpointCheckTool(CheckTool):
             if a_file_name not in self.file_name_map:
                 self.file_name_map[a_file_name] = a
 
-    def _get_file_by_endpoint(self, address: AnyAddress) -> Optional[str]:
-        """Get data file by endpoint and tool label"""
-        assert self.data_file_suffix, f"Data file suffix not set for {self}"
-        host = address.get_host()
-        pp = address.get_protocol_port()
-        if pp is None:
-            n = f"{host}{self.data_file_suffix}"
-        else:
-            n = f"{host}.{pp[0].value.lower()}.{pp[1]}{self.data_file_suffix}"
-        return n
-
     def _filter_node(self, node: NetworkNode) -> bool:
         """Filter checked entities"""
         return True
@@ -154,13 +121,6 @@ class EndpointCheckTool(CheckTool):
     def process_file(self,  endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
         """Process file from stream"""
         raise NotImplementedError()
-
-    def _check_entity(self,  endpoint: AnyAddress, data_file: pathlib.Path, interface: EventInterface, source: EvidenceSource):
-        """Check entity with data"""
-        raise NotImplementedError("Deprecated")
-
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        raise NotImplementedError("run_tools is deprecated")
 
 
 class NodeCheckTool(CheckTool):
@@ -191,11 +151,6 @@ class NodeCheckTool(CheckTool):
     def _filter_component(self, node: NetworkNode) -> bool:
         """Filter checked entities"""
         return True
-
-    def _check_entity(self, node: NetworkNode, data_file: pathlib.Path, interface: EventInterface,
-                      source: EvidenceSource):
-        """Check entity with data"""
-        raise NotImplementedError()
 
 
 class ComponentCheckTool(CheckTool):
