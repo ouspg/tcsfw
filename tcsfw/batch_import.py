@@ -17,7 +17,7 @@ from tcsfw.releases import ReleaseReader
 from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
-from tcsfw.traffic import IPFlow
+from tcsfw.traffic import EvidenceSource, IPFlow
 from enum import StrEnum
 from tcsfw.tshark_reader import TSharkReader
 from tcsfw.vulnerability_reader import VulnerabilityReader
@@ -32,6 +32,8 @@ class BatchImporter:
         self.interface = interface
         self.filter = filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
+        # collect evidence sources from visited tools
+        self.evidence: Dict[str, List[EvidenceSource]] = {}
 
     def import_batch(self, file: pathlib.Path):
         """Import a batch of files from a directory or zip file recursively."""
@@ -58,6 +60,7 @@ class BatchImporter:
                             info = FileMetaInfo.parse_from_stream(f, dir_name)
                     except Exception as e:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
+                self.evidence.setdefault(info.label, [])
             else:
                 info = FileMetaInfo()
 
@@ -132,6 +135,7 @@ class BatchImporter:
 
             if reader:
                 ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix())
+                self.evidence.setdefault(info.label, []).append(ev)
                 return reader.process_file(stream, file_name, self.interface, ev)
 
         except Exception as e:
@@ -163,6 +167,7 @@ class BatchImporter:
             if not fn.is_file():
                 continue  # directories called later
             ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix())
+            self.evidence.setdefault(info.label, []).append(ev)
             with fn.open("rb") as f:
                 done = tool.process_file(f, fn.name, self.interface, ev)
             if done:

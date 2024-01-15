@@ -232,18 +232,19 @@ class Builder(SystemBuilder):
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
+        if self.args.help_tools:
+            # print help and exit
+            for label, sl in sorted(batch_import.evidence.items()):
+                sl_s = ", ".join(sorted(set([s.name for s in sl])))
+                print(f"{label:<20} {sl_s}")
+            return
+
         all_loaders = {}  # loaders by labels
         for sub in self.claimSet.finish_loaders():
             sub.pre_load(registry, all_loaders, cc)
         for ln in self.loaders:
             for sub in ln.subs:
                 sub.pre_load(registry, all_loaders, cc)
-        if self.args.help_tools:
-            # print help and exit
-            for label, sl in sorted(all_loaders.items()):
-                sl_s = ", ".join(sorted(set([s.loader_name for s in sl])))
-                print(f"{label:<20} {sl_s}")
-            return
         for ln_list in all_loaders.values():
             for ln in ln_list:
                 ln.load(registry, cc)
