@@ -21,6 +21,7 @@ from tcsfw.traffic import IPFlow
 from enum import StrEnum
 from tcsfw.tshark_reader import TSharkReader
 from tcsfw.vulnerability_reader import VulnerabilityReader
+from tcsfw.web_checker import WebChecker
 
 from tcsfw.zed_reader import ZEDReader
 
@@ -122,6 +123,9 @@ class BatchImporter:
             elif file_ext == ".xml" and info.file_type == BatchFileType.NMAP:
                 # read NMAP from xml
                 reader = NMAPScan(self.interface.get_system())
+            elif file_ext == ".http" and info.file_type == BatchFileType.WEB_LINK:
+                # read web links from http content file
+                reader = WebChecker(self.interface.get_system())
             elif file_ext == ".json" and info.file_type == BatchFileType.ZAP:
                 # read ZAP from json
                 reader = ZEDReader(self.interface.get_system())
@@ -191,6 +195,7 @@ class BatchFileType(StrEnum):
     SSH_AUDIT = "ssh-audit"
     TESTSSL = "testssl"
     VULNERABILITIES = "vulnerabilities"  # BlackDuck csv output
+    WEB_LINK = "web-link"
     ZAP = "zap"  # ZED Attack Proxy
 
     @classmethod
