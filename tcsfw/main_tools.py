@@ -76,13 +76,6 @@ class ToolLoader(SubLoader):
         for g in self.groups:
             labels.setdefault(g, []).append(self)
 
-    def load(self, registry: Registry, coverage: RequirementClaimMapper):
-        coverage.introduce_tool_plans(self.tool_plan_coverage)
-        self.tool.coverage(coverage.tool_coverage)
-        self.tool.load_baseline = self.baseline
-        self.tool.run_tool(registry, self.get_source())
-
-
 class FabricationLoader(SubLoader):
     """Fabricate evidence for testing or visualization"""
     def __init__(self, source_label: str):

@@ -27,10 +27,6 @@ class CheckTool:
         self.send_events = True  # True to send events to interface
         self.load_baseline = False  # True to load baseline, false to check it
 
-    def run_tool(self, interface: EventInterface, source: EvidenceSource, arguments: str = None):
-        """Perform the tool action"""
-        pass
-
     def _get_file_by_name(self, name: str) -> str:
         """Get data file by name"""
         assert self.data_file_suffix, f"Data file suffix not set"
