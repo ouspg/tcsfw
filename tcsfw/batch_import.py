@@ -5,10 +5,12 @@ import pathlib
 import io
 from typing import Dict, List, Optional
 from framing.raw_data import Raw
+from tcsfw.censys_scan import CensysScan
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
+from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
 from tcsfw.traffic import IPFlow
 from enum import StrEnum
@@ -120,6 +122,10 @@ class BatchImporter:
         """Process files"""
         if info.file_type == BatchFileType.TESTSSL:
             tool = TestSSLScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.SSH_AUDIT:
+            tool = SSHAuditScan(self.interface.get_system())
+        elif info.file_type == BatchFileType.CENSYS:
+            tool = CensysScan(self.interface.get_system())
         else:
             raise ValueError(f"Unsupported file type {info.file_type}")
         for fn in files:
@@ -148,6 +154,8 @@ class BatchFileType(StrEnum):
     CAPTURE = "capture"
     NMAP = "nmap"
     TESTSSL = "testssl"
+    SSH_AUDIT = "ssh-audit"
+    CENSYS = "censys"
 
     @classmethod
     def parse(cls, value: Optional[str]):
@@ -170,7 +178,7 @@ class FileMetaInfo:
 
     def process_individually(self) -> bool:
         """Process each file individually?"""
-        return self.file_type not in {BatchFileType.TESTSSL}
+        return self.file_type not in {BatchFileType.TESTSSL, BatchFileType.SSH_AUDIT, BatchFileType.CENSYS}
 
     @classmethod
     def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':

@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 import pathlib
 from typing import Dict, List
@@ -18,17 +19,17 @@ class SSHAuditScan(EndpointCheckTool):
         self.tool.name = "SSH audit"
         self.data_file_suffix = ".json"
         self.property_key = Properties.PROTOCOL.append_key("ssh")
+        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         if not isinstance(node, Service):
             return False
         return node.protocol == Protocol.SSH
 
-    def _check_entity(self, endpoint: AnyAddress, data_file: pathlib.Path, interface: EventInterface,
+    def process_file(self, endpoint: AnyAddress, data_file: BytesIO, interface: EventInterface,
                       source: EvidenceSource):
         """Scan network node"""
-        with data_file.open() as f:
-            raw = json.load(f)
+        raw = json.load(data_file)
 
         evidence = Evidence(source)
 

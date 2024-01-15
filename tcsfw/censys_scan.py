@@ -1,4 +1,5 @@
 import argparse
+from io import BytesIO
 import json
 import logging
 import pathlib
@@ -21,14 +22,14 @@ class CensysScan(EndpointCheckTool):
         super().__init__("censys", system)
         self.tool.name = "Censys"
         self.data_file_suffix = ".json"
+        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)
 
-    def _check_entity(self,  address: AnyAddress, data_file: pathlib.Path, interface: EventInterface,
+    def _check_entity(self,  address: AnyAddress, data_file: BytesIO, interface: EventInterface,
                       source: EvidenceSource):
-        with data_file.open() as f:
-            raw = json.load(f)
+        raw = json.load(data_file)
 
         evidence = Evidence(source)
 
