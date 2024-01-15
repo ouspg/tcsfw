@@ -97,10 +97,7 @@ class BatchImporter:
             # process the files in a batch?
             as_batch = info.file_type in self.batch_tools
             if as_batch:
-                if skip_processing:
-                    self.logger.info(f"skipping ({info.label}) data files")
-                    return
-                self._do_process_files(proc_list, info)
+                self._do_process_files(proc_list, info, skip_processing)
 
             # recursively scan the directory
             for child in proc_list:
@@ -111,22 +108,26 @@ class BatchImporter:
                     if not info.default_include and info.label not in self.filter.included:
                         self.logger.debug(f"skipping (default=False) {child.as_posix()}")
                         continue # skip file if not explicitly included
-                    if skip_processing:
-                        self.logger.info(f"skipping ({info.label}) {child.as_posix()}")
-                        continue
-                    self.logger.info(f"processing ({info.label}) {child.as_posix()}")
                     with child.open("rb") as f:
-                        self._do_process(f, child, info)
+                        self._do_process(f, child, info, skip_processing)
                 else:
                     self._import_batch(child)
 
-    def _do_process(self, stream: io.BytesIO, file_path: pathlib.Path, info: 'FileMetaInfo'):
+    def _do_process(self, stream: io.BytesIO, file_path: pathlib.Path, info: 'FileMetaInfo', skip_processing: bool):
         """Process the file as stream"""
+        if not skip_processing:
+            self.logger.info(f"processing ({info.label}) {file_path.as_posix()}")
+
         file_name = file_path.name
         file_ext = file_path.suffix.lower()
         try:
+
+            # FIXME: Refactor to use CheckTool instance
             if file_ext == ".json" and info.file_type == BatchFileType.CAPTURE:
                 # read flows from json
+                if skip_processing:
+                    self.logger.info(f"skipping ({info.label}) {file_path.as_posix()}")
+                    return
                 return self._process_pcap_json(stream)
 
             reader = None
@@ -152,17 +153,24 @@ class BatchImporter:
             if reader:
                 ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix())
                 self.evidence.setdefault(info.label, []).append(ev)
+                if skip_processing:
+                    self.logger.info(f"skipping ({info.label}) {file_path.as_posix()}")
+                    return
                 return reader.process_file(stream, file_name, self.interface, ev)
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
         self.logger.info(f"skipping unsupported '{file_name}' type {info.file_type}")
 
-    def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo'):
+    def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo', skip_processing: bool):
         """Process files"""
-        if info.file_type not in self.batch_tools:
-            raise ValueError(f"Unsupported file type {info.file_type}")
         tool = self.batch_tools[info.file_type](self.interface.get_system())
+
+        if skip_processing:
+            self.logger.info(f"skipping ({info.label}) data files")
+            ev = info.source.rename(name=tool.tool.name)
+            self.evidence.setdefault(info.label, []).append(ev)
+            return
 
         unmapped = set(tool.file_name_map.keys())
         for fn in files:
