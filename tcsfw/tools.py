@@ -110,10 +110,12 @@ class BaseFileCheckTool(CheckTool):
 
 class EndpointCheckTool(CheckTool):
     """Check a service endpoint"""
-    def __init__(self, tool_label: str, system: IoTSystem):
+    def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
         # map from file names into addressable entities
+        self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, Addressable] = {}
+        self._create_file_name_map()
 
     def _create_file_name_map(self):
         """Create file name map"""

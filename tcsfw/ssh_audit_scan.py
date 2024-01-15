@@ -15,11 +15,9 @@ from tcsfw.verdict import Verdict
 
 class SSHAuditScan(EndpointCheckTool):
     def __init__(self, system: IoTSystem):
-        super().__init__("ssh-audit", system)
+        super().__init__("ssh-audit", ".json", system)
         self.tool.name = "SSH audit"
-        self.data_file_suffix = ".json"
         self.property_key = Properties.PROTOCOL.append_key("ssh")
-        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         if not isinstance(node, Service):

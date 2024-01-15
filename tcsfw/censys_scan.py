@@ -19,10 +19,8 @@ from tcsfw.verdict import Verdict
 
 class CensysScan(EndpointCheckTool):
     def __init__(self, system: IoTSystem):
-        super().__init__("censys", system)
+        super().__init__("censys", ".json", system)
         self.tool.name = "Censys"
-        self.data_file_suffix = ".json"
-        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)

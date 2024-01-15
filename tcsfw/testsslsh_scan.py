@@ -16,11 +16,9 @@ from tcsfw.verdict import Verdict
 
 class TestSSLScan(EndpointCheckTool):
     def __init__(self, system: IoTSystem):
-        super().__init__("testssl", system)
+        super().__init__("testssl", ".json", system)
         self.tool.name = "Testssl.sh"
-        self.data_file_suffix = ".json"
         self.property_key = Properties.PROTOCOL.append_key("tls")
-        self._create_file_name_map()
 
     def _filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Service)
