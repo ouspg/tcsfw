@@ -3,7 +3,7 @@ import json
 import logging
 import pathlib
 import io
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 from framing.raw_data import Raw
 from tcsfw.android_manifest_scan import AndroidManifestScan
 from tcsfw.censys_scan import CensysScan
@@ -17,6 +17,7 @@ from tcsfw.releases import ReleaseReader
 from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
 from tcsfw.testsslsh_scan import TestSSLScan
+from tcsfw.tools import CheckTool
 from tcsfw.traffic import EvidenceSource, IPFlow
 from enum import StrEnum
 from tcsfw.tshark_reader import TSharkReader
@@ -32,6 +33,19 @@ class BatchImporter:
         self.interface = interface
         self.filter = filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
+
+        # map file types into batch tools
+        self.batch_tools: Dict[BatchFileType, Type[CheckTool]] = {
+            BatchFileType.APK: AndroidManifestScan,
+            BatchFileType.CENSYS: CensysScan,
+            BatchFileType.HAR: HARScan,
+            BatchFileType.RELEASES: ReleaseReader,
+            BatchFileType.SPDX: SPDXReader,
+            BatchFileType.SSH_AUDIT: SSHAuditScan,
+            BatchFileType.TESTSSL: TestSSLScan,
+            BatchFileType.VULNERABILITIES: VulnerabilityReader,
+        }
+
         # collect evidence sources from visited tools
         self.evidence: Dict[str, List[EvidenceSource]] = {}
 
@@ -80,8 +94,9 @@ class BatchImporter:
             # filter by label
             skip_processing = not self.filter.filter(info.label)
 
-            if not info.process_individually():
-                # some files are processed at once
+            # process the files in a batch?
+            as_batch = info.file_type in self.batch_tools
+            if as_batch:
                 if skip_processing:
                     self.logger.info(f"skipping ({info.label}) data files")
                     return
@@ -90,8 +105,9 @@ class BatchImporter:
             # recursively scan the directory
             for child in proc_list:
                 if info and child.is_file():
-                    if not info.process_individually():
+                    if as_batch:
                         continue
+                    # process the files individually
                     if not info.default_include and info.label not in self.filter.included:
                         self.logger.debug(f"skipping (default=False) {child.as_posix()}")
                         continue # skip file if not explicitly included
@@ -144,24 +160,10 @@ class BatchImporter:
 
     def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo'):
         """Process files"""
-        if info.file_type == BatchFileType.APK:
-            tool = AndroidManifestScan(self.interface.get_system())
-        elif info.file_type == BatchFileType.HAR:
-            tool = HARScan(self.interface.get_system())
-        elif info.file_type == BatchFileType.TESTSSL:
-            tool = TestSSLScan(self.interface.get_system())
-        elif info.file_type == BatchFileType.RELEASES:
-            tool = ReleaseReader(self.interface.get_system())
-        elif info.file_type == BatchFileType.SPDX:
-            tool = SPDXReader(self.interface.get_system())
-        elif info.file_type == BatchFileType.SSH_AUDIT:
-            tool = SSHAuditScan(self.interface.get_system())
-        elif info.file_type == BatchFileType.CENSYS:
-            tool = CensysScan(self.interface.get_system())
-        elif info.file_type == BatchFileType.VULNERABILITIES:
-            tool = VulnerabilityReader(self.interface.get_system())
-        else:
+        if info.file_type not in self.batch_tools:
             raise ValueError(f"Unsupported file type {info.file_type}")
+        tool = self.batch_tools[info.file_type](self.interface.get_system())
+
         unmapped = set(tool.file_name_map.keys())
         for fn in files:
             if not fn.is_file():
@@ -221,13 +223,6 @@ class FileMetaInfo:
         self.file_type = file_type
         self.default_include = True
         self.source = EvidenceNetworkSource(file_type)
-
-    def process_individually(self) -> bool:
-        """Process each file individually?"""
-        return self.file_type not in {
-            BatchFileType.APK, BatchFileType.CENSYS, BatchFileType.HAR, 
-            BatchFileType.RELEASES, BatchFileType.SPDX, BatchFileType.SSH_AUDIT,
-            BatchFileType.TESTSSL, BatchFileType.VULNERABILITIES}
 
     @classmethod
     def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':
