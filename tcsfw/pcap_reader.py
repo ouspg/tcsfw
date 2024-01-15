@@ -45,7 +45,8 @@ class PCAPReader(BaseFileCheckTool):
     def inspect(cls, pcap_file: pathlib.Path, system=IoTSystem()) -> 'PCAPReader':
         """Inspect the given system with given pcap"""
         r = PCAPReader(system)
-        r._check_file(pcap_file, Inspector(system), EvidenceSource(r.tool_label))
+        with pcap_file.open("rb") as f:
+            r.read_stream(f, pcap_file.name, Inspector(system), EvidenceSource(pcap_file.name))
         return r
 
     def read_stream(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
