@@ -706,19 +706,21 @@ class ARP(ProtocolConfigurer):
         s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
         bc = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
-        s2 = bc.service_builders.get((self.transport, self.service_port))
-        if not s2:
+        arp_ser = bc.service_builders.get((self.transport, self.service_port))
+        if not arp_ser:
+            # create ARP service
             bc.new_address_(HWAddresses.BROADCAST)
             s.entity.external_activity = ExternalActivity.PASSIVE
             bc.entity.host_type = HostType.ADMINISTRATIVE
-            s2 = bc / ProtocolConfigurer(transport=Protocol.ARP, name="ARP")
-            s2.entity.host_type = HostType.ADMINISTRATIVE
-            s2.entity.con_type = ConnectionType.ADMINISTRATIVE
+            arp_ser = bc / ProtocolConfigurer(transport=Protocol.ARP, name="ARP")
+            arp_ser.entity.host_type = HostType.ADMINISTRATIVE
+            arp_ser.entity.con_type = ConnectionType.ADMINISTRATIVE
+            arp_ser.entity.external_activity = ExternalActivity.PASSIVE  # anyone can contact
             s.entity.external_activity = self.external_activity
         c_ok = any([c.source == s.entity for c in s.entity.get_parent_host().connections])
         if not c_ok:
-            s >> s2
-        return s2  # NOTE: the broadcast
+            s >> arp_ser
+        return arp_ser  # NOTE: the broadcast
 
 
 class DHCP(ProtocolConfigurer):

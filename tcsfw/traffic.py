@@ -127,19 +127,33 @@ class EthernetFlow(Flow):
     def __init__(self, evidence: Evidence, source: HWAddress, target: HWAddress, payload=-1,
                  protocol=Protocol.ETHERNET):
         super().__init__(evidence, protocol)
-        self.source = source,
-        self.target = target,
+        self.source = source
+        self.target = target
         self.payload = payload
 
     def stack(self, target: bool) -> Tuple[AnyAddress]:
-        return self.target if target else self.source
+        return (self.target,) if target else (self.source,)
 
     def port(self, target=True) -> int:
         return self.payload  # both ways
 
+    @classmethod
+    def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
+        """New ethernet-based protocol flow"""
+        return EthernetFlow(NO_EVIDENCE, HWAddress(address), HWAddresses.NULL, protocol=protocol)
+
     def reverse(self) -> Self:
         """Reverse the flow"""
-        return EthernetFlow(self.evidence, self.target[0], self.source[0], self.payload, self.protocol)
+        return EthernetFlow(self.evidence, self.target, self.source, self.payload, self.protocol)
+
+    def __rshift__(self, target: str) -> 'EthernetFlow':
+        self.target = HWAddress(target)
+        return self
+
+    def __lshift__(self, source: str) -> 'EthernetFlow':
+        self.target = self.source
+        self.source = HWAddress(source)
+        return self
 
     def __repr__(self):
         s = self.source
