@@ -93,6 +93,7 @@ class Status:
     """Entity or connection status"""
     def __init__(self, verdict=Verdict.UNDEFINED):
         self.verdict = verdict
+        # FIXME: Lets get rid of this list and use EventLogger instead
         self.events: List[VerdictEvent] = []
 
     def is_expected(self) -> bool:
