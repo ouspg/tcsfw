@@ -48,6 +48,9 @@ class NameEvent(Event):
         self.name = name
         self.address = address
 
+    def get_value_string(self) -> str:
+        return f"{self.name}={self.address}" if self.address else self.name
+
     def __eq__(self, other):
         if not isinstance(other, NameEvent):
             return False
