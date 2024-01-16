@@ -66,7 +66,7 @@ class Event:
 
     def get_value_string(self) -> str:
         """Get value as string"""
-        return self.evidence.source.name
+        return ""
 
     def get_comment(self) -> str:
         """Get comment or empty"""
@@ -74,7 +74,7 @@ class Event:
 
     def get_info(self) -> str:
         """Short event information"""
-        return self.get_value_string()
+        return self.get_value_string() or self.evidence.source.name
 
     def __repr__(self):
         return self.get_value_string()
