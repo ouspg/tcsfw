@@ -203,6 +203,7 @@ class Builder(SystemBuilder):
         parser.add_argument("--test-post", nargs=2, help="Test API POST")
 
         parser.add_argument("--help-tools", action="store_true", help="List available tools")
+        parser.add_argument("--print-events", action="store_true", help="Print events and exit")
 
         self.parser = parser
         self.args = parser.parse_args()
@@ -248,6 +249,11 @@ class Builder(SystemBuilder):
         for ln_list in all_loaders.values():
             for ln in ln_list:
                 ln.load(registry, cc)
+
+        if self.args.print_events:
+            print(f"== Event print ==")
+            registry.print_events(sys.stdout)
+            return
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True
