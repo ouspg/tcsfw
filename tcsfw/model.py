@@ -53,6 +53,7 @@ class Connection(Entity):
         self.source = source
         self.target = target
         self.con_type = ConnectionType.UNKNOWN
+        # FIXME: Can we nuke session list?
         self.sessions: List[Session] = []
 
     def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
