@@ -252,7 +252,7 @@ class Builder(SystemBuilder):
 
         if self.args.print_events:
             print(f"== Event print ==")
-            registry.print_events(sys.stdout)
+            registry.logging.print_events(sys.stdout)
             return
 
         api = VisualizerAPI(registry, cc, self.visualizer)

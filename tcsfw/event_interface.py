@@ -65,9 +65,15 @@ class PropertyEvent(Event, Verdictable):
         v = self.key_value[1]
         return v.get_verdict() if isinstance(v, Verdictable) else Verdict.UNDEFINED
 
+    def get_value_string(self) -> str:
+        return self.key_value[0].get_value_string(self.key_value[1])
+
+    def get_comment(self) -> str:
+        return self.key_value[0].get_explanation(self.key_value[1])
+
     def get_info(self) -> str:
         # without entity, at least for event log
-        return self.key_value[0].to_string(self.key_value[1])
+        return self.key_value[0].get_value_string(self.key_value[1])
 
 
 class PropertyAddressEvent(Event, Verdictable):
@@ -81,6 +87,12 @@ class PropertyAddressEvent(Event, Verdictable):
         v = self.key_value[1]
         return v.get_verdict() if isinstance(v, Verdictable) else Verdict.UNDEFINED
 
+    def get_value_string(self) -> str:
+        return self.key_value[0].get_value_string(self.key_value[1])
+
+    def get_comment(self) -> str:
+        return self.key_value[0].get_explanation(self.key_value[1])
+
     def get_info(self) -> str:
         # without entity, at least for event log
-        return self.key_value[0].to_string(self.key_value[1])
+        return self.key_value[0].get_value_string(self.key_value[1])

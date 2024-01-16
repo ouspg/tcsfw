@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Optional
+from typing import List, TextIO, Tuple, Dict, Optional
 
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyEvent, PropertyAddressEvent
@@ -17,6 +17,16 @@ class EventLogger(EventInterface):
     def __init__(self, inspector: Inspector):
         self.inspector = inspector
         self.logs: List[Tuple[Tuple[Entity, PropertyKey], Event]] = []
+
+    def print_events(self, writer: TextIO):
+        """Print all events for debugging"""
+        for log_ent in self.logs:
+            ent_pro, e = log_ent
+            ent, pro = ent_pro
+            name_s = f"{ent.long_name()},"
+            info_s = f"{e.get_value_string()},"
+            comm_s = f"{e.get_comment()}"
+            writer.write(f"{name_s:<40}{info_s:<40}{comm_s}\n")
 
     def _add(self, event: Event, entity: Entity, key: PropertyKey = None):
         """Add log entry"""

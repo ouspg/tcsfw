@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict, Self, Any, TextIO, Tuple
+from typing import List, Optional, Dict, Self, Any, Tuple
 
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
@@ -116,14 +116,6 @@ class Registry(EventInterface):
         if not self.fallthrough:
             return None
         return self.logging.host_scan(scan)
-
-    def print_events(self, writer: TextIO):
-        """Print all events for debugging"""
-        for e in self.trail:
-            name_s = f"{e.evidence.source.name},"
-            info_s = f"{e.get_info()},"
-            ref_s = f"{e.evidence.get_reference()}"
-            writer.write(f"{name_s:<25}{info_s:<50}{ref_s}\n")
 
     def __repr__(self):
         return self.logging.__repr__()

@@ -58,13 +58,18 @@ class PropertyKey(Generic[V]):
         v = properties.get(self)
         return v
 
+    def get_explanation(self, value: V) -> str:
+        """Get explanation for value, if any"""
+        return ""
+
+    def get_value_string(self, value: V) -> str:
+        """Get value as string"""
+        value_s = f"{value}"
+        return f"{self.get_name()}={value_s}" if value_s else self.get_name()
+
     def update(self, properties: 'PropertyDict', value: V):
         """Update existing property dictionary with new value"""
         properties[self] = value
-
-    def to_string(self, value: V) -> str:
-        """Value to string, do not repeat key if there is an explanation"""
-        return f"{value}" or self.get_name()
 
     def __hash__(self):
         return self.segments.__hash__()
@@ -141,6 +146,9 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         # use 'this' key even with old value, as old may have wrong key type
         properties[self] = value
 
+    def get_explanation(self, value: PropertyVerdictValue) -> str:
+        return value.explanation
+
     @classmethod
     def cast(cls, key_value: Tuple[PropertyKey, Any]) -> Optional[PropertyVerdictValue]:
         """Cast to property set, if such given"""
@@ -149,9 +157,6 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         value = key_value[1]
         assert isinstance(value, PropertyVerdictValue)
         return value
-
-    def to_string(self, value: PropertyVerdictValue) -> str:
-        return value.explanation or self.get_name()
 
 
 @dataclass
@@ -211,8 +216,12 @@ class PropertySet(PropertyKey):
             return Verdict.NOT_SEEN  # not seen
         return p_set.get_overall_verdict(properties)
 
-    def to_string(self, value: PropertySetValue) -> str:
-        return value.explanation or self.get_name()
+    def get_value_string(self, value: PropertySetValue) -> str:
+        v = f"{value.get_overall_verdict({})}" if not value.sub_keys else f"{value.sub_keys}"
+        return f"{self.get_name()}={v}"
+
+    def get_explanation(self, value: PropertySetValue) -> str:
+        return value.explanation
 
     @classmethod
     def cast(cls, key_value: Tuple[PropertyKey, Any]) -> Optional[PropertySetValue]:

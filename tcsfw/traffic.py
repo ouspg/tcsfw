@@ -64,12 +64,20 @@ class Event:
         self.evidence = evidence
         self.update_entity_status = True  # update entity etc. status?
 
-    def get_info(self) -> str:
-        """Short event information"""
+    def get_value_string(self) -> str:
+        """Get value as string"""
         return self.evidence.source.name
 
+    def get_comment(self) -> str:
+        """Get comment or empty"""
+        return ""
+
+    def get_info(self) -> str:
+        """Short event information"""
+        return self.get_value_string()
+
     def __repr__(self):
-        return self.get_info()
+        return self.get_value_string()
 
 
 class ServiceScan(Event):
@@ -96,6 +104,9 @@ class Flow(Event):
         super().__init__(evidence)
         self.protocol = protocol
         self.timestamp: Optional[datetime.datetime] = None
+
+    def get_comment(self) -> str:
+        return self.evidence.get_reference()  # PCAP frame number
 
     def stack(self, target: bool) -> Tuple[AnyAddress]:
         """Get source or target address stack"""

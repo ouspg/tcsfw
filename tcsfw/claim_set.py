@@ -227,7 +227,7 @@ class PropertyClaim(EntityClaim):
             # Value not set
             return ClaimStatus(self, verdict=Verdict.NOT_SEEN, authority=ClaimAuthority.TOOL)
         val = entity.properties.get(key)
-        return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.to_string(val))
+        return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.get_value_string(val))
 
     # NOTE: We assume that key alone separates claims
 
@@ -677,7 +677,7 @@ class PermissionClaim(SoftwareClaim):
             return None  # no claims
         val = entity.properties.get(Properties.PERMISSIONS)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL,
-                           explanation=Properties.PERMISSIONS.to_string(val))
+                           explanation=Properties.PERMISSIONS.get_value_string(val))
 
 
 class ReleaseClaim(SoftwareClaim):

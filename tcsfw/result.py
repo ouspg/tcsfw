@@ -22,7 +22,7 @@ class Report:
     def print_properties(self, entity: NetworkNode, indent: str, writer: TextIO):
         """Print properties from entity"""
         for k, v in entity.properties.items():
-            writer.write(f"{indent}{k} {k.to_string(v)}\n")
+            writer.write(f"{indent}{k} {k.get_value_string(v)}\n")
 
     def print_report(self, writer: TextIO):
         """Print textual report"""
