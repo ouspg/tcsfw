@@ -27,7 +27,7 @@ class EventLogger(EventInterface):
             s = f"{s:<40}"
             s += f"{e.get_value_string()},"
             s = f"{s:<80}"
-            s += f"{e.get_comment()}"
+            s += e.get_comment() or e.evidence.get_reference()
             writer.write(f"{s}\n")
 
     def _add(self, event: Event, entity: Entity, key: PropertyKey = None):

@@ -105,9 +105,6 @@ class Flow(Event):
         self.protocol = protocol
         self.timestamp: Optional[datetime.datetime] = None
 
-    def get_comment(self) -> str:
-        return self.evidence.get_reference()  # PCAP frame number
-
     def stack(self, target: bool) -> Tuple[AnyAddress]:
         """Get source or target address stack"""
         raise NotImplementedError()
