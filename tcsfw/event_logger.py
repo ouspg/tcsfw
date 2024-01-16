@@ -9,20 +9,26 @@ from tcsfw.services import NameEvent
 from tcsfw.traffic import Evidence, HostScan, ServiceScan, Flow, Event
 
 
-# Key to use when none
-NullKey = PropertyKey("")
+class LoggingEvent:
+    """Event with logging"""
+    def __init__(self, event: Event, key: Tuple[Entity, Optional[PropertyKey]] = None):
+        self.key = key
+        self.event = event
+
+    def __repr__(self):
+        return f"{self.key[0].long_name()}: {self.key[1] or '-'} {self.event}"
 
 
 class EventLogger(EventInterface):
     def __init__(self, inspector: Inspector):
         self.inspector = inspector
-        self.logs: List[Tuple[Tuple[Entity, PropertyKey], Event]] = []
+        self.logs: List[LoggingEvent] = []
 
     def print_events(self, writer: TextIO):
         """Print all events for debugging"""
-        for log_ent in self.logs:
-            ent_pro, e = log_ent
-            ent, pro = ent_pro
+        for lo in self.logs:
+            ent, pro = lo.key
+            e = lo.event
             s = f"{ent.long_name()},"
             s = f"{s:<40}"
             s += f"{e.get_value_string()},"
@@ -32,7 +38,8 @@ class EventLogger(EventInterface):
 
     def _add(self, event: Event, entity: Entity, key: PropertyKey = None):
         """Add log entry"""
-        self.logs.append(((entity, key or NullKey), event))
+        ev = LoggingEvent(event, (entity, key))
+        self.logs.append(ev)
 
     def reset(self):
         """Reset the log"""
@@ -73,24 +80,25 @@ class EventLogger(EventInterface):
         return e
 
     def get_log(self, entity: Optional[Entity] = None, key: Optional[PropertyKey] = None) \
-            -> List[Tuple[Event, Entity, Optional[PropertyKey]]]:
+            -> List[LoggingEvent]:
         """Get log, possibly filtered by entity and key"""
         key_set = set()
         if entity:
-            key_set.add((entity, key or NullKey))
+            key_set.add((entity, key))
 
         def add(n: Entity):
             for k in n.properties.keys():
                 key_set.add((n, k))
             for c in n.get_children():
-                key_set.add((c, NullKey))
+                key_set.add((c, None))
                 add(c)
         if entity and key is None:
+            # add all properties for the entity
             add(entity)
         if key_set:
-            r = [(lo[1], lo[0][0], lo[0][1]) for lo in self.logs if lo[0] in key_set]
+            r = [lo for lo in self.logs if lo.key in key_set]
         else:
-            r = [(lo[1], lo[0][0], lo[0][1]) for lo in self.logs]
+            r = self.logs
         return r
 
 
