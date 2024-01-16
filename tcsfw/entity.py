@@ -3,13 +3,14 @@ from typing import Dict, Optional, Self, List, Any, Tuple, Iterable, Callable, I
 
 from tcsfw.claim import Claim
 from tcsfw.property import PropertyKey
-from tcsfw.verdict import Verdict, Verdictable
+from tcsfw.verdict import Status, Verdict, Verdictable
 
 
 class Entity:
     """An entity, network node or connection"""
     def __init__(self):
         self.concept_name = "other"
+        self.status = Status()
         self.properties: Dict[PropertyKey, Any] = {}
 
     def long_name(self) -> str:

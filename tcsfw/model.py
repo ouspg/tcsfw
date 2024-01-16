@@ -53,7 +53,6 @@ class Connection(Entity):
         self.source = source
         self.target = target
         self.con_type = ConnectionType.UNKNOWN
-        self.status = Status()
         self.sessions: List[Session] = []
 
     def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
@@ -135,7 +134,7 @@ class NodeComponent(Entity):
         self.entity = entity
         self.name = name
         self.simple_value: Optional[str] = None  # some components can use this
-        self.status = Status(Verdict.NOT_SEEN)
+        self.status.verdict = Verdict.NOT_SEEN
         self.sub_components: List[NodeComponent] = []
 
     def get_children(self) -> Iterable['Entity']:
@@ -179,7 +178,6 @@ class NetworkNode(Entity):
         self.description = ""
         self.match_priority = 0
         self.visual = False  # show visual image?
-        self.status = Status()
         self.children: List[Addressable] = []
         self.components: List[NodeComponent] = []
         self.external_activity = ExternalActivity.BANNED

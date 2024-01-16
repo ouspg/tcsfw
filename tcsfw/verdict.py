@@ -1,5 +1,5 @@
 import enum
-from typing import List, Iterable, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional
 
 from tcsfw.address import AnyAddress
 from tcsfw.traffic import Event, Flow
