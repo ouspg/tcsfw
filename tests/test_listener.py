@@ -1,3 +1,4 @@
+from typing import List
 from test_model import simple_setup_1
 from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Protocol
 from tcsfw.inspector import Inspector
@@ -9,21 +10,26 @@ from tcsfw.traffic import Flow, IPFlow
 class AModelListener(ModelListener):
     def __init__(self):
         self.events = []
+        self.labels: List[str] = []
 
     def systemReset(self, system: IoTSystem):
         self.events.append(system)
+        self.labels.append(f"reset")
 
     def hostChange(self, host: Host):
         self.events.append(host)
+        self.labels.append(f"host {host}")
 
     def connectionChange(self, connection: Connection):
         self.events.append(connection)
+        self.labels.append(f"conn {connection}")
 
     def newFlow(self, source: AnyAddress, target: AnyAddress, flow: Flow, connection: Connection):
         self.events.append(flow)
+        self.labels.append(f"flow {flow}")
 
     def __repr__(self):
-        return "\n".join([f"{e}" for e in self.events])
+        return "\n".join([f"{s}" for s in self.labels])
 
 
 def test_model_events():
