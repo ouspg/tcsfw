@@ -337,6 +337,7 @@ class Addressable(NetworkNode):
         s.addresses.add(address.change_host(Addresses.ANY))
         if self.status.verdict in {Verdict.UNEXPECTED, Verdict.EXTERNAL}:
             s.status.verdict = self.status.verdict
+        s.external_activity = self.external_activity
         self.children.append(s)
         return s
 
@@ -606,6 +607,7 @@ class IoTSystem(NetworkNode):
                     e = e.get_endpoint(address) or e
                 break
         else:
+            # create new host and possibly service
             e = Host(self, f"{h_add}")
             if h_add.is_multicast():
                 e.host_type = HostType.ADMINISTRATIVE
@@ -613,6 +615,7 @@ class IoTSystem(NetworkNode):
                 e.host_type = HostType.REMOTE if self.is_external(h_add) else HostType.GENERIC
             e.description = "Unexpected host"
             e.addresses.add(h_add)
+            e.external_activity = ExternalActivity.UNLIMITED  # we know nothing about its behavior
             self.children.append(e)
         if isinstance(address, EndpointAddress) and e.is_host():
             e = e.create_service(address)

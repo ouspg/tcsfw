@@ -49,9 +49,10 @@ def test_connection_match():
     assert cs.source.name == "Device 1"
     assert cs.target.name == "1.0.0.3"
 
+    # connection between unexpected hosts
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:4", "192.168.0.4", 2004) >> ("1:0:0:0:0:5", "1.0.0.5", 2005))
     assert cs is not None
-    assert cs.status.verdict == Verdict.UNEXPECTED
+    assert cs.status.verdict == Verdict.EXTERNAL
     assert cs.source.name == "1:0:0:0:0:4"
     assert cs.target.name == "1.0.0.5"
 
@@ -83,8 +84,9 @@ def test_match_mix_unknown():
     assert cs6 == cs2
     assert cs7 != cs2
 
-    # all observed connectinos are unexpected
-    assert all([c.status.verdict == Verdict.UNEXPECTED for c in sb.system.connections.values()])
+    # all observed connectinos are unexpected or external
+    assert all([c.status.verdict == Verdict.UNEXPECTED for c in [cs1, cs3]])
+    assert all([c.status.verdict == Verdict.EXTERNAL for c in [cs2, cs4, cs4_2, cs5, cs6, cs7]])
 
     assert cs1.source.name == "Device 1"
     assert cs1.target.name == "1:0:0:0:0:3"

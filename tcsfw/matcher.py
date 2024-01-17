@@ -392,16 +392,18 @@ class MatchEngine:
         c = connection
         v = Verdict.UNEXPECTED
 
+        # new connection status by external activity policies and reply status
         source_act = source.endpoint.external_activity
         target_act = target.endpoint.external_activity
-        if source_act >= ExternalActivity.UNLIMITED and (
-                target_act >= ExternalActivity.UNLIMITED or not c.target.status.is_expected()):
-            # source is free to make connections, but not with known nodes
-            v = Verdict.EXTERNAL
-        elif target_act >= ExternalActivity.PASSIVE and (
-                source_act >= ExternalActivity.UNLIMITED or not c.source.status.is_expected()):
-            # target can be contacted by external nodes, as long as no reply
-            v = Verdict.EXTERNAL
+        if source_act > ExternalActivity.BANNED and target_act > ExternalActivity.BANNED:
+            # unexpected connections may be allowed
+            reply = c.source == target.endpoint.entity # FIXME: This is weak?
+            if source_act >= ExternalActivity.UNLIMITED:
+                # source is free to make connections
+                v = Verdict.EXTERNAL
+            elif reply and source_act >= ExternalActivity.OPEN:
+                # source can make replies
+                v = Verdict.EXTERNAL
         c.status.verdict = v
         return c
 
