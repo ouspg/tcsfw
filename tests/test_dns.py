@@ -45,7 +45,7 @@ def test_dns_pcap():
     assert host.name == "ns-923.amazon.com"
 
     c = m.connection(IPFlow.udp_flow(source_ip="192.168.20.132", target_ip="155.198.142.7", target_port=53))
-    assert c.status.verdict == Verdict.PASS
+    assert c.get_expected_verdict() == Verdict.PASS
 
 
 def test_dns_large_pcap():
