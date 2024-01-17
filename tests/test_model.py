@@ -3,7 +3,7 @@ from tcsfw.main import SystemBuilder, UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
 from tcsfw.traffic import IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 def simple_setup_1(external=False) -> SystemBuilder:
@@ -33,32 +33,32 @@ def test_connection_match():
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs is not None
-    assert cs.status.verdict == Verdict.NOT_SEEN
+    assert cs.status == Status.EXPECTED
     assert cs.source.name == "Device 1"
     assert cs.target.name == "UDP:1234"
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs is not None
-    assert cs.status.verdict == Verdict.NOT_SEEN
+    assert cs.status == Status.EXPECTED
     assert cs.source.name == "Device 1"
     assert cs.target.name == "UDP:1234"
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:3", "1.0.0.3", 1234))
     assert cs is not None
-    assert cs.status.verdict == Verdict.UNEXPECTED
+    assert cs.status == Status.UNEXPECTED
     assert cs.source.name == "Device 1"
     assert cs.target.name == "1.0.0.3"
 
     # connection between unexpected hosts
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:4", "192.168.0.4", 2004) >> ("1:0:0:0:0:5", "1.0.0.5", 2005))
     assert cs is not None
-    assert cs.status.verdict == Verdict.EXTERNAL
+    assert cs.status == Status.EXTERNAL
     assert cs.source.name == "1:0:0:0:0:4"
     assert cs.target.name == "1.0.0.5"
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:6", "1.0.0.6", 2006) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs is not None
-    assert cs.status.verdict == Verdict.UNEXPECTED
+    assert cs.status == Status.UNEXPECTED
     assert cs.source.name == "1.0.0.6"
     assert cs.target.name == "UDP:1234"
 

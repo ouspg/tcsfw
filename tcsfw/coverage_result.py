@@ -88,7 +88,7 @@ class CoverageReport:
     def _print_statistics(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
 
-        columns = {Verdict.PASS: 0, Verdict.FAIL: 1, Verdict.NOT_SEEN: 2, Verdict.UNDEFINED: 3, Verdict.IGNORE: 4}
+        columns = {Verdict.PASS: 0, Verdict.FAIL: 1, Verdict.UNDEFINED: 2, Verdict.IGNORE: 3}
         verdicts: Dict[str, Dict[str, List[Set[int]]]] = {
             "ui+": {},
             "def": {},
@@ -225,8 +225,6 @@ class CoverageReport:
             return "."
         if status.verdict == Verdict.UNDEFINED:
             return "?"
-        if status.verdict == Verdict.NOT_SEEN:
-            return "-"
         if status.verdict != Verdict.PASS:
             return "!"
         if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
@@ -236,7 +234,7 @@ class CoverageReport:
     @classmethod
     def _light(self, verdict: Verdict) -> str:
         """Verdict traffic light"""
-        if verdict in {Verdict.IGNORE, Verdict.NOT_SEEN}:
+        if verdict in {Verdict.IGNORE, Verdict.UNDEFINED}:
             return "yellow"
         if verdict == Verdict.PASS:
             return "green"
@@ -249,8 +247,6 @@ class CoverageReport:
             return base
         if base == Verdict.UNDEFINED or verdict == Verdict.UNDEFINED:
             return Verdict.UNDEFINED
-        elif {base, verdict} == {Verdict.PASS, Verdict.NOT_SEEN}:
-            return Verdict.NOT_SEEN  # Override pass
         else:
             return Verdict.aggregate(base, verdict)
 
@@ -294,10 +290,9 @@ class CoverageReport:
             f"Tool {Verdict.PASS.value}": "Verification pass",
             f"Tool {Verdict.FAIL.value}": "Verification fail",
             ignore_len_name: "Not relevant",
-            f"Tool {Verdict.NOT_SEEN.value}": "Not verified",
+            f"Tool {Verdict.UNDEFINED.value}": "Not verified",
             f"Manual {Verdict.PASS.value}": "Explained pass",
             f"Manual {Verdict.IGNORE.value}": "Explained not relevant",
-            f"Model {Verdict.UNDEFINED.value}": "Inconclusive",
         }
         legend_c = {n: 0 for n in legend.keys()}
 

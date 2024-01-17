@@ -121,10 +121,10 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
 
     def reset(self, value: PropertyVerdictValue) -> Optional[PropertyVerdictValue]:
         if self.model:
-            return PropertyVerdictValue(Verdict.NOT_SEEN, value.explanation)
+            return PropertyVerdictValue(Verdict.UNDEFINED, value.explanation)
         return None
 
-    def value(self, verdict=Verdict.NOT_SEEN, explanation="") -> Tuple['PropertyVerdict', PropertyVerdictValue]:
+    def value(self, verdict=Verdict.UNDEFINED, explanation="") -> Tuple['PropertyVerdict', PropertyVerdictValue]:
         """New property value"""
         return self, PropertyVerdictValue(verdict, explanation)
 
@@ -213,7 +213,7 @@ class PropertySet(PropertyKey):
         v = None
         p_set = self.get(properties)
         if p_set is None:
-            return Verdict.NOT_SEEN  # not seen
+            return Verdict.UNDEFINED  # not seen
         return p_set.get_overall_verdict(properties)
 
     def get_value_string(self, value: PropertySetValue) -> str:

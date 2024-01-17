@@ -161,7 +161,7 @@ class SystemBuilder(SystemInterface):
                     hb.use_data(DataPieceBuilder(self, [auth]))
                     # property to link from service to authentication
                     exp = f"Authentication by {auth.name} (implicit)"
-                    prop_v = Properties.AUTHENTICATION_DATA.value(verdict=Verdict.NOT_SEEN, explanation=exp)
+                    prop_v = Properties.AUTHENTICATION_DATA.value(explanation=exp)
                     prop_v[0].set(s.properties, prop_v[1])
 
 
@@ -425,7 +425,7 @@ class ServiceBuilder(NodeBuilder):
         c.status = Status.EXPECTED
         c.con_type = self.entity.con_type
         for e in [s.entity, self.entity]:
-            e.update_verdict(Verdict.NOT_SEEN)
+            e.status = Status.EXPECTED
         s.entity.get_parent_host().connections.append(c)
         self.entity.get_parent_host().connections.append(c)
         return ConnectionBuilder(c, (s, self))
@@ -521,7 +521,7 @@ class DataPieceBuilder:
             for d in self.data:
                 d.authenticator_for.append(s.entity)
                 # property to link from service to authentication
-                prop_v = Properties.AUTHENTICATION_DATA.value(verdict=Verdict.NOT_SEEN, explanation=d.name)
+                prop_v = Properties.AUTHENTICATION_DATA.value(explanation=d.name)
                 prop_v[0].set(s.entity.properties, prop_v[1])
         return self
 

@@ -14,7 +14,7 @@ class Entity:
         self.properties: Dict[PropertyKey, Any] = {}
 
     def long_name(self) -> str:
-        return self.__repr__()
+        return self.concept_name
 
     def reset(self):
         """Reset entity and at least properties"""
@@ -45,6 +45,10 @@ class Entity:
             return None  # does not matter if seen or not
         self.properties[Properties.EXPECTED] = v
         return v
+
+    def get_expected_verdict(self, default: Optional[Verdict] = Verdict.UNDEFINED) -> Verdict:
+        """Get the expected verdict or undefined"""
+        return Properties.EXPECTED.get(self.properties) or default
 
     def get_children(self) -> Iterable['Entity']:
         """Get child entities, if any"""
@@ -91,7 +95,7 @@ class Entity:
         return st
 
     def __repr__(self):
-        s = f"{self.status_string()} {self.long_name}"
+        s = f"{self.status_string()} {self.long_name()}"
         return s
 
 class ClaimAuthority(enum.Enum):

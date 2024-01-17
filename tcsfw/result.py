@@ -266,7 +266,7 @@ class Report:
                     for c, v in s.claims.items():
                         if v.verdict == Verdict.PASS:
                             checked = 1  # checked ok
-                        elif v.verdict not in {Verdict.NOT_SEEN, Verdict.IGNORE}:
+                        elif v.verdict not in {Verdict.UNDEFINED, Verdict.IGNORE}:
                             failed = 1  # at least one claim failed
                 else:
                     # no special claims

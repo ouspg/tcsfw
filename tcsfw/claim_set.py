@@ -226,7 +226,7 @@ class PropertyClaim(EntityClaim):
             if not tools:
                 return None  # no tool to set the value
             # Value not set
-            return ClaimStatus(self, verdict=Verdict.NOT_SEEN, authority=ClaimAuthority.TOOL)
+            return ClaimStatus(self, authority=ClaimAuthority.TOOL)
         val = entity.properties.get(key)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.get_value_string(val))
 
@@ -251,9 +251,9 @@ class AlternativeClaim(EntityClaim):
             r = context.check(c, entity)
             if r is None:
                 continue
-            if best is None or (best.verdict == Verdict.NOT_SEEN and r.verdict != Verdict.NOT_SEEN):
+            if best is None or (best.verdict == Verdict.UNDEFINED and r.verdict != Verdict.UNDEFINED):
                 best = r
-            if best.verdict != Verdict.NOT_SEEN:
+            if best.verdict != Verdict.UNDEFINED:
                 break
         return best
 
@@ -382,7 +382,7 @@ class NoUnexpectedConnections(HostClaim):
         if un_c > 0:
             exp += f", but {un_c} unexpected ones"
         if see_c == 0 and exp_c > 0 and un_c == 0:
-            ver = Verdict.NOT_SEEN
+            ver = Verdict.UNDEFINED
         else:
             ver = Verdict.PASS if un_c == 0 else Verdict.FAIL
         context.mark_coverage(entity, self, Properties.EXPECTED_CONNECTIONS, value=ver == Verdict.PASS)
@@ -422,7 +422,7 @@ class AvailabilityClaim(PropertyClaim):
         if not cs:
             cs = super().check(entity, context)
         if not cs and isinstance(entity, IoTSystem) and self.resource_key in entity.online_resources:
-            return ClaimStatus(self, verdict=Verdict.NOT_SEEN)
+            return ClaimStatus(self)
         return cs
 
     def get_base_claim(self) -> EntityClaim:
@@ -440,7 +440,7 @@ class ContentClaim(AvailabilityClaim):
     def __init__(self, resource_key="undefined", review_hint="", key=Properties.DOCUMENT_CONTENT):
         super().__init__(resource_key, key)
         self.description = "Contents of " + resource_key + (f" ({review_hint})" if review_hint else "")
-        self.default_to = Verdict.NOT_SEEN  # someone just need to do it
+        self.default_to = Verdict.UNDEFINED  # someone just need to do it
         self.review_hint = review_hint
 
     def resource(self, key: str, review_hint="") -> 'ContentClaim':
@@ -484,7 +484,7 @@ class NoUnexpectedServices(EntityClaim):
         if un_c > 0:
             exp += f", but {un_c} unexpected ones"
         if see_c == 0 and exp_c > 0 and un_c == 0:
-            ver = Verdict.NOT_SEEN
+            ver = Verdict.UNDEFINED
         else:
             ver = Verdict.PASS if un_c == 0 else Verdict.FAIL
         context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
@@ -709,14 +709,14 @@ class UserInterfaceClaim(PropertyClaim):
     """Need to manipulate user interface"""
     def __init__(self, description="User interface use and checks"):
         super().__init__(description, Properties.UI)
-        self.default_to = Verdict.NOT_SEEN  # 'Eihän se oo ku tekkee'
+        self.default_to = Verdict.UNDEFINED  # 'Eihän se oo ku tekkee'
 
 
 class PhysicalManipulationClaim(PropertyClaim):
     """Need to manipulate physically"""
     def __init__(self, description="Physical manipulation and checks"):
         super().__init__(description, Properties.PHYSICAL)
-        self.default_to = Verdict.NOT_SEEN
+        self.default_to = Verdict.UNDEFINED
 
 
 class Claims:
