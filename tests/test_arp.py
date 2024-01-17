@@ -4,7 +4,7 @@ from tcsfw.main import ARP, SystemBuilder
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
 from tcsfw.traffic import EthernetFlow, IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 def test_serve_arp():
@@ -21,20 +21,20 @@ def test_serve_arp():
 
     # dev3 can make external calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:3") >> "ff:ff:ff:ff:ff:ff")
-    assert f1.status.verdict == Verdict.EXTERNAL
+    assert f1.status == Status.EXTERNAL
 
     # dev2 not defined to make ARP calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:2") >> "ff:ff:ff:ff:ff:ff")
-    assert f1.status.verdict == Verdict.UNEXPECTED
+    assert f1.status == Status.UNEXPECTED
 
     # unknown device can make ARP calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:1:1") >> "ff:ff:ff:ff:ff:ff")
-    assert f1.status.verdict == Verdict.EXTERNAL
+    assert f1.status == Status.EXTERNAL
 
-    # FIXME: The remaining does not work
     # dev4 can make ARP calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:4") >> "ff:ff:ff:ff:ff:ff")
-    # assert f1.status.verdict == Verdict.NOT_SEEN
+    assert f1.status == Status.EXPECTED
+    # FIXME: The remaining does not work
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:4") << "1:0:0:0:0:1")
-    # assert f1.status.verdict == Verdict.PASS
+    # assert f1.status == Status.EXPECTED
 

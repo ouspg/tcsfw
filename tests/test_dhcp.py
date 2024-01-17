@@ -2,7 +2,7 @@ from tcsfw.address import HWAddress, IPAddress
 from tcsfw.main import SystemBuilder, DHCP, UDP
 from tcsfw.matcher import SystemMatcher
 from tcsfw.traffic import IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 def test_dhcp():
@@ -42,10 +42,10 @@ def test_dhcp():
     assert f2 != f4
 
     # reminder: inspector changes verdicts
-    assert f1.status.verdict == Verdict.NOT_SEEN
-    assert f2.status.verdict == Verdict.NOT_SEEN
-    assert f3.status.verdict == Verdict.UNEXPECTED
-    assert f4.status.verdict == Verdict.UNEXPECTED
+    assert f1.status == Status.EXPECTED
+    assert f2.status == Status.EXPECTED
+    assert f3.status == Status.UNEXPECTED
+    assert f4.status == Status.UNEXPECTED
 
     # one more time...
     # IP reassigned
