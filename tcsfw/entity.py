@@ -32,7 +32,7 @@ class Entity:
 
     def set_seen_now(self) -> Optional[Verdict]:
         """The entity is seen now, update and return new verdict IF changed"""
-        v = self.properties.get(Properties.EXPECTED)
+        v = Properties.EXPECTED.get_verdict(self.properties)
         if self.status == Status.EXPECTED: 
             if v == Verdict.PASS:
                 return None  # already ok
@@ -43,12 +43,12 @@ class Entity:
             v = Verdict.FAIL
         else:
             return None  # does not matter if seen or not
-        self.properties[Properties.EXPECTED] = v
+        self.set_property(Properties.EXPECTED.value(v))
         return v
 
     def get_expected_verdict(self, default: Optional[Verdict] = Verdict.UNDEFINED) -> Verdict:
         """Get the expected verdict or undefined"""
-        return Properties.EXPECTED.get(self.properties) or default
+        return Properties.EXPECTED.get_verdict(self.properties) or default
 
     def get_children(self) -> Iterable['Entity']:
         """Get child entities, if any"""
@@ -89,7 +89,7 @@ class Entity:
         st = self.status.value
         v = Properties.EXPECTED.get(self.properties)
         if v is not None:
-            st = f"{st}={v.value}"
+            st = f"{st}={v.get_verdict().value}"
         return st
 
     def __repr__(self):

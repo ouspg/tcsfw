@@ -100,7 +100,7 @@ class Report:
             if not h.is_relevant():
                 continue
             claimed = 1 if h.status == Status.EXPECTED else 0
-            verified = 1 if Properties.EXPECTED.get(h.properties) == Verdict.PASS else 0
+            verified = 1 if Properties.EXPECTED.get_verdict(h.properties) == Verdict.PASS else 0
             if claimed == verified == 0:
                 continue
             admin = h.host_type == HostType.ADMINISTRATIVE
@@ -137,7 +137,7 @@ class Report:
                 if not s.is_relevant():
                     continue
                 claimed = 1 if h.status == Status.EXPECTED else 0
-                verified = 1 if Properties.EXPECTED.get(h.properties) == Verdict.PASS else 0
+                verified = 1 if Properties.EXPECTED.get_verdict(h.properties) == Verdict.PASS else 0
                 if claimed == verified == 0:
                     continue
                 admin = s.host_type == HostType.ADMINISTRATIVE
@@ -176,7 +176,7 @@ class Report:
                     continue
                 conns.add(c)
                 claimed = 1 if h.status == Status.EXPECTED else 0
-                verified = 1 if Properties.EXPECTED.get(h.properties) == Verdict.PASS else 0
+                verified = 1 if Properties.EXPECTED.get_verdict(h.properties) == Verdict.PASS else 0
                 if claimed == verified == 0:
                     continue
                 encrypt = c.con_type == ConnectionType.ENCRYPTED
@@ -214,7 +214,7 @@ class Report:
                     continue
                 pro = s.protocol
                 claimed = 1 if h.status == Status.EXPECTED else 0
-                verified = 1 if Properties.EXPECTED.get(h.properties) == Verdict.PASS else 0
+                verified = 1 if Properties.EXPECTED.get_verdict(h.properties) == Verdict.PASS else 0
                 if claimed == verified == 0:
                     continue
                 admin = s.host_type == HostType.ADMINISTRATIVE
@@ -270,7 +270,7 @@ class Report:
                             failed = 1  # at least one claim failed
                 else:
                     # no special claims
-                    if Properties.EXPECTED.get(s.properties) == Verdict.PASS:
+                    if Properties.EXPECTED.get_verdict(s.properties) == Verdict.PASS:
                         checked = 1
                 admin = s.host_type == HostType.ADMINISTRATIVE
                 self.logger.info("Checked %s %s claim=%s fail=%s check=%s admin=%s ver=%s", h.name, s.name,

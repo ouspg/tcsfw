@@ -191,7 +191,7 @@ class Inspector(EventInterface):
                     break
             else:
                 # child address not in scan results
-                c.set_property(Properties.EXPECTED(Verdict.FAIL))
+                c.set_property(Properties.EXPECTED.value(Verdict.FAIL))
         self.system.call_listeners(lambda ln: ln.hostChange(host))
         return host
 

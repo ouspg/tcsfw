@@ -146,6 +146,11 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         # use 'this' key even with old value, as old may have wrong key type
         properties[self] = value
 
+    def get_verdict(self, properties: PropertyDict) -> Optional[Verdict]:
+        """Get the verdict, if any, not verdict value objects"""
+        v = properties.get(self)
+        return v.get_verdict() if v is not None else None
+
     def get_explanation(self, value: PropertyVerdictValue) -> str:
         return value.explanation
 

@@ -167,7 +167,7 @@ class StatusClaim(EntityClaim):
             p = Properties.EXPECTED_CONNECTIONS
         else:
             assert False, f"Unexpected entity for status claim {entity}"
-        v = Properties.EXPECTED.get(entity.properties) or Verdict.UNDEFINED
+        v = Properties.EXPECTED.get_verdict(entity.properties) or Verdict.UNDEFINED
         context.mark_coverage(entity, self, p, value=v == Verdict.PASS)
         return ClaimStatus(self, verdict=v, authority=ClaimAuthority.TOOL)
 
@@ -375,7 +375,7 @@ class NoUnexpectedConnections(HostClaim):
         for c in entity.connections:
             if c.is_expected():
                 exp_c += 1
-                see_c += 1 if Properties.EXPECTED.get(c.properties) == Verdict.PASS else 0
+                see_c += 1 if Properties.EXPECTED.get_verdict(c.properties) == Verdict.PASS else 0
             elif c.is_relevant():
                 un_c += 1
         exp = f"{see_c}/{exp_c} expected connections"
@@ -474,7 +474,7 @@ class NoUnexpectedServices(EntityClaim):
         for c in services:
             if c.is_expected():
                 exp_c += 1
-                see_c += 1 if Properties.EXPECTED.get(c.properties) == Verdict.PASS else 0
+                see_c += 1 if Properties.EXPECTED.get_verdict(c.properties) == Verdict.PASS else 0
             else:
                 un_c += 1
         if exp_c == 0 and un_c == 0:
@@ -527,7 +527,7 @@ class UpdateClaim(SoftwareClaim):
         ver = None
         for c in entity.update_connections:
             # just copy update connection verdict
-            ver = Verdict.aggregate(Properties.EXPECTED.get(c.properties), ver)
+            ver = Verdict.aggregate(Properties.EXPECTED.get_verdict(c.properties), ver)
         context.mark_coverage(entity, self, Properties.UPDATE_SEEN, value=ver == Verdict.PASS)
         if ver is None:
             return None
