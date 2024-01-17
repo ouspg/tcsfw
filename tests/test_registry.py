@@ -56,7 +56,7 @@ def test_reset_2():
     sb = simple_setup_1(external=True)
     r = Registry(Inspector(sb.system))
 
-    flows = sb.system.collect_flows()
+    flows = r.logging.collect_flows()
     assert len(flows) == 1
 
     c1 = r.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
@@ -65,21 +65,21 @@ def test_reset_2():
     assert c2.status.verdict == Verdict.UNEXPECTED
     c3 = r.connection(IPFlow.UDP("1:0:0:1:0:4", "192.168.0.3", 1100) >> ("1:0:0:0:0:4", "1.0.0.4", 1234))
     assert c3.status.verdict == Verdict.EXTERNAL
-    flows = sb.system.collect_flows()
+    flows = r.logging.collect_flows()
     assert len(flows) == 3
 
     r.reset(evidence_filter={NO_EVIDENCE.source: False}).do_all_tasks()
     assert c1.status.verdict == Verdict.NOT_SEEN
     assert c2.status.verdict == Verdict.UNDEFINED
     assert c3.status.verdict == Verdict.UNDEFINED
-    flows = sb.system.collect_flows()
+    flows = r.logging.collect_flows()
     assert len(flows) == 1
 
     r.reset().do_all_tasks()
     assert c1.status.verdict == Verdict.PASS
     assert c2.status.verdict == Verdict.UNEXPECTED
     assert c3.status.verdict == Verdict.EXTERNAL
-    flows = sb.system.collect_flows()
+    flows = r.logging.collect_flows()
     assert len(flows) == 3
 
 

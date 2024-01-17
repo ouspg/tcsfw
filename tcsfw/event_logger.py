@@ -99,6 +99,8 @@ class EventLogger(EventInterface):
     def collect_flows(self) -> Dict[Connection, List[Tuple[AnyAddress, AnyAddress, Flow]]]:
         """Collect relevant connection flows"""
         r = {}
+        for c in self.inspector.system.get_connections():
+            r[c] = []  # expected connections without flows
         for lo in self.logs:
             event = lo.event
             if not isinstance(event, Flow):

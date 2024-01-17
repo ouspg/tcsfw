@@ -93,8 +93,6 @@ class Status:
     """Entity or connection status"""
     def __init__(self, verdict=Verdict.UNDEFINED):
         self.verdict = verdict
-        # FIXME: Lets get rid of this list and use EventLogger instead
-        self.events: List[VerdictEvent] = []
 
     def is_expected(self) -> bool:
         """Is an expected connection?"""
@@ -103,12 +101,10 @@ class Status:
     def add_result(self, event: VerdictEvent):
         """Add new result"""
         self.verdict = Verdict.resolve(self.verdict, event.verdict)
-        self.events.append(event)
 
     def reset(self, verdict: Verdict):
         """Reset model"""
         self.verdict = verdict
-        self.events.clear()
 
     def __repr__(self):
         return f"{self.verdict.value}"

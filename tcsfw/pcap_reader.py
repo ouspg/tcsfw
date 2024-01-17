@@ -21,6 +21,7 @@ from tcsfw.event_interface import EventInterface
 from tcsfw.inspector import Inspector
 from tcsfw.model import Connection, IoTSystem, Addressable
 from tcsfw.property import PropertyKey, Properties
+from tcsfw.registry import Registry
 from tcsfw.services import NameEvent, DNSService
 from tcsfw.tools import BaseFileCheckTool
 from tcsfw.traffic import IPFlow, EvidenceSource, Evidence, EthernetFlow, Flow, Tool
@@ -42,11 +43,10 @@ class PCAPReader(BaseFileCheckTool):
         self.flows: Dict[Tuple, Flow] = {}
 
     @classmethod
-    def inspect(cls, pcap_file: pathlib.Path, system=IoTSystem()) -> 'PCAPReader':
-        """Inspect the given system with given pcap"""
-        r = PCAPReader(system)
+    def inspect(cls, pcap_file: pathlib.Path, interface: EventInterface) -> 'PCAPReader':
+        r = PCAPReader(interface.get_system())
         with pcap_file.open("rb") as f:
-            r.process_file(f, pcap_file.name, Inspector(system), EvidenceSource(pcap_file.name))
+            r.process_file(f, pcap_file.name, interface, EvidenceSource(pcap_file.name))
         return r
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> Self:
