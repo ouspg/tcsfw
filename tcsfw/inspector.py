@@ -6,7 +6,7 @@ from tcsfw.address import DNSName, AnyAddress
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
 from tcsfw.matcher import SystemMatcher
-from tcsfw.model import IoTSystem, Connection, Service, Host, Session, Addressable, NodeComponent
+from tcsfw.model import IoTSystem, Connection, Service, Host, Addressable, NodeComponent
 from tcsfw.services import NameEvent
 from tcsfw.traffic import ServiceScan, HostScan, Flow, IPFlow
 from tcsfw.verdict import Verdict
@@ -19,7 +19,7 @@ class Inspector(EventInterface):
         self.system = system
         self.logger = logging.getLogger("inspector")
         self.connection_count: Dict[Connection, int] = {}
-        self.sessions: Dict[Flow, Tuple[Session, bool]] = {}
+        self.sessions: Dict[Flow, bool] = {}
         self.dns_names: Dict[str, Host] = {}
 
     def reset(self):
@@ -47,19 +47,12 @@ class Inspector(EventInterface):
         c_count = self.connection_count.get(conn, 0) + 1
         self.connection_count[conn] = c_count
 
-        # FIXME: Shouldn't model add sessions, why inspector?
-        session, _ = self.sessions.get(flow, (None, None))
-        new_session = not session
+        # detect new sessions
+        session = self.sessions.get(flow)
+        new_session = session is None
         if new_session:
-            session, _ = self.sessions.get(flow.reverse(), (None, None))
-            if not session:
-                # truly new session
-                session = Session(flow.timestamp or datetime.datetime.now())
-                conn.sessions.append(session)
-                self.sessions[flow] = session, reply
-            else:
-                # old session in reverse direction
-                self.sessions[flow] = session, reply
+            # new session or direction
+            self.sessions[flow] = reply
 
         send = set()  # connection, flow, source and/or target
 
@@ -95,12 +88,10 @@ class Inspector(EventInterface):
                 if learn:
                     send.add(ends[1])
 
-        ev = None
         if new_session:
             # Flow event for each new session
             verdict = conn.status.verdict
             assert verdict != Verdict.UNDEFINED
-            session.status.verdict = verdict
             send.add(flow)
             # new direction, update sender
             if not reply:

@@ -38,13 +38,6 @@ class ExternalActivity(enum.IntEnum):
     UNLIMITED = 3              # unlimited activity, including client connections
 
 
-class Session:
-    """A connection session"""
-    def __init__(self, start_time: datetime.datetime):
-        self.start_time = start_time
-        self.status = Status()
-
-
 class Connection(Entity):
     """A connection from source to target"""
     def __init__(self, source: 'Addressable', target: 'Addressable') -> None:
@@ -53,8 +46,6 @@ class Connection(Entity):
         self.source = source
         self.target = target
         self.con_type = ConnectionType.UNKNOWN
-        # FIXME: Can we nuke session list?
-        self.sessions: List[Session] = []
 
     def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
         v = super().get_verdict(cache)
@@ -98,7 +89,6 @@ class Connection(Entity):
         """Reset this connection"""
         self.reset()
         self.status.reset(Verdict.NOT_SEEN if self in system.originals else Verdict.UNDEFINED)
-        self.sessions.clear()
 
     def long_name(self) -> str:
         """A long name for human consumption"""
@@ -106,8 +96,6 @@ class Connection(Entity):
 
     def __repr__(self):
         s = f"{self.status.verdict.value} {self.source.name} => {self.target.name}"
-        for p in self.sessions:
-            s += f"\nSessions:  {p}"
         return s
 
 
