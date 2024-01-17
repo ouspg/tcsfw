@@ -281,8 +281,8 @@ class Builder(SystemBuilder):
             report = LaTeXGenerator(self.system, spec, cc)
             report.generate(sys.stdout, cmd.strip(" -"))
         elif dump_report or out_form:
-            report = Report(self.system, details=out_form == 'details')
-            if out_form in {'text', 'details', '', None}:
+            report = Report(self.system)
+            if out_form in {'text', '', None}:
                 report.print_report(sys.stdout)
             elif out_form == 'table-csv':
                 report.tabular(sys.stdout)

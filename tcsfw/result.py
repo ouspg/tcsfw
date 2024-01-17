@@ -14,9 +14,8 @@ INCONCLUSIVE = "-"
 
 class Report:
     """Report of the system status"""
-    def __init__(self, system: IoTSystem, details=True):
+    def __init__(self, system: IoTSystem):
         self.system = system
-        self.details = details
         self.logger = logging.getLogger("reporter")
 
     def print_properties(self, entity: NetworkNode, indent: str, writer: TextIO):
@@ -48,17 +47,11 @@ class Report:
             ads = [a for a in ads if a != h_name]
             if ads:
                 writer.write(f"  " + ", ".join(ads) + "\n")
-            if self.details:
-                for ev in h.status.events:
-                    writer.write(f"  " + ", ".join(ads) + "\n")
             self.print_properties(h, "  ", writer)
             for s in h.children:
                 auth = f" auth={s.authentication}" if isinstance(s, Service) else ""
                 writer.write(f"  {s.name} {s.status}{auth}\n")
                 self.print_properties(s, "  ", writer)
-                if self.details:
-                    for ev in s.status.events:
-                        writer.write(f"    {ev}\n")
         for ad, hs in sorted(rev_map.items()):
             if len(hs) > 1:
                 self.logger.warning(f"DOUBLE mapped {ad}: " + ", ".join([f"{h}" for h in hs]))

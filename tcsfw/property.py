@@ -244,6 +244,7 @@ class Properties:
     PROTOCOL = PropertySet("check", "protocol")      # Protocol-specific check, augment with protocol name
     WEB_BEST = PropertySet("check", "web")           # Web best practices, HTTP/TLS covered by PROTOCOL
     ENCRYPTION = PropertySet("check", "encryption")  # Encryption best practices
+    EXPECTED = PropertyVerdict("check", "expected")  # Entry is expected (True) or unexpected (False)
     COOKIES = PropertySet("check", "cookies")        # Cookies checks
     COMPONENTS = PropertySet("check", "components")  # Software component check
     VULNERABILITIES = PropertySet("check", "vulnz")  # Component vulnerability check
