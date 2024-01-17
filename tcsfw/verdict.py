@@ -66,16 +66,6 @@ Verdict_Markers: Dict[Verdict, str] = {
 }
 
 
-class VerdictEvent:
-    """Information about verdict assignment"""
-    def __init__(self, event: Event, verdict=Verdict.UNDEFINED):
-        self.verdict = verdict
-        self.event = event
-
-    def __repr__(self):
-        return f"{self.verdict}: {self.event}"
-
-
 class Status:
     """Entity or connection status"""
     def __init__(self, verdict=Verdict.UNDEFINED):
@@ -84,10 +74,6 @@ class Status:
     def is_expected(self) -> bool:
         """Is an expected connection?"""
         return self.verdict in {Verdict.NOT_SEEN, Verdict.PASS}
-
-    def add_result(self, event: VerdictEvent):
-        """Add new result"""
-        self.verdict = Verdict.resolve(self.verdict, event.verdict)
 
     def reset(self, verdict: Verdict):
         """Reset model"""
