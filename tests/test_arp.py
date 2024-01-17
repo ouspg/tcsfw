@@ -1,4 +1,5 @@
 from tcsfw.address import Protocol
+from tcsfw.inspector import Inspector
 from tcsfw.main import ARP, SystemBuilder
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
@@ -16,7 +17,7 @@ def test_serve_arp():
     dev4 = sb.device().hw("1:0:0:0:0:4")
     dev4 >> dev1 / ARP
 
-    m = SystemMatcher(sb.system)
+    m = Inspector(sb.system)
 
     # dev3 can make external calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:3") >> "ff:ff:ff:ff:ff:ff")
@@ -25,6 +26,10 @@ def test_serve_arp():
     # dev2 not defined to make ARP calls
     f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:0:2") >> "ff:ff:ff:ff:ff:ff")
     assert f1.status.verdict == Verdict.UNEXPECTED
+
+    # unknown device can make ARP calls
+    f1 = m.connection(EthernetFlow.new(Protocol.ARP, "1:0:0:0:1:1") >> "ff:ff:ff:ff:ff:ff")
+    assert f1.status.verdict == Verdict.EXTERNAL
 
     # FIXME: The remaining does not work
     # dev4 can make ARP calls
