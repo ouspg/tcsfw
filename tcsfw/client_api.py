@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from framing.raw_data import Raw
 
-from tcsfw.address import HWAddress, HWAddresses, IPAddresses, Protocol, IPAddress
+from tcsfw.address import AnyAddress, HWAddress, HWAddresses, IPAddresses, Protocol, IPAddress
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import Entity
@@ -16,7 +16,7 @@ from tcsfw.property import PropertyKey, PropertyVerdict, PropertySet
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.traffic import Evidence, NO_EVIDENCE, Flow, IPFlow
-from tcsfw.verdict import Verdict, FlowEvent, Verdictable
+from tcsfw.verdict import FlowEvent, Verdict, Verdictable
 
 # format strings
 FORMAT_YEAR_MONTH_DAY = "%Y-%m-%d"
@@ -77,10 +77,10 @@ class RequestContext:
         self.flows = None
         self.verdict_cache: Dict[Entity, Verdict] = {}
 
-    def get_flows(self) -> Dict[Connection, List[Tuple[NetworkNode, NetworkNode, FlowEvent]]]:
+    def get_flows(self) -> Dict[Connection, List[Tuple[AnyAddress, AnyAddress, Flow]]]:
         """Get flows, resolve and cache as required"""
         if self.flows is None:
-            self.flows = self.api.registry.system.collect_flows()
+            self.flows = self.api.registry.logging.collect_flows()
         return self.flows
 
     def change_path(self, path: str) -> 'RequestContext':
@@ -340,18 +340,19 @@ class ClientAPI(ModelListener):
     def get_flows(self, connection: Connection, context: RequestContext) -> List:
         """GET all flows from a connection"""
         fs = []
-        for _, _, flow in context.get_flows().get(connection, []):
-            ff = self.get_flow(flow, connection, context)
+        for s, t, flow in context.get_flows().get(connection, []):
+            ff = self.get_flow(s, t, flow, connection, context)
             fs.append(ff)
         return fs
 
-    def get_flow(self, flow: FlowEvent, connection: Connection, context: RequestContext) -> Dict:
+    def get_flow(self, source: AnyAddress, target: AnyAddress, flow: Flow, connection: Connection,
+                 context: RequestContext) -> Dict:
         """GET flow entry"""
         ff = {
             "conn_id": self.get_id(connection),
-            "ends": [f"{flow.endpoints[0]}", f"{flow.endpoints[1]}"],
+            "ends": [f"{source}", f"{target}"],
             "dir": "down" if flow.reply else "up",
-            "ref": flow.event.evidence.get_reference(),
+            "ref": flow.evidence.get_reference(),
         }
         return ff
 
@@ -470,7 +471,7 @@ class ClientAPI(ModelListener):
     def newFlow(self, flow: FlowEvent, connection: Connection):
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
-            d = self.get_flow(flow, connection, context)
+            d = self.get_flow(flow.endpoints[0], flow.endpoints[1], flow.event, connection, context)
             ln.connectionChange({"flow": d}, connection)
 
     def hostChange(self, host: Host):

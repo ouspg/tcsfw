@@ -634,24 +634,6 @@ class IoTSystem(NetworkNode):
         self.connections[source[1], target[1]] = c
         return c
 
-    def collect_flows(self) -> Dict[Connection, List[Tuple[NetworkNode, NetworkNode, FlowEvent]]]:
-        """Collect relevant connection flows"""
-        # connections, the same order even when observing them
-        cs = {}
-        for c in self.get_connections():
-            if c in cs or c.status.verdict == Verdict.UNDEFINED:
-                continue
-            ca = cs.setdefault(c, [])
-            for s in c.sessions:
-                for i in s.status.events:
-                    if not isinstance(i, FlowEvent):
-                        continue
-                    if not i.reply:
-                        ca.append((c.source, c.target, i))
-                    else:
-                        ca.append((c.target, c.source, i))
-        return cs
-
     def get_addresses(self) -> Set[AnyAddress]:
         """Get all addresses"""
         ads = set()
@@ -696,14 +678,8 @@ class IoTSystem(NetworkNode):
         s = []
         for h in self.get_hosts():
             s.append(f"{h.status} {h.name} {sorted(h.addresses)}")
-        connections = self.collect_flows()
-        for conn, obs in connections.items():
+        for conn in self.connections.values():
             s.append(f"{conn.status} {conn}")
-            for o in obs:
-                if o[1] == conn.source:
-                    s.append(f"  {o[1]} <- {o[0]}")
-                else:
-                    s.append(f"  {o[0]} -> {o[1]}")
         return "\n".join(s)
 
 

@@ -103,6 +103,7 @@ class Flow(Event):
     def __init__(self, evidence: Evidence, protocol=Protocol.ANY):
         super().__init__(evidence)
         self.protocol = protocol
+        self.reply = False  # Is this reply? Set by inspector
         self.timestamp: Optional[datetime.datetime] = None
 
     def stack(self, target: bool) -> Tuple[AnyAddress]:
@@ -122,6 +123,14 @@ class Flow(Event):
         self.evidence = evidence
         return self
 
+    def get_source_address(self) -> AnyAddress:
+        """Get source top address"""
+        return NotImplementedError()
+
+    def get_target_address(self) -> AnyAddress:
+        """Get target top address"""
+        return NotImplementedError()
+
 
 class EthernetFlow(Flow):
     def __init__(self, evidence: Evidence, source: HWAddress, target: HWAddress, payload=-1,
@@ -136,6 +145,12 @@ class EthernetFlow(Flow):
 
     def port(self, target=True) -> int:
         return self.payload  # both ways
+
+    def get_source_address(self) -> AnyAddress:
+        return self.source
+
+    def get_target_address(self) -> AnyAddress:
+        return self.target
 
     @classmethod
     def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
@@ -215,6 +230,12 @@ class IPFlow(Flow):
     def reverse(self) -> Self:
         return IPFlow(self.evidence, self.target, self.source, self.protocol)
 
+    def get_source_address(self) -> AnyAddress:
+        return self.source[0] if self.source[1].is_null() else self.source[1]
+
+    def get_target_address(self) -> AnyAddress:
+        return self.target[0] if self.target[1].is_null() else self.target[1]
+
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
         self.target = HWAddress(target[0]), IPAddress.new(target[1]), target[2]
         return self
@@ -273,6 +294,12 @@ class BLEAdvertisementFlow(Flow):
     def reverse(self) -> Self:
         """Reverse the flow"""
         return self
+
+    def get_source_address(self) -> AnyAddress:
+        return (Addresses.BLE_Ad if self.reply else self.source)
+
+    def get_target_address(self) -> AnyAddress:
+        return (self.source if self.reply else Addresses.BLE_Ad)
 
     def __repr__(self):
         return f"{self.source} >> 0x{self.event_type:02x} {self.protocol.value.upper()}"

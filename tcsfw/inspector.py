@@ -39,6 +39,8 @@ class Inspector(EventInterface):
         key = self.matcher.connection_w_ends(flow)
         conn, s, t, reply = key
 
+        flow.reply = reply  # bit ugly to fix, but now available for logger
+
         assert conn.status.verdict != Verdict.UNDEFINED, f"Received connection with verdict undefined: {conn}"
         # Note: hosts and services _can_ be Undefined???
 

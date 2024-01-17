@@ -1,4 +1,5 @@
-from typing import List, TextIO, Tuple, Dict, Optional
+from typing import List, TextIO, Tuple, Dict, Optional, cast
+from tcsfw.address import AnyAddress
 
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyEvent, PropertyAddressEvent
@@ -7,7 +8,7 @@ from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import Evidence, HostScan, ServiceScan, Flow, Event
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import FlowEvent, Verdict
 
 
 class LoggingEvent:
@@ -94,6 +95,19 @@ class EventLogger(EventInterface):
         lo = self._add(scan, e)
         lo.verdict = e.status.verdict
         return e
+
+    def collect_flows(self) -> Dict[Connection, List[Tuple[AnyAddress, AnyAddress, Flow]]]:
+        """Collect relevant connection flows"""
+        r = {}
+        for lo in self.logs:
+            event = lo.event
+            if not isinstance(event, Flow):
+                continue
+            c = cast(Connection, lo.key[0])
+            cs = r.setdefault(c, [])
+            s, t = event.get_source_address(), event.get_target_address()
+            cs.append((s, t, event))
+        return r
 
     def get_log(self, entity: Optional[Entity] = None, key: Optional[PropertyKey] = None) \
             -> List[LoggingEvent]:

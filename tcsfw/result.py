@@ -4,6 +4,7 @@ from typing import TextIO, List, Dict, Optional, Self, Set
 from tcsfw.address import Protocol
 from tcsfw.entity import Entity
 from tcsfw.model import IoTSystem, Host, HostType, ConnectionType, Service, NetworkNode
+from tcsfw.registry import Registry
 from tcsfw.verdict import Verdict
 
 # Keywords for verdicts
@@ -14,8 +15,9 @@ INCONCLUSIVE = "-"
 
 class Report:
     """Report of the system status"""
-    def __init__(self, system: IoTSystem):
-        self.system = system
+    def __init__(self, registry: Registry):
+        self.registry = registry
+        self.system = registry.system
         self.logger = logging.getLogger("reporter")
 
     def print_properties(self, entity: NetworkNode, indent: str, writer: TextIO):
@@ -57,7 +59,7 @@ class Report:
                 self.logger.warning(f"DOUBLE mapped {ad}: " + ", ".join([f"{h}" for h in hs]))
 
         writer.write("== Connections ==\n")
-        connections = self.system.collect_flows()
+        connections = self.registry.logging.collect_flows()
         for conn, _ in connections.items():
             stat = conn.con_type.value if conn.con_type == ConnectionType.LOGICAL else conn.status.verdict.value
             writer.write(f"{conn.source.long_name():>30} ==> {conn.target.long_name()} [{stat}]\n")
