@@ -47,12 +47,6 @@ class Connection(Entity):
         self.target = target
         self.con_type = ConnectionType.UNKNOWN
 
-    def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
-        v = super().get_verdict(cache)
-        v = Verdict.resolve(self.status.verdict, v)
-        cache[self] = v
-        return v
-
     def is_original(self) -> bool:
         """Is this entity originally defined in the model?"""
         system = self.source.get_system()
@@ -60,26 +54,20 @@ class Connection(Entity):
 
     def is_relevant(self, or_relevant_end=False) -> bool:
         """Is this connection relevant, i.e. not undefined or external?"""
-        v = self.status.verdict
-        if v == Verdict.UNDEFINED:
-            return False  # this does not exist
-        if v == Verdict.EXTERNAL:
-            if not or_relevant_end or not (self.source.status.is_expected() or self.target.status.is_expected()):
-                return False  # external connection (not with expected ends)
-        return True
-        # return self.status.verdict not in {Verdict.UNDEFINED, Verdict.EXTERNAL}
+        if self.status == Status.EXPECTED:
+            return True
+        if or_relevant_end:
+            return False
+        return self.source.is_relevant() or self.target.is_relevant()
+
+    def is_expected(self) -> bool:
+        """Is the connection expected?"""
+        return self.status == Status.EXPECTED
 
     def is_encrypted(self) -> bool:
         """Is an encrypted connection?"""
         t = self.target
         return isinstance(t, Service) and t.is_encrypted()
-
-    def update_verdict(self, new_verdict: Verdict) -> Verdict:
-        """Update local verdict and endpoint verdicts"""
-        # NOTE: Once connection is created, it's status should only be updated by inspector.
-        # This is for consistency, but also to avoid excessive events due status changes!
-        self.status.verdict = Verdict.resolve(self.status.verdict, new_verdict)
-        return self.status.verdict
 
     def is_end(self, entity: 'NetworkNode') -> bool:
         """Is given entity either end of the connection?"""
@@ -88,15 +76,11 @@ class Connection(Entity):
     def reset_connection(self, system: 'IoTSystem'):
         """Reset this connection"""
         self.reset()
-        self.status.reset(Verdict.NOT_SEEN if self in system.originals else Verdict.UNDEFINED)
+        self.placeholder = self not in system.originals
 
     def long_name(self) -> str:
         """A long name for human consumption"""
         return f"{self.source.long_name()} => {self.target.long_name()}"
-
-    def __repr__(self):
-        s = f"{self.status.verdict.value} {self.source.name} => {self.target.name}"
-        return s
 
 
 T = TypeVar("T")
@@ -123,17 +107,10 @@ class NodeComponent(Entity):
         self.entity = entity
         self.name = name
         self.simple_value: Optional[str] = None  # some components can use this
-        self.status.verdict = Verdict.NOT_SEEN
         self.sub_components: List[NodeComponent] = []
 
     def get_children(self) -> Iterable['Entity']:
         return self.sub_components
-
-    def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
-        v = super().get_verdict(cache)
-        v = Verdict.resolve(v, self.status.verdict)
-        cache[self] = v
-        return v
 
     def long_name(self) -> str:
         return self.name
@@ -150,7 +127,6 @@ class NodeComponent(Entity):
     def reset(self):
         """Reset model"""
         super().reset()
-        self.status.reset(Verdict.NOT_SEEN)  # NOTE: What to put here?
         for s in self.sub_components:
             s.reset()
 
@@ -174,12 +150,6 @@ class NetworkNode(Entity):
     def get_children(self) -> Iterable['Entity']:
         return itertools.chain(self.children, self.components)
 
-    def get_verdict(self, cache: Dict['Entity', Verdict]) -> Verdict:
-        v = super().get_verdict(cache)
-        v = Verdict.resolve(v, self.status.verdict)
-        cache[self] = v
-        return v
-
     def long_name(self):
         """Get longer name, or at least the name"""
         return self.name
@@ -201,7 +171,8 @@ class NetworkNode(Entity):
         return False
 
     def is_relevant(self) -> bool:
-        return self.status.verdict not in {Verdict.UNDEFINED, Verdict.EXTERNAL}
+        """Is relevant entity?"""
+        return self.status == Status.EXPECTED
 
     def get_connections(self) -> List[Connection]:
         """Get connections excluding external and undefined"""
@@ -288,15 +259,12 @@ class NetworkNode(Entity):
     def reset(self):
         """Reset model"""
         super().reset()
-        self.status.reset(Verdict.NOT_SEEN if self.is_original() else Verdict.UNDEFINED)
+        self.placeholder = not self.is_original()
         for c in self.children:
             c.reset()
         for s in self.components:
             s.reset()
-        # NOTE: Addressable or does not override, thus addresses remain to that the Entities are reused
-
-    def __repr__(self):
-        return f"{self.status} {self.name}"
+        # NOTE: Addressable does not override, thus addresses remain to that the Entities are reused
 
 
 class Addressable(NetworkNode):
@@ -306,25 +274,10 @@ class Addressable(NetworkNode):
         self.parent: Optional[NetworkNode] = None
         self.addresses: Set[AnyAddress] = set()
 
-    def update_verdict(self, new_verdict: Verdict) -> Verdict:
-        """Update local verdict and parent verdicts"""
-        # NOTE: Once entity is created, it's status should only be updated by inspector.
-        # This is for consistency, but also to avoid excessive events due status changes!
-        if self.status.verdict == Verdict.EXTERNAL:
-            # external remains such
-            return self.status.verdict
-        nv = Verdict.resolve(self.status.verdict, new_verdict)
-        if nv != self.status.verdict:
-            self.status.verdict = nv
-            if isinstance(self.parent, Addressable):
-                self.parent.update_verdict(nv)
-        return nv
-
     def create_service(self, address: EndpointAddress) -> 'Service':
         s = Service(Service.make_name(f"{address.protocol.value.upper()}", address.port), self)
         s.addresses.add(address.change_host(Addresses.ANY))
-        if self.status.verdict in {Verdict.UNEXPECTED, Verdict.EXTERNAL}:
-            s.status.verdict = self.status.verdict
+        s.status = self.status
         s.external_activity = self.external_activity
         self.children.append(s)
         return s
@@ -469,7 +422,6 @@ class IoTSystem(NetworkNode):
     def __init__(self, name="IoT system"):
         super().__init__(name)
         self.concept_name = "system"
-        self.status.verdict = Verdict.PASS  # I pass
         # network mask(s)
         self.ip_networks = [ipaddress.ip_network("192.168.0.0/16")]  # reasonable default
         # online resources
@@ -631,7 +583,6 @@ class IoTSystem(NetworkNode):
 
     def reset(self):
         super().reset()
-        self.status.verdict = Verdict.NOT_SEEN
         for h in self.get_hosts():
             for c in h.connections:
                 c.reset_connection(self)

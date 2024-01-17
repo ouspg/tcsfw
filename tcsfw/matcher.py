@@ -6,9 +6,10 @@ from tcsfw.address import AnyAddress, EndpointAddress, HWAddress, IPAddress, Add
     DNSName
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener, \
     ExternalActivity
+from tcsfw.property import Properties
 from tcsfw.services import DHCPService
 from tcsfw.traffic import Flow, EvidenceSource, IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 class SystemMatcher(ModelListener):
@@ -207,9 +208,8 @@ class MatchEngine:
         else:
             # new flow, may be existing or new source and/or target
             m = self.add_connection(flow)
-            if m.connection.status.verdict == Verdict.UNDEFINED:
+            if m.connection.status == Status.PLACEHOLDER:
                 # this is an UNEXPECTED connection found after reset
-                m.connection.status.verdict = Verdict.UNEXPECTED
                 self.set_connection_status(m.connection, m.source, m.target)
             self.observed[flow] = m
         conn = m.connection
@@ -228,13 +228,13 @@ class MatchEngine:
         c = self.observed.get(r)
         if c:
             # reverse direction
-            if c.connection.status.verdict == Verdict.EXTERNAL:
+            if c.connection.status == Status.EXTERNAL:
                 # connection from source to target was ok, but target is now replying
                 te = c.target.endpoint
-                if te.entity.status.verdict != Verdict.EXTERNAL and \
+                if te.entity.status != Status.EXTERNAL and \
                         te.entity.external_activity < ExternalActivity.OPEN:
                     # target should not reply
-                    c.connection.status.verdict = Verdict.UNEXPECTED
+                    c.connection.set_property(Properties.EXPECTED.value(Verdict.FAIL))
 
             rc = ConnectionMatch(c.connection, c.source, c.target, reply=True)
             self.observed[flow] = rc
@@ -388,9 +388,9 @@ class MatchEngine:
 
     def set_connection_status(self, connection: Connection,
                               source: 'AddressMatch', target: 'AddressMatch') -> Connection:
-        """Set connection status"""
+        """Set status for unexpected connection"""
         c = connection
-        v = Verdict.UNEXPECTED
+        status = Status.UNEXPECTED
 
         # new connection status by external activity policies and reply status
         source_act = source.endpoint.external_activity
@@ -400,11 +400,11 @@ class MatchEngine:
             reply = c.source == target.endpoint.entity # FIXME: This is weak?
             if source_act >= ExternalActivity.UNLIMITED:
                 # source is free to make connections
-                v = Verdict.EXTERNAL
+                status = Status.EXTERNAL
             elif reply and source_act >= ExternalActivity.OPEN:
                 # source can make replies
-                v = Verdict.EXTERNAL
-        c.status.verdict = v
+                status = Status.EXTERNAL
+        c.status = status
         return c
 
     def __repr__(self):
@@ -464,7 +464,7 @@ class MatchEndpoint:
         for c in host.connections:
             if not c.is_end(self.entity):
                 continue
-            if not unexpected and not c.status.is_expected():
+            if not unexpected and not c.is_expected():
                 # NOTE: A hack to match unexpected DHCP reply
                 target = c.target
                 if not isinstance(target, Service) or not target.reply_from_other_address:

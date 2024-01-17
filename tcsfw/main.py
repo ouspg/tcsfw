@@ -32,7 +32,7 @@ from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
 
@@ -224,7 +224,7 @@ class Builder(SystemBuilder):
         for set_ip in self.args.set_ip or []:
             name, _, ips = set_ip.partition("=")
             h = self.system.get_entity(name) or self.system.get_endpoint(DNSName.name_or_ip(name))
-            if not isinstance(h, Host) or h.status.verdict != Verdict.NOT_SEEN:
+            if not isinstance(h, Host) or not h.is_relevant():
                 raise ValueError(f"No such host '{name}'")
             for ip in ips.split(","):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
@@ -422,7 +422,7 @@ class ServiceBuilder(NodeBuilder):
                 # referring existing connection
                 return ConnectionBuilder(c, (s, self))
         c = Connection(s.entity, self.entity)
-        c.status.verdict = Verdict.NOT_SEEN
+        c.status = Status.EXPECTED
         c.con_type = self.entity.con_type
         for e in [s.entity, self.entity]:
             e.update_verdict(Verdict.NOT_SEEN)
@@ -456,7 +456,7 @@ class HostBuilder(HostInterface, NodeBuilder):
         super().__init__(entity, system)
         self.entity = entity
         system.system.children.append(entity)
-        entity.status.verdict = Verdict.NOT_SEEN  # tolerate hosts which have no interaction
+        entity.status = Status.EXPECTED
         system.hosts_by_name[entity.name] = self
         if DNSName.looks_like(entity.name):
             self.name(entity.name)
@@ -659,7 +659,7 @@ class ProtocolConfigurer:
             return old
         b = self._create_service(parent)
         parent.service_builders[(self.transport, self.service_port)] = b
-        b.entity.status.verdict = Verdict.NOT_SEEN
+        b.entity.status = Status.EXPECTED
         assert b.entity.parent == parent.entity
         parent.entity.children.append(b.entity)
         if not b.entity.addresses:

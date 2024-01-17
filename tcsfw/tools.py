@@ -12,7 +12,7 @@ from tcsfw.event_interface import EventInterface
 from tcsfw.model import NetworkNode, Addressable, IoTSystem, NodeComponent, Connection, Host
 from tcsfw.property import PropertyKey
 from tcsfw.traffic import Evidence, EvidenceSource, Tool, Flow, IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 class CheckTool:
@@ -96,14 +96,14 @@ class EndpointCheckTool(CheckTool):
     def _create_file_name_map(self):
         """Create file name map"""
         for host in self.system.get_hosts(include_external=False):
-            if host.status.verdict not in {Verdict.NOT_SEEN, Verdict.PASS}:
+            if host.status != Status.EXPECTED:
                 continue
             if self._filter_node(host):
                 # scan hosts
                 self._map_addressable(host)
                 continue
             for s in host.children:
-                if s.status.verdict not in {Verdict.NOT_SEEN, Verdict.PASS}:
+                if s.status != Status.EXPECTED:
                     continue
                 if self._filter_node(s):
                     self._map_addressable(s)

@@ -15,7 +15,7 @@ from tcsfw.property import PropertyKey, PropertyVerdict, PropertySet
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.traffic import Evidence, NO_EVIDENCE, Flow, IPFlow
-from tcsfw.verdict import Verdict, Verdictable
+from tcsfw.verdict import Status, Verdict, Verdictable
 
 # format strings
 FORMAT_YEAR_MONTH_DAY = "%Y-%m-%d"
@@ -297,14 +297,14 @@ class ClientAPI(ModelListener):
             r["parent_id"] = self.get_id(entity.parent)
         if entity.children:
             r["services"] = [self.get_entity(c, context)[1]
-                             for c in entity.children if c.status.verdict != Verdict.UNDEFINED]
+                             for c in entity.children if c.status != Status.PLACEHOLDER]
         if entity.components:
             r["components"] = self.get_components(entity, context)
         if isinstance(entity, Host):
             if context.request.get_connections:
                 cj: List[Dict] = r.setdefault("connections", [])
                 for c in entity.connections:
-                    if c.status.verdict != Verdict.UNDEFINED:
+                    if c.status != Status.PLACEHOLDER:
                         cj.append(self.get_connection(c, context))
                         if context.request.get_flows:
                             fs = self.get_flows(c, context)
@@ -374,13 +374,13 @@ class ClientAPI(ModelListener):
         }
         hj = root.setdefault("hosts", [])
         for h in system.get_hosts():
-            if h.status.verdict != Verdict.UNDEFINED:
+            if h.status != Status.PLACEHOLDER:
                 _, hr = self.get_entity(h, context)
                 hj.append(hr)
         cj = root.setdefault("connections", [])
         cf = root.setdefault("flows", [])
         for c in context.get_flows().keys():
-            if c.status.verdict != Verdict.UNDEFINED:
+            if c.status != Status.PLACEHOLDER:
                 cr = self.get_connection(c, context)
                 cj.append(cr)
                 cr = self.get_flows(c, context)
@@ -422,11 +422,11 @@ class ClientAPI(ModelListener):
         ]
         # ... as we list it here then
         for h in system.get_hosts():
-            if h.status.verdict != Verdict.UNDEFINED:
+            if h.status != Status.PLACEHOLDER:
                 _, hr = self.get_entity(h, context)
                 its.append({"host": hr})
         for c in context.get_flows().keys():
-            if c.status.verdict != Verdict.UNDEFINED:
+            if c.status != Status.PLACEHOLDER:
                 cr = self.get_connection(c, context)
                 its.append({"connection": cr})
                 for cf in self.get_flows(c, context):

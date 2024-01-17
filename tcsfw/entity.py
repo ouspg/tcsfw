@@ -2,7 +2,7 @@ import enum
 from typing import Dict, Optional, Self, List, Any, Tuple, Iterable, Callable, Iterator, TypeVar
 
 from tcsfw.claim import Claim
-from tcsfw.property import PropertyKey
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.verdict import Status, Verdict, Verdictable
 
 
@@ -10,14 +10,14 @@ class Entity:
     """An entity, network node or connection"""
     def __init__(self):
         self.concept_name = "other"
-        self.status = Status()
+        self.status = Status.UNEXPECTED
         self.properties: Dict[PropertyKey, Any] = {}
 
     def long_name(self) -> str:
         return self.__repr__()
 
     def reset(self):
-        """Reset, at least properties"""
+        """Reset entity and at least properties"""
         new_p: Dict[PropertyKey, Any] = {}
         for k, v in self.properties.items():
             nv = k.reset(v)
@@ -29,6 +29,22 @@ class Entity:
         """Set a property"""
         self.properties[key_value[0]] = key_value[1]
         return self
+
+    def set_seen_now(self) -> Optional[Verdict]:
+        """The entity is seen now, update and return new verdict IF changed"""
+        v = self.properties.get(Properties.EXPECTED)
+        if self.status == Status.EXPECTED: 
+            if v == Verdict.PASS:
+                return None  # already ok
+            v = Verdict.PASS
+        elif self.status == Status.UNEXPECTED:
+            if v == Verdict.FAIL:
+                return None  # already not ok
+            v = Verdict.FAIL
+        else:
+            return None  # does not matter if seen or not
+        self.properties[Properties.EXPECTED] = v
+        return v
 
     def get_children(self) -> Iterable['Entity']:
         """Get child entities, if any"""
@@ -64,6 +80,19 @@ class Entity:
         for c in self.get_children():
             yield from c.iterate(relevant_only)
 
+    def status_string(self) -> str:
+        """Get a status string"""
+        st = self.status.value
+        exp = self.properties.get(Properties.EXPECTED)
+        if exp:
+            st = f"{st}|Expected"
+        elif exp is not None:
+            st = f"{st}|Unexpected"
+        return st
+
+    def __repr__(self):
+        s = f"{self.status_string()} {self.long_name}"
+        return s
 
 class ClaimAuthority(enum.Enum):
     """Claim or claim status authority"""

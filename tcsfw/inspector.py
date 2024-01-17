@@ -7,9 +7,10 @@ from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import IoTSystem, Connection, Service, Host, Addressable, NodeComponent
+from tcsfw.property import Properties
 from tcsfw.services import NameEvent
 from tcsfw.traffic import ServiceScan, HostScan, Flow, IPFlow
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 class Inspector(EventInterface):
@@ -41,8 +42,7 @@ class Inspector(EventInterface):
 
         flow.reply = reply  # bit ugly to fix, but now available for logger
 
-        assert conn.status.verdict != Verdict.UNDEFINED, f"Received connection with verdict undefined: {conn}"
-        # Note: hosts and services _can_ be Undefined???
+        assert conn.status != Status.PLACEHOLDER, f"Received placeholder connection: {conn}"
 
         c_count = self.connection_count.get(conn, 0) + 1
         self.connection_count[conn] = c_count
@@ -56,27 +56,24 @@ class Inspector(EventInterface):
 
         send = set()  # connection, flow, source and/or target
 
-        def update_verdict(entity: Addressable, new_verdict: Verdict):
-            old_v = entity.status.verdict
-            new_v = entity.update_verdict(new_verdict)
-            if old_v != new_v:
+        def update_seen_status(entity: Addressable):
+            mod_s = entity.set_seen_now()
+            if mod_s is not None:
                 send.add(entity)  # verdict change, must send the entity
 
         source, target = conn.source, conn.target
-        external = conn.status.verdict == Verdict.EXTERNAL
+        external = conn.status == Status.EXTERNAL
         if c_count == 1:
-            # new connection
-            send.add(conn)
-            if conn.status.verdict == Verdict.NOT_SEEN:
-                # connection is seen now
-                conn.status.verdict = Verdict.PASS
-            elif external:
-                # External connection, maybe some endpoints are too..?
-                for h in [source, target]:
-                    if h.status.verdict == Verdict.UNDEFINED:
-                        update_verdict(h, Verdict.EXTERNAL)
-                    elif h.status.verdict == Verdict.NOT_SEEN:
-                        update_verdict(h, Verdict.PASS)  # well, we have seen it now - FIXME: not good?
+            # new connection is seen
+            update_seen_status(conn)
+            # FIXME: What is this doing?
+            # if external:
+            #     # External connection, maybe some endpoints are too..?
+            #     for h in [source, target]:
+            #         if h.status.verdict == Verdict.UNDEFINED:
+            #             update_verdict(h, Verdict.EXTERNAL)
+            #        elif h.status.verdict == Verdict.NOT_SEEN:
+            #             update_verdict(h, Verdict.PASS)  # well, we have seen it now - FIXME: not good?
 
             # what about learning local IP/HW address pairs
             if isinstance(flow, IPFlow):
@@ -89,25 +86,25 @@ class Inspector(EventInterface):
                     send.add(ends[1])
 
         if new_session:
-            # Flow event for each new session
-            verdict = conn.status.verdict
-            assert verdict != Verdict.UNDEFINED
+            # flow event for each new session
             send.add(flow)
             # new direction, update sender
             if not reply:
-                source.update_verdict(conn.status.verdict)
-                send.add(source)
-                if conn.target.is_relevant() and conn.target.is_multicast() and conn.target.status.is_expected():
+                update_seen_status(source)
+                if conn.target.is_relevant() and conn.target.is_multicast():
                     # multicast updated when sent to
-                    update_verdict(target, conn.status.verdict)
-            elif target.is_relevant():
-                update_verdict(target, conn.status.verdict)
+                    update_seen_status(target)
+            else:
+                # a reply
+                update_seen_status(target)
 
-        # if we have a connection, the endpoints cannot be undefined
-        if source.status.verdict == Verdict.UNDEFINED:
-            update_verdict(source, Verdict.EXTERNAL if external else Verdict.UNEXPECTED)
-        if target.status.verdict == Verdict.UNDEFINED:
-            update_verdict(target, Verdict.EXTERNAL if external else Verdict.UNEXPECTED)
+        # if we have a connection, the endpoints cannot be placeholders
+        if source.status == Status.PLACEHOLDER:
+            source.status = conn.status
+            update_seen_status(source)
+        if target.status == Status.PLACEHOLDER:
+            target.status == conn.status
+            update_seen_status(target)
 
         if self.system.model_listeners and send:
             if source in send:
@@ -185,7 +182,7 @@ class Inspector(EventInterface):
             if isinstance(c, Service):
                 if c.client_side or not c.is_tcp_service():
                     continue  # only server TCP services are scannable
-            if c.status.verdict not in {Verdict.NOT_SEEN, Verdict.PASS}:
+            if not c.is_relevant():
                 continue  # verdict does not need checking
             for a in c.addresses:
                 if a in scan.endpoints:
@@ -194,16 +191,14 @@ class Inspector(EventInterface):
                     break
             else:
                 # child address not in scan results
-                c.update_verdict(Verdict.MISSING)
+                c.set_property(Properties.EXPECTED(Verdict.FAIL))
         self.system.call_listeners(lambda ln: ln.hostChange(host))
         return host
 
     def _get_seen_entity(self, endpoint: AnyAddress) -> Addressable:
+        """Get entity by address, mark it seen"""
         ent = self.system.get_endpoint(endpoint)
-        if ent.status.verdict == Verdict.NOT_SEEN:
-            ent.update_verdict(Verdict.PASS)
-        if ent.status.verdict == Verdict.UNDEFINED:
-            ent.update_verdict(Verdict.UNEXPECTED)
+        ent.set_seen_now()
         return ent
 
     def __repr__(self):

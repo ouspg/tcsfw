@@ -167,8 +167,9 @@ class StatusClaim(EntityClaim):
             p = Properties.EXPECTED_CONNECTIONS
         else:
             assert False, f"Unexpected entity for status claim {entity}"
-        context.mark_coverage(entity, self, p, value=entity.status.verdict == Verdict.PASS)
-        return ClaimStatus(self, verdict=entity.status.verdict, authority=ClaimAuthority.TOOL)
+        v = Properties.EXPECTED.get(entity.properties) or Verdict.UNDEFINED
+        context.mark_coverage(entity, self, p, value=v == Verdict.PASS)
+        return ClaimStatus(self, verdict=v, authority=ClaimAuthority.TOOL)
 
 
 class ConnectionClaim(EntityClaim):
@@ -372,9 +373,9 @@ class NoUnexpectedConnections(HostClaim):
         entity = self.assert_host(entity)
         exp_c, see_c, un_c = 0, 0, 0
         for c in entity.connections:
-            if c.status.is_expected():
+            if c.is_expected():
                 exp_c += 1
-                see_c += 1 if c.status.verdict == Verdict.PASS else 0
+                see_c += 1 if Properties.EXPECTED.get(c.properties) == Verdict.PASS else 0
             elif c.is_relevant():
                 un_c += 1
         exp = f"{see_c}/{exp_c} expected connections"
@@ -471,9 +472,9 @@ class NoUnexpectedServices(EntityClaim):
         services = [c for c in entity.children if c.is_relevant()]
         exp_c, see_c, un_c = 0, 0, 0
         for c in services:
-            if c.status.is_expected():
+            if c.is_expected():
                 exp_c += 1
-                see_c += 1 if c.status.verdict == Verdict.PASS else 0
+                see_c += 1 if Properties.EXPECTED.get(c.properties) == Verdict.PASS else 0
             else:
                 un_c += 1
         if exp_c == 0 and un_c == 0:
@@ -526,7 +527,7 @@ class UpdateClaim(SoftwareClaim):
         ver = None
         for c in entity.update_connections:
             # just copy update connection verdict
-            ver = Verdict.aggregate(c.status.verdict, ver)
+            ver = Verdict.aggregate(Properties.EXPECTED.get(c.properties), ver)
         context.mark_coverage(entity, self, Properties.UPDATE_SEEN, value=ver == Verdict.PASS)
         if ver is None:
             return None

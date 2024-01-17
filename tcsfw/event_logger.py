@@ -5,7 +5,7 @@ from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyEvent, PropertyAddressEvent
 from tcsfw.inspector import Inspector
 from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
-from tcsfw.property import PropertyKey
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import HostScan, ServiceScan, Flow, Event
 from tcsfw.verdict import Verdict
@@ -63,13 +63,13 @@ class EventLogger(EventInterface):
     def connection(self, flow: Flow) -> Connection:
         e = self.inspector.connection(flow)
         lo = self._add(flow, e)
-        lo.verdict = e.status.verdict
+        lo.verdict = Properties.EXPECTED.get(e.properties) or Verdict.UNDEFINED
         return e
 
     def name(self, event: NameEvent) -> Host:
         e = self.inspector.name(event)
         lo = self._add(event, e)
-        lo.verdict = e.status.verdict
+        lo.verdict = Properties.EXPECTED.get(e.properties) or Verdict.UNDEFINED
         return e
 
     def property_update(self, update: PropertyEvent) -> Entity:
@@ -87,13 +87,13 @@ class EventLogger(EventInterface):
     def service_scan(self, scan: ServiceScan) -> Service:
         e = self.inspector.service_scan(scan)
         lo = self._add(scan, e)
-        lo.verdict = e.status.verdict
+        lo.verdict = Properties.EXPECTED.get(e.properties) or Verdict.UNDEFINED
         return e
 
     def host_scan(self, scan: HostScan) -> Host:
         e = self.inspector.host_scan(scan)
         lo = self._add(scan, e)
-        lo.verdict = e.status.verdict
+        lo.verdict = Properties.EXPECTED.get(e.properties) or Verdict.UNDEFINED
         return e
 
     def collect_flows(self) -> Dict[Connection, List[Tuple[AnyAddress, AnyAddress, Flow]]]:
