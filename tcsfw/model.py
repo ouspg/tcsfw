@@ -76,7 +76,8 @@ class Connection(Entity):
     def reset_connection(self, system: 'IoTSystem'):
         """Reset this connection"""
         self.reset()
-        self.placeholder = self not in system.originals
+        if self not in system.originals:
+            self.status = Status.PLACEHOLDER
 
     def long_name(self) -> str:
         """A long name for human consumption"""
@@ -259,7 +260,8 @@ class NetworkNode(Entity):
     def reset(self):
         """Reset model"""
         super().reset()
-        self.placeholder = not self.is_original()
+        if not self.is_original():
+            self.status = Status.PLACEHOLDER
         for c in self.children:
             c.reset()
         for s in self.components:

@@ -103,7 +103,7 @@ class Inspector(EventInterface):
             source.status = conn.status
             update_seen_status(source)
         if target.status == Status.PLACEHOLDER:
-            target.status == conn.status
+            target.status = conn.status
             update_seen_status(target)
 
         if self.system.model_listeners and send:
