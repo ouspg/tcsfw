@@ -76,19 +76,6 @@ class VerdictEvent:
         return f"{self.verdict}: {self.event}"
 
 
-class FlowEvent(VerdictEvent):
-    """Flow event with verdict"""
-    def __init__(self, endpoints: Tuple[AnyAddress, AnyAddress], reply: bool, event: Flow, verdict=Verdict.UNDEFINED):
-        super().__init__(event, verdict)
-        self.endpoints = endpoints
-        self.reply = reply
-
-    def __repr__(self):
-        if self.reply:
-            return f"{self.verdict}: {self.endpoints[1]} <- {self.endpoints[0]} {self.event.evidence}"
-        return f"{self.verdict}: {self.endpoints[0]} -> {self.endpoints[1]} {self.event.evidence}"
-
-
 class Status:
     """Entity or connection status"""
     def __init__(self, verdict=Verdict.UNDEFINED):

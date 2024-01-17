@@ -2,7 +2,6 @@ import json
 import logging
 import urllib
 from typing import Dict, List, Tuple, Any, Iterable, BinaryIO, Optional
-from urllib.parse import urlparse
 
 from framing.raw_data import Raw
 
@@ -16,7 +15,7 @@ from tcsfw.property import PropertyKey, PropertyVerdict, PropertySet
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.traffic import Evidence, NO_EVIDENCE, Flow, IPFlow
-from tcsfw.verdict import FlowEvent, Verdict, Verdictable
+from tcsfw.verdict import Verdict, Verdictable
 
 # format strings
 FORMAT_YEAR_MONTH_DAY = "%Y-%m-%d"
@@ -468,10 +467,10 @@ class ClientAPI(ModelListener):
             d = self.get_connection(connection, context)
             ln.connectionChange({"connection": d}, connection)
 
-    def newFlow(self, flow: FlowEvent, connection: Connection):
+    def newFlow(self, source: AnyAddress, target: AnyAddress, flow: Flow, connection: Connection):
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
-            d = self.get_flow(flow.endpoints[0], flow.endpoints[1], flow.event, connection, context)
+            d = self.get_flow(source, target, flow.event, connection, context)
             ln.connectionChange({"flow": d}, connection)
 
     def hostChange(self, host: Host):

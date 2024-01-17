@@ -9,7 +9,7 @@ from tcsfw.matcher import SystemMatcher
 from tcsfw.model import IoTSystem, Connection, Service, Host, Session, Addressable, NodeComponent
 from tcsfw.services import NameEvent
 from tcsfw.traffic import ServiceScan, HostScan, Flow, IPFlow
-from tcsfw.verdict import Verdict, VerdictEvent, FlowEvent
+from tcsfw.verdict import Verdict
 
 
 class Inspector(EventInterface):
@@ -100,9 +100,8 @@ class Inspector(EventInterface):
             # Flow event for each new session
             verdict = conn.status.verdict
             assert verdict != Verdict.UNDEFINED
-            ev = FlowEvent((s, t), reply, flow, verdict=verdict)
-            session.status.add_result(ev)
-            send.add(ev)
+            session.status.verdict = verdict
+            send.add(flow)
             # new direction, update sender
             if not reply:
                 source.update_verdict(conn.status.verdict)
@@ -126,8 +125,8 @@ class Inspector(EventInterface):
                 self.system.call_listeners(lambda ln: ln.hostChange(target.get_parent_host()))
             if conn in send:
                 self.system.call_listeners(lambda ln: ln.connectionChange(conn))
-            if ev in send:
-                self.system.call_listeners(lambda ln: ln.newFlow(ev, conn))
+            if flow in send:
+                self.system.call_listeners(lambda ln: ln.newFlow(s, t, flow, conn))
         return conn
 
     def name(self, event: NameEvent) -> Host:
@@ -185,7 +184,6 @@ class Inspector(EventInterface):
         """The given address has a service"""
         s = self._get_seen_entity(scan.endpoint)
         assert isinstance(s, Service)
-        s.status.add_result(VerdictEvent(scan, s.status.verdict))
         self.system.call_listeners(lambda ln: ln.hostChange(s.get_parent_host()))
         return s
 
@@ -206,7 +204,6 @@ class Inspector(EventInterface):
             else:
                 # child address not in scan results
                 c.update_verdict(Verdict.MISSING)
-                c.status.add_result(VerdictEvent(scan, c.status.verdict))
         self.system.call_listeners(lambda ln: ln.hostChange(host))
         return host
 

@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from tcsfw.address import AnyAddress, Addresses, EndpointAddress, Protocol, IPAddress, HWAddress, DNSName
 from tcsfw.entity import Entity
 from tcsfw.traffic import Flow, EvidenceSource
-from tcsfw.verdict import Status, Verdict, FlowEvent
+from tcsfw.verdict import Status, Verdict
 
 
 class HostType(enum.Enum):
@@ -693,7 +693,7 @@ class ModelListener:
         """Connection created or changed"""
         pass
 
-    def newFlow(self, flow: FlowEvent, connection: Connection):
+    def newFlow(self, source: AnyAddress, target: AnyAddress, flow: Flow, connection: Connection):
         """New flow event"""
         pass
 

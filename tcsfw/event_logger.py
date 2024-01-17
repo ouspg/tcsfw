@@ -7,8 +7,8 @@ from tcsfw.inspector import Inspector
 from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import PropertyKey
 from tcsfw.services import NameEvent
-from tcsfw.traffic import Evidence, HostScan, ServiceScan, Flow, Event
-from tcsfw.verdict import FlowEvent, Verdict
+from tcsfw.traffic import HostScan, ServiceScan, Flow, Event
+from tcsfw.verdict import Verdict
 
 
 class LoggingEvent:
