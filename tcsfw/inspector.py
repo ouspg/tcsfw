@@ -207,30 +207,6 @@ class Inspector(EventInterface):
         self.system.call_listeners(lambda ln: ln.hostChange(host))
         return host
 
-    # FIXME: Move to Claim!
-    # def release_info(self, info: ReleaseInfo) -> Optional[Software]:
-    #     sw = Software.get_software(self.system, info.sw_name)
-    #     if sw:
-    #         sw.info = info  # just take the latest data
-    #
-    #         claims = Claim.identifier_map(sw.claims)
-    #         first_release = FirstRelease.find(claims)
-    #         release_interval = ReleaseInterval.find(claims)
-    #         support_end = EndOfSupport.find(claims)
-    #
-    #         if release_interval is not None and info.interval_days is not None:
-    #             v = Verdict.FAIL if release_interval.days > info.interval_days else Verdict.PASS
-    #             sw.claims[release_interval] = ClaimStatus(
-    #                 release_interval, verdict=v, explanation=f"{info.interval_days} <= {release_interval.days} days")
-    #             sw.status.verdict = resolve_verdict([sw.status.verdict, v])
-    #             sw.status.add_result(VerdictEvent(info, v))
-    #     else:
-    #         self.logger.warning("Info for unknown SW %s", info.sw_name)
-    #     entity = sw.entity
-    #     if isinstance(entity, Addressable):
-    #         self.system.call_listeners(lambda ln: ln.hostChange(entity.get_parent_host()))
-    #     return sw
-
     def _get_seen_entity(self, endpoint: AnyAddress) -> Addressable:
         ent = self.system.get_endpoint(endpoint)
         if ent.status.verdict == Verdict.NOT_SEEN:
