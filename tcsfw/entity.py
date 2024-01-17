@@ -87,11 +87,9 @@ class Entity:
     def status_string(self) -> str:
         """Get a status string"""
         st = self.status.value
-        exp = self.properties.get(Properties.EXPECTED)
-        if exp:
-            st = f"{st}|Expected"
-        elif exp is not None:
-            st = f"{st}|Unexpected"
+        v = Properties.EXPECTED.get(self.properties)
+        if v is not None:
+            st = f"{st}={v.value}"
         return st
 
     def __repr__(self):
