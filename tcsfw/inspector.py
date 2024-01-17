@@ -65,7 +65,9 @@ class Inspector(EventInterface):
         external = conn.status == Status.EXTERNAL
         if c_count == 1:
             # new connection is seen
-            update_seen_status(conn)
+            conn.set_seen_now()
+            send.add(conn) # send with or without v
+
             # FIXME: What is this doing?
             # if external:
             #     # External connection, maybe some endpoints are too..?
@@ -94,6 +96,13 @@ class Inspector(EventInterface):
                 if conn.target.is_relevant() and conn.target.is_multicast():
                     # multicast updated when sent to
                     update_seen_status(target)
+                elif target.status != Status.EXPECTED:
+                    # unexpeced/external target, should send event
+                    exp = conn.target.get_expected_verdict(default=None)
+                    if exp is None:
+                        # this is my special little trick to detect new unexpected target, which have not replied yet
+                        target.set_property(Properties.EXPECTED.value(Verdict.UNDEFINED))
+                        send.add(target)
             else:
                 # a reply
                 update_seen_status(target)
