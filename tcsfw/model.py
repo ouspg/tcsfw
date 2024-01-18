@@ -279,7 +279,8 @@ class Addressable(NetworkNode):
     def create_service(self, address: EndpointAddress) -> 'Service':
         s = Service(Service.make_name(f"{address.protocol.value.upper()}", address.port), self)
         s.addresses.add(address.change_host(Addresses.ANY))
-        s.status = self.status
+        if self.status == Status.EXTERNAL:
+            s.status = Status.EXTERNAL  # only external propagates, otherwise unexpected
         s.external_activity = self.external_activity
         self.children.append(s)
         return s
