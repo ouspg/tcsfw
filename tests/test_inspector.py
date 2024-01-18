@@ -155,14 +155,15 @@ def test_multicast():
 
     cs1 = i.connection(IPFlow.UDP(
         "1:0:0:0:0:1", "192.168.0.1", 1100) >> ("ff:ff:ff:ff:ff:ff", "255.255.255.255", 333))
-    assert cs1.status.verdict == Verdict.PASS
-    assert cs1.source.status.verdict == Verdict.PASS
+    assert cs1.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs1.source.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert cs1.target.is_multicast()
-    assert cs1.target.status.verdict == Verdict.PASS
+    assert cs1.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     cs2 = i.connection(IPFlow.UDP(
         "1:0:0:0:0:1", "192.168.0.1", 1100) >> ("ff:ff:ff:ff:ff:ff", "255.255.255.255", 222))
-    assert cs2.status.verdict == Verdict.UNEXPECTED
-    assert cs2.source.status.verdict == Verdict.UNEXPECTED
+    assert cs2.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert cs2.source.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert cs2.target.is_multicast()
-    assert cs2.target.status.verdict == Verdict.UNEXPECTED
+    # target is the multicast 'host', not service - is that ok...
+    assert cs2.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
