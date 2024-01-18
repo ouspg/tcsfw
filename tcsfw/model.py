@@ -511,7 +511,11 @@ class IoTSystem(NetworkNode):
                     add.name = self.free_child_name(nn)
             return add
 
-        named = named or self.get_endpoint(name)
+        if named is None:
+            named = self.get_endpoint(name)
+            # FIXME: If we would know who is asking, then could check its external_actvitity
+            if named.status == Status.UNEXPECTED:
+                named.status = Status.EXTERNAL
 
         if not add:
             # just use the named
