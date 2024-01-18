@@ -30,12 +30,14 @@ def test_traffic_verdict():
     # expected connections
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
     assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
     assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
 
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
@@ -100,18 +102,17 @@ def test_scan():
     ev = Evidence(EvidenceSource(""))
 
     s1 = i.service_scan(ServiceScan(ev, EndpointAddress.ip("192.168.0.2", Protocol.TCP, 1234)))
-    assert s1.status.verdict == Verdict.PASS
-    assert s1.get_parent_host().status.verdict == Verdict.PASS
+    assert s1.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert s1.get_parent_host().status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     s2 = i.service_scan(ServiceScan(ev, EndpointAddress.ip("192.168.0.2", Protocol.TCP, 2234)))
-    assert s2.status.verdict == Verdict.UNEXPECTED
-    assert s2.get_parent_host().status.verdict == Verdict.UNEXPECTED
+    assert s2.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert s2.get_parent_host().status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     hs = i.host_scan(HostScan(ev, IPAddress.new("192.168.0.2"), set()))
-    assert hs.status.verdict == Verdict.MISSING
-    assert s1.status.verdict == Verdict.MISSING
+    assert hs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert s1.status_verdict() == (Status.EXPECTED, Verdict.FAIL)
     assert hs == s1.get_parent_host()
-    assert s2.status.verdict == Verdict.UNEXPECTED
     assert hs == s2.get_parent_host()
 
 
