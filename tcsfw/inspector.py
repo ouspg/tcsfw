@@ -99,14 +99,16 @@ class Inspector(EventInterface):
             # new direction, update sender
             if not reply:
                 update_seen_status(source)
-                if conn.target.is_relevant() and conn.target.is_multicast():
+                if target.status == Status.UNEXPECTED:
+                    # unexpected target fails instantly
+                    update_seen_status(target)
+                elif conn.target.is_relevant() and conn.target.is_multicast():
                     # multicast updated when sent to
                     update_seen_status(target)
-                elif target.status != Status.EXPECTED:
-                    # unexpeced/external target, should send event
+                elif target.status == Status.EXTERNAL:
+                    # external target, send update even that verdict remains inconclusve
                     exp = conn.target.get_expected_verdict(default=None)
                     if exp is None:
-                        # this is my special little trick to detect new unexpected target, which have not replied yet
                         target.set_property(Properties.EXPECTED.value(Verdict.UNDEFINED))
                         send.add(target)
             else:

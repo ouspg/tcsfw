@@ -52,7 +52,7 @@ def test_traffic_verdict():
     # connection to unexpected host
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:4", "192.168.0.4", 1100) << ("1:0:0:0:0:1", "192.168.0.1", 1234))
     assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
-    assert cs.target.status_verdict() == (Status.UNEXPECTED, Verdict.UNDEFINED)
+    assert cs.target.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)  # fails instantly without waiting reply
     assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # unexpected service in known host
