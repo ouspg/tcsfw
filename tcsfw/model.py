@@ -107,7 +107,6 @@ class NodeComponent(Entity):
         super().__init__()
         self.entity = entity
         self.name = name
-        self.simple_value: Optional[str] = None  # some components can use this
         self.sub_components: List[NodeComponent] = []
 
     def get_children(self) -> Iterable['Entity']:

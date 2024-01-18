@@ -246,8 +246,6 @@ class ClientAPI(ModelListener):
                 "verdict": component.get_verdict(context.verdict_cache).value,
                 "properties": self.get_properties(component.properties)
             }
-            if component.simple_value is not None:
-                com_cs["value"] = component.simple_value
             if component.sub_components:
                 com_cs["sub_components"] = [sub(c) for c in component.sub_components]
             return com_cs
