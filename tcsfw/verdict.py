@@ -6,7 +6,7 @@ from tcsfw.traffic import Event, Flow
 
 class Verdict(enum.Enum):
     """Verdict for entity, connection, property, etc."""
-    UNDEFINED = "Undefined"        # Inconclusive (FIXME: Rename)
+    INCON = "Incon"                # Inconclusive check
     FAIL = "Fail"                  # Failed check
     PASS = "Pass"                  # All checks pass
     IGNORE = "Ignore"              # Ignore
@@ -16,11 +16,11 @@ class Verdict(enum.Enum):
         """Resolve verdict when new information accumulates during inspection"""
         vs = [v for v in verdicts if v]
         if not vs:
-            return Verdict.UNDEFINED
+            return Verdict.INCON
         if len(vs) == 1:
             return vs[0]
         v_set = set(vs)
-        for s in (Verdict.FAIL, Verdict.PASS, Verdict.IGNORE, Verdict.UNDEFINED):
+        for s in (Verdict.FAIL, Verdict.PASS, Verdict.IGNORE, Verdict.INCON):
             if s in v_set:
                 return s
         raise NotImplementedError(f"Merging of {verdicts}")

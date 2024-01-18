@@ -88,7 +88,7 @@ class CoverageReport:
     def _print_statistics(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
 
-        columns = {Verdict.PASS: 0, Verdict.FAIL: 1, Verdict.UNDEFINED: 2, Verdict.IGNORE: 3}
+        columns = {Verdict.PASS: 0, Verdict.FAIL: 1, Verdict.INCON: 2, Verdict.IGNORE: 3}
         verdicts: Dict[str, Dict[str, List[Set[int]]]] = {
             "ui+": {},
             "def": {},
@@ -223,7 +223,7 @@ class CoverageReport:
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
         if status is None:
             return "."
-        if status.verdict == Verdict.UNDEFINED:
+        if status.verdict == Verdict.INCON:
             return "?"
         if status.verdict != Verdict.PASS:
             return "!"
@@ -234,7 +234,7 @@ class CoverageReport:
     @classmethod
     def _light(self, verdict: Verdict) -> str:
         """Verdict traffic light"""
-        if verdict in {Verdict.IGNORE, Verdict.UNDEFINED}:
+        if verdict in {Verdict.IGNORE, Verdict.INCON}:
             return "yellow"
         if verdict == Verdict.PASS:
             return "green"
@@ -245,8 +245,8 @@ class CoverageReport:
         """Update aggregate verdict"""
         if verdict is None:
             return base
-        if base == Verdict.UNDEFINED or verdict == Verdict.UNDEFINED:
-            return Verdict.UNDEFINED
+        if base == Verdict.INCON or verdict == Verdict.INCON:
+            return Verdict.INCON
         else:
             return Verdict.aggregate(base, verdict)
 
@@ -290,7 +290,7 @@ class CoverageReport:
             f"Tool {Verdict.PASS.value}": "Verification pass",
             f"Tool {Verdict.FAIL.value}": "Verification fail",
             ignore_len_name: "Not relevant",
-            f"Tool {Verdict.UNDEFINED.value}": "Not verified",
+            f"Tool {Verdict.INCON.value}": "Not verified",
             f"Manual {Verdict.PASS.value}": "Explained pass",
             f"Manual {Verdict.IGNORE.value}": "Explained not relevant",
         }
@@ -311,7 +311,7 @@ class CoverageReport:
                     aut = status.authority.value
                     if status.verdict != Verdict.FAIL and status.authority == ClaimAuthority.MODEL:
                         # Model can only FAIL or be inconclusive
-                        verdict = Verdict.UNDEFINED
+                        verdict = Verdict.INCON
                     else:
                         verdict = Verdict.FAIL if status.verdict in {Verdict.UNEXPECTED, Verdict.MISSING} else \
                             status.verdict

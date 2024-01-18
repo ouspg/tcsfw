@@ -63,7 +63,7 @@ class PropertyEvent(Event, Verdictable):
 
     def get_verdict(self) -> Verdict:
         v = self.key_value[1]
-        return v.get_verdict() if isinstance(v, Verdictable) else Verdict.UNDEFINED
+        return v.get_verdict() if isinstance(v, Verdictable) else Verdict.INCON
 
     def get_value_string(self) -> str:
         return self.key_value[0].get_value_string(self.key_value[1])
@@ -85,7 +85,7 @@ class PropertyAddressEvent(Event, Verdictable):
 
     def get_verdict(self) -> Verdict:
         v = self.key_value[1]
-        return v.get_verdict() if isinstance(v, Verdictable) else Verdict.UNDEFINED
+        return v.get_verdict() if isinstance(v, Verdictable) else Verdict.INCON
 
     def get_value_string(self) -> str:
         return self.key_value[0].get_value_string(self.key_value[1])

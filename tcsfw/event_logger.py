@@ -16,12 +16,12 @@ class LoggingEvent:
     def __init__(self, event: Event, key: Tuple[Entity, Optional[PropertyKey]] = None):
         self.key = key
         self.event = event
-        self.verdict = Verdict.UNDEFINED
+        self.verdict = Verdict.INCON
 
     def get_value_string(self) -> str:
         """Get value as string"""
         v = self.event.get_value_string()
-        if self.verdict != Verdict.UNDEFINED:
+        if self.verdict != Verdict.INCON:
             v += f" [{self.verdict.value}]" if v else self.verdict.value
         return v
 
@@ -63,13 +63,13 @@ class EventLogger(EventInterface):
     def connection(self, flow: Flow) -> Connection:
         e = self.inspector.connection(flow)
         lo = self._add(flow, e)
-        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.UNDEFINED
+        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.INCON
         return e
 
     def name(self, event: NameEvent) -> Host:
         e = self.inspector.name(event)
         lo = self._add(event, e)
-        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.UNDEFINED
+        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.INCON
         return e
 
     def property_update(self, update: PropertyEvent) -> Entity:
@@ -87,13 +87,13 @@ class EventLogger(EventInterface):
     def service_scan(self, scan: ServiceScan) -> Service:
         e = self.inspector.service_scan(scan)
         lo = self._add(scan, e)
-        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.UNDEFINED
+        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.INCON
         return e
 
     def host_scan(self, scan: HostScan) -> Host:
         e = self.inspector.host_scan(scan)
         lo = self._add(scan, e)
-        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.UNDEFINED
+        lo.verdict = Properties.EXPECTED.get_verdict(e.properties) or Verdict.INCON
         return e
 
     def collect_flows(self) -> Dict[Connection, List[Tuple[AnyAddress, AnyAddress, Flow]]]:

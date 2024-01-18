@@ -15,23 +15,23 @@ def test_icmp():
     assert cs.source.name == "1.0.0.1"
     assert cs.target.name == "ICMP"
     assert cs.target == dev1.entity
-    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.INCON)
 
     cs = i.connection(IPFlow.IP("11:02:03:04:05:06", "1.0.0.1", 2) >> ("01:02:03:04:05:06", "1.0.1.1", 2))
     assert cs.source.name == "1.0.0.1"
     assert cs.target == dev1.entity.get_parent_host()
     assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
-    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.INCON)
 
     cs = i.connection(IPFlow.IP("11:02:03:04:05:06", "1.0.0.1", 1) << ("01:02:03:04:05:06", "1.0.1.1", 1))
     assert cs.source.name == "1.0.0.1"
     assert cs.target.name == "ICMP"
     assert cs.target == dev1.entity
-    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
     assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
 
@@ -50,9 +50,9 @@ def test_arp():
     assert cs.source.name == "21:02:03:04:05:06"
     assert cs.target.name == "ARP"
     assert cs.target.get_parent_host() == dev1.entity
-    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
-    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.INCON)
     # response
     cs2 = i.connection(EthernetFlow(ev, HWAddress("01:02:03:04:05:06"), HWAddress("21:02:03:04:05:06"),
                                     protocol=Protocol.ARP))

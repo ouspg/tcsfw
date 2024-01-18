@@ -396,7 +396,7 @@ class MatchEngine:
         c.status = Status.UNEXPECTED
 
         def set_external(e: Addressable):
-            if e.status == Status.UNEXPECTED and e.get_expected_verdict() == Verdict.UNDEFINED:
+            if e.status == Status.UNEXPECTED and e.get_expected_verdict() == Verdict.INCON:
                 # entity is fresh and unexpected, make it external
                 e.status = Status.EXTERNAL
                 if isinstance(e.parent, Addressable):

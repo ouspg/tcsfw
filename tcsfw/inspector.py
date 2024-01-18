@@ -109,7 +109,7 @@ class Inspector(EventInterface):
                     # external target, send update even that verdict remains inconclusve
                     exp = conn.target.get_expected_verdict(default=None)
                     if exp is None:
-                        target.set_property(Properties.EXPECTED.value(Verdict.UNDEFINED))
+                        target.set_property(Properties.EXPECTED.value(Verdict.INCON))
                         send.add(target)
             else:
                 # a reply

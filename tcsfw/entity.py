@@ -46,7 +46,7 @@ class Entity:
         self.set_property(Properties.EXPECTED.value(v))
         return v
 
-    def get_expected_verdict(self, default: Optional[Verdict] = Verdict.UNDEFINED) -> Verdict:
+    def get_expected_verdict(self, default: Optional[Verdict] = Verdict.INCON) -> Verdict:
         """Get the expected verdict or undefined"""
         return Properties.EXPECTED.get_verdict(self.properties) or default
 
@@ -62,7 +62,7 @@ class Entity:
                 v = Verdict.resolve(v, c.get_verdict(cache))
             for p in self.properties.values():
                 v = Verdict.resolve(v, p.get_verdict()) if isinstance(p, Verdictable) else v
-            cache[self] = v = v or Verdict.UNDEFINED
+            cache[self] = v = v or Verdict.INCON
         return v
 
     def is_relevant(self) -> bool:
@@ -108,7 +108,7 @@ class ClaimAuthority(enum.Enum):
 
 
 class ClaimStatus:
-    def __init__(self, claim: Claim, explanation="", verdict=Verdict.UNDEFINED, authority=ClaimAuthority.MODEL):
+    def __init__(self, claim: Claim, explanation="", verdict=Verdict.INCON, authority=ClaimAuthority.MODEL):
         assert claim is not None and verdict is not None
         self.claim = claim
         self.verdict = verdict

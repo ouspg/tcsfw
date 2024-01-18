@@ -107,7 +107,7 @@ def test_reset_dhcp():
     assert len(cli.children) == 1
     assert len(cli.connections) == 1
     assert cli.children[0].status == Status.EXPECTED
-    assert cli.children[0].get_expected_verdict() == Verdict.UNDEFINED
+    assert cli.children[0].get_expected_verdict() == Verdict.INCON
 
     # enable sources again
     r.reset().do_all_tasks()

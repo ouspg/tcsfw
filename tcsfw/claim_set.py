@@ -167,7 +167,7 @@ class StatusClaim(EntityClaim):
             p = Properties.EXPECTED_CONNECTIONS
         else:
             assert False, f"Unexpected entity for status claim {entity}"
-        v = Properties.EXPECTED.get_verdict(entity.properties) or Verdict.UNDEFINED
+        v = Properties.EXPECTED.get_verdict(entity.properties) or Verdict.INCON
         context.mark_coverage(entity, self, p, value=v == Verdict.PASS)
         return ClaimStatus(self, verdict=v, authority=ClaimAuthority.TOOL)
 
@@ -251,9 +251,9 @@ class AlternativeClaim(EntityClaim):
             r = context.check(c, entity)
             if r is None:
                 continue
-            if best is None or (best.verdict == Verdict.UNDEFINED and r.verdict != Verdict.UNDEFINED):
+            if best is None or (best.verdict == Verdict.INCON and r.verdict != Verdict.INCON):
                 best = r
-            if best.verdict != Verdict.UNDEFINED:
+            if best.verdict != Verdict.INCON:
                 break
         return best
 
@@ -382,7 +382,7 @@ class NoUnexpectedConnections(HostClaim):
         if un_c > 0:
             exp += f", but {un_c} unexpected ones"
         if see_c == 0 and exp_c > 0 and un_c == 0:
-            ver = Verdict.UNDEFINED
+            ver = Verdict.INCON
         else:
             ver = Verdict.PASS if un_c == 0 else Verdict.FAIL
         context.mark_coverage(entity, self, Properties.EXPECTED_CONNECTIONS, value=ver == Verdict.PASS)
@@ -440,7 +440,7 @@ class ContentClaim(AvailabilityClaim):
     def __init__(self, resource_key="undefined", review_hint="", key=Properties.DOCUMENT_CONTENT):
         super().__init__(resource_key, key)
         self.description = "Contents of " + resource_key + (f" ({review_hint})" if review_hint else "")
-        self.default_to = Verdict.UNDEFINED  # someone just need to do it
+        self.default_to = Verdict.INCON  # someone just need to do it
         self.review_hint = review_hint
 
     def resource(self, key: str, review_hint="") -> 'ContentClaim':
@@ -484,7 +484,7 @@ class NoUnexpectedServices(EntityClaim):
         if un_c > 0:
             exp += f", but {un_c} unexpected ones"
         if see_c == 0 and exp_c > 0 and un_c == 0:
-            ver = Verdict.UNDEFINED
+            ver = Verdict.INCON
         else:
             ver = Verdict.PASS if un_c == 0 else Verdict.FAIL
         context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
@@ -709,14 +709,14 @@ class UserInterfaceClaim(PropertyClaim):
     """Need to manipulate user interface"""
     def __init__(self, description="User interface use and checks"):
         super().__init__(description, Properties.UI)
-        self.default_to = Verdict.UNDEFINED  # 'Eihän se oo ku tekkee'
+        self.default_to = Verdict.INCON  # 'Eihän se oo ku tekkee'
 
 
 class PhysicalManipulationClaim(PropertyClaim):
     """Need to manipulate physically"""
     def __init__(self, description="Physical manipulation and checks"):
         super().__init__(description, Properties.PHYSICAL)
-        self.default_to = Verdict.UNDEFINED
+        self.default_to = Verdict.INCON
 
 
 class Claims:

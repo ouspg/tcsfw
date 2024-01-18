@@ -195,8 +195,8 @@ class ClientAPI(ModelListener):
             }
             if key:
                 ls["property"] = f"{key}"
-            lo_v = ev.get_verdict() if isinstance(ev, Verdictable) else Verdict.UNDEFINED
-            if lo_v != Verdict.UNDEFINED:
+            lo_v = ev.get_verdict() if isinstance(ev, Verdictable) else Verdict.INCON
+            if lo_v != Verdict.INCON:
                 ls["verdict"] = ev.get_verdict().value
             lr.append(ls)
         return rs

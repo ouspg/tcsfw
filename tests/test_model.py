@@ -96,16 +96,16 @@ def test_match_mix_unknown():
     assert cs7.target.name == "UDP:1234"
 
     dev1 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:1"))
-    assert dev1.get_expected_verdict() == Verdict.UNDEFINED  # would be updated by inspector
+    assert dev1.get_expected_verdict() == Verdict.INCON  # would be updated by inspector
     dev_s = sb.system.get_endpoint(HWAddress("1:0:0:0:0:3")).get_entity("UDP:1234")
     assert dev_s == cs2.target
-    assert dev_s.get_expected_verdict() == Verdict.UNDEFINED  # would be updated by inspector
+    assert dev_s.get_expected_verdict() == Verdict.INCON  # would be updated by inspector
     dev4 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:4"))
     assert dev4 == cs2.source
-    assert dev4.get_expected_verdict() == Verdict.UNDEFINED
+    assert dev4.get_expected_verdict() == Verdict.INCON
     dev7 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:7"))
     assert dev7 == cs7.source
-    assert dev7.get_expected_verdict() == Verdict.UNDEFINED
+    assert dev7.get_expected_verdict() == Verdict.INCON
 
     assert cs1 in dev1.connections
     assert cs1 not in dev_s.get_parent_host().connections
@@ -176,7 +176,7 @@ def test_reverse_connection_first():
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs is not None
-    assert cs.get_expected_verdict() == Verdict.UNDEFINED
+    assert cs.get_expected_verdict() == Verdict.INCON
     assert cs.source.name == "Device 1"
     assert cs.target.name == "UDP:1234"
 
@@ -272,17 +272,17 @@ def test_foreign_connection():
     cs2 = m.connection(IPFlow.UDP(
         "20:0:0:0:0:1", "192.168.10.1", 2000) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs1 == cs2
-    assert cs1.get_expected_verdict() == Verdict.UNDEFINED
-    assert cs1.source.get_expected_verdict() == Verdict.UNDEFINED  # no inspector to update
-    assert cs1.target.get_expected_verdict() == Verdict.UNDEFINED
+    assert cs1.get_expected_verdict() == Verdict.INCON
+    assert cs1.source.get_expected_verdict() == Verdict.INCON  # no inspector to update
+    assert cs1.target.get_expected_verdict() == Verdict.INCON
 
     cs3 = m.connection(IPFlow.UDP(
         "20:0:0:0:0:1", "192.168.10.1", 2000) >> ("1:0:0:0:0:2", "192.168.0.2", 2001))
     cs4 = m.connection(IPFlow.UDP(
         "20:0:0:0:0:1", "192.168.10.1", 2000) << ("1:0:0:0:0:2", "192.168.0.2", 2001))
     assert cs3 == cs4
-    assert cs4.get_expected_verdict() == Verdict.UNDEFINED
-    assert cs4.source.get_expected_verdict() == Verdict.UNDEFINED
+    assert cs4.get_expected_verdict() == Verdict.INCON
+    assert cs4.source.get_expected_verdict() == Verdict.INCON
 
 
 def test_wildcard_source():
@@ -297,7 +297,7 @@ def test_wildcard_source():
         "1:0:0:0:0:1", "192.168.10.1", 2000) >> ("1:0:0:0:0:2", "203.0.113.1", 22))
     assert cs1.source == user.entity
     assert cs1.target == ssh.entity
-    assert cs1.get_expected_verdict() == Verdict.UNDEFINED
+    assert cs1.get_expected_verdict() == Verdict.INCON
 
 
 def test_any_host():
