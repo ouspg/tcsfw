@@ -61,7 +61,13 @@ class Inspector(EventInterface):
             if mod_s is not None:
                 send.add(entity)  # verdict change, must send the entity
 
+        # if we have a connection, the endpoints cannot be placeholders
         source, target = conn.source, conn.target
+        if source.status == Status.PLACEHOLDER:
+            source.status = conn.status
+        if target.status == Status.PLACEHOLDER:
+            target.status = conn.status
+
         external = conn.status == Status.EXTERNAL
         if c_count == 1:
             # new connection is seen
@@ -106,14 +112,6 @@ class Inspector(EventInterface):
             else:
                 # a reply
                 update_seen_status(target)
-
-        # if we have a connection, the endpoints cannot be placeholders
-        if source.status == Status.PLACEHOLDER:
-            source.status = conn.status
-            update_seen_status(source)
-        if target.status == Status.PLACEHOLDER:
-            target.status = conn.status
-            update_seen_status(target)
 
         if self.system.model_listeners and send:
             if source in send:

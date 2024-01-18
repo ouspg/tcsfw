@@ -3,7 +3,7 @@ from tcsfw.address import EndpointAddress, Protocol, IPAddress
 from tcsfw.inspector import Inspector
 from tcsfw.main import SystemBuilder, UDP, TCP, UNLIMITED
 from tcsfw.traffic import IPFlow, Evidence, EvidenceSource, ServiceScan, HostScan
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 def simple_setup_3(tcp=False) -> SystemBuilder:
@@ -25,39 +25,39 @@ def test_traffic_verdict():
     dev2 = sb.device("Device 2")
     dev3 = sb.device("Device 3")
 
-    assert all(d.entity.status.verdict == Verdict.NOT_SEEN for d in [dev1, dev2, dev3])
+    assert all(d.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED) for d in [dev1, dev2, dev3])
 
     # expected connections
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.PASS
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev2.entity.status.verdict == Verdict.NOT_SEEN
-    assert dev3.entity.status.verdict == Verdict.NOT_SEEN
+    assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
+    assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
 
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.PASS
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev2.entity.status.verdict == Verdict.PASS
-    assert dev3.entity.status.verdict == Verdict.NOT_SEEN
+    assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
 
     # connection from unexpected host
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.UNEXPECTED
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev2.entity.status.verdict == Verdict.PASS
-    assert dev3.entity.status.verdict == Verdict.UNEXPECTED
+    assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # connection to unexpected host
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:4", "192.168.0.4", 1100) << ("1:0:0:0:0:1", "192.168.0.1", 1234))
-    assert cs.status.verdict == Verdict.UNEXPECTED
-    assert cs.target.status.verdict == Verdict.UNEXPECTED
-    assert dev1.entity.status.verdict == Verdict.UNEXPECTED
+    assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert cs.target.status_verdict() == (Status.UNEXPECTED, Verdict.UNDEFINED)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # unexpected service in known host
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.UNEXPECTED
-    assert dev2.entity.status.verdict == Verdict.UNEXPECTED
-    assert dev3.entity.status.verdict == Verdict.UNEXPECTED
+    assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev3.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
 
 def test_irrelevant_traffic():

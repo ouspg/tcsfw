@@ -325,6 +325,13 @@ class Addressable(NetworkNode):
         """New connection with this entity either as source or target"""
         pass
 
+    def set_seen_now(self) -> Optional[Verdict]:
+        v = super().set_seen_now()
+        if self.parent and v is not None:
+            # propagate to parent, it is also seen now
+            self.parent.set_seen_now()
+        return v
+
     def get_system(self) -> 'IoTSystem':
         return self.parent.get_system()
 

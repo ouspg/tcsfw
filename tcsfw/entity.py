@@ -84,6 +84,10 @@ class Entity:
         for c in self.get_children():
             yield from c.iterate(relevant_only)
 
+    def status_verdict(self) -> Tuple[Status, Verdict]:
+        """Get status and expected verdict"""
+        return self.status, self.get_expected_verdict()
+
     def status_string(self) -> str:
         """Get a status string"""
         st = self.status.value
