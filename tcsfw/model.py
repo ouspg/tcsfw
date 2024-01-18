@@ -108,6 +108,7 @@ class NodeComponent(Entity):
         self.entity = entity
         self.name = name
         self.sub_components: List[NodeComponent] = []
+        self.status = Status.EXPECTED
 
     def get_children(self) -> Iterable['Entity']:
         return self.sub_components
