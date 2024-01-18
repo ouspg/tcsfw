@@ -730,7 +730,8 @@ class ARP(ProtocolConfigurer):
 class DHCP(ProtocolConfigurer):
     def __init__(self, port=67):
         super().__init__(Protocol.UDP, port=port, name="DHCP")
-        self.external_activity = ExternalActivity.PASSIVE  # replies to anyone
+        # DHCP requests go to broadcast, thus the reply looks like request
+        self.external_activity = ExternalActivity.UNLIMITED
 
     def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
         host_s = ServiceBuilder(parent, DHCPService(parent.entity))
