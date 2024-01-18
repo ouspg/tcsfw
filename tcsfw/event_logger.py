@@ -22,7 +22,8 @@ class LoggingEvent:
         """Get value as string"""
         v = self.event.get_value_string()
         if self.verdict != Verdict.INCON:
-            v += f" [{self.verdict.value}]" if v else self.verdict.value
+            st = f"{self.key[0].status.value}/{self.verdict.value}"
+            v += f" [{st}]" if v else st
         return v
 
     def __repr__(self):

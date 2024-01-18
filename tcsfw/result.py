@@ -38,7 +38,7 @@ class Report:
             if not h.is_relevant():
                 continue
             h_name = f"{h.name}"
-            writer.write(f"[{h.status}] {h_name}\n")
+            writer.write(f"[{h.status_string()}] {h_name}\n")
             for sw in h.components:
                 writer.write(f"  {sw.name} [{sw.status_string()}]\n")
                 sw_info = sw.info_string()
@@ -53,7 +53,7 @@ class Report:
             self.print_properties(h, "  ", writer)
             for s in h.children:
                 auth = f" auth={s.authentication}" if isinstance(s, Service) else ""
-                writer.write(f"  {s.name} {s.status}{auth}\n")
+                writer.write(f"  {s.name} {s.status_string()}{auth}\n")
                 self.print_properties(s, "  ", writer)
         for ad, hs in sorted(rev_map.items()):
             if len(hs) > 1:

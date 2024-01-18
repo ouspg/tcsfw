@@ -93,7 +93,7 @@ class Entity:
         st = self.status.value
         v = Properties.EXPECTED.get(self.properties)
         if v is not None:
-            st = f"{st}={v.get_verdict().value}"
+            st = f"{st}/{v.get_verdict().value}"
         return st
 
     def __repr__(self):
