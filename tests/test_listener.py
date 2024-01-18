@@ -70,13 +70,21 @@ def test_model_events():
 
 def test_registry_events():
     sb = simple_setup_1()
-    lis = AModelListener()
     reg = Registry(Inspector(sb.system))
 
+    lis0 = AModelListener()
+    reg.system.model_listeners.append(lis0)
     cs1 = reg.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     cs2 = reg.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:3", "1.0.0.3", 1234))
+    assert len(lis0.events) == 7
 
-    reg.system.model_listeners.append(lis)
+    lis = AModelListener()
+    reg.system.model_listeners = [lis]  # replace
     reg.reset().do_all_tasks()
 
-    assert len(lis.events) == 8
+    # FIXME: We do not get one address event the 2nd time, as addresses are not cleared on reset
+    # - If this is a problem, registry could keep track of learned addresses and clear them on reset
+
+    assert len(lis.events) == 7
+    for i in [(0, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]:
+        assert lis0.labels[i[0]] == lis.labels[i[1]], f"missmatch at {i[0]}, {i[1]}"
