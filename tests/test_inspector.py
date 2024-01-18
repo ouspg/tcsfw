@@ -70,27 +70,27 @@ def test_irrelevant_traffic():
 
     # expected connections
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.PASS
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev2.entity.status.verdict == Verdict.NOT_SEEN
+    assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
-    assert cs.status.verdict == Verdict.PASS
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev2.entity.status.verdict == Verdict.PASS
+    assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # unexpected connection to known service
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     dev3 = cs.source
-    assert cs.status.verdict == Verdict.EXTERNAL
-    assert dev1.entity.status.verdict == Verdict.PASS
-    assert dev3.status.verdict == Verdict.EXTERNAL
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert dev1.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)  
+    assert dev3.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
 
     # connection to unexpected service
     cs = i.connection(IPFlow.UDP("1:0:0:0:0:2", "192.168.0.2", 1100) >> ("1:0:0:0:0:4", "192.168.0.4", 4444))
     dev4 = cs.target
-    assert cs.status.verdict == Verdict.EXTERNAL
-    assert dev2.entity.status.verdict == Verdict.PASS
-    assert dev4.status.verdict == Verdict.EXTERNAL
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert dev2.entity.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert dev3.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
 
 
 def test_scan():

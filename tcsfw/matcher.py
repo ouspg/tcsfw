@@ -390,7 +390,14 @@ class MatchEngine:
                               source: 'AddressMatch', target: 'AddressMatch') -> Connection:
         """Set status for unexpected connection"""
         c = connection
-        status = Status.UNEXPECTED
+        c.status = Status.UNEXPECTED
+
+        def set_external(e: Addressable):
+            if e.status == Status.UNEXPECTED and e.get_expected_verdict() == Verdict.UNDEFINED:
+                # entity is fresh and unexpected, make it external
+                e.status = Status.EXTERNAL
+                if isinstance(e.parent, Addressable):
+                    set_external(e.parent)
 
         # new connection status by external activity policies and reply status
         source_act = source.endpoint.external_activity
@@ -400,11 +407,12 @@ class MatchEngine:
             reply = c.source == target.endpoint.entity # FIXME: This is weak?
             if source_act >= ExternalActivity.UNLIMITED:
                 # source is free to make connections
-                status = Status.EXTERNAL
+                c.status = Status.EXTERNAL
+                set_external(c.source)
             elif reply and source_act >= ExternalActivity.OPEN:
                 # source can make replies
-                status = Status.EXTERNAL
-        c.status = status
+                c.status = Status.EXTERNAL
+                set_external(c.source)
         return c
 
     def __repr__(self):
