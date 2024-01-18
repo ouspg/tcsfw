@@ -420,7 +420,7 @@ class Service(Addressable):
         return self.protocol in {Protocol.TLS, Protocol.SSH}
 
     def __repr__(self):
-        return f"{self.parent} {self.name}"
+        return f"{self.status_string()} {self.parent.long_name()} {self.name}"
 
 
 # Source and target, optional
