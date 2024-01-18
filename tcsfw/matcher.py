@@ -253,6 +253,9 @@ class MatchEngine:
         assert isinstance(n_service_ep, EndpointAddress), "Expected endpoint address from observation cache"
         # change connection to point the new service
         n_service = target_h.create_service(n_service_ep)
+        if target_h.external_activity >= ExternalActivity.UNLIMITED and conn.status == Status.EXTERNAL:
+            # host is free to provide unlisted services
+            n_service.status = Status.EXTERNAL
         target_h.connections.append(conn)
         for ep in self.endpoints[n_service_ep.get_host()]:
             if ep.entity == target_h:

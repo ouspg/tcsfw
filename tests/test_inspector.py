@@ -128,11 +128,11 @@ def test_foreign_connection():
     cs1_2 = i.connection(IPFlow.UDP(
         "20:0:0:0:0:1", "192.168.10.1", 2000) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert cs1 == cs1_2
-    assert cs1.status.verdict == Verdict.EXTERNAL
-    assert cs1.source.status.verdict == Verdict.EXTERNAL
-    assert cs1.source.get_parent_host().status.verdict == Verdict.EXTERNAL
-    assert cs1.target.status.verdict == Verdict.PASS
-    assert cs1.target.get_parent_host().status.verdict == Verdict.PASS
+    assert cs1.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED) 
+    assert cs1.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs1.source.get_parent_host().status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs1.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs1.target.get_parent_host().status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # target is unknown service, fine for UNLIMITED activity
     cs2 = i.connection(IPFlow.UDP(
@@ -140,11 +140,11 @@ def test_foreign_connection():
     cs2_2 = i.connection(IPFlow.UDP(
         "20:0:0:0:0:1", "192.168.10.1", 2000) << ("1:0:0:0:0:2", "192.168.0.2", 2001))
     assert cs2 == cs2_2
-    assert cs2.status.verdict == Verdict.EXTERNAL
-    assert cs2.source.status.verdict == Verdict.EXTERNAL
-    assert cs2.source.get_parent_host().status.verdict == Verdict.EXTERNAL
-    assert cs2.target.status.verdict == Verdict.EXTERNAL
-    assert cs2.target.get_parent_host().status.verdict == Verdict.PASS
+    assert cs2.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs2.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs2.source.get_parent_host().status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs2.target.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs2.target.get_parent_host().status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
 
 def test_multicast():
