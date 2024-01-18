@@ -8,7 +8,7 @@ from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import HostScan, ServiceScan, Flow, Event
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 class LoggingEvent:
@@ -21,8 +21,9 @@ class LoggingEvent:
     def get_value_string(self) -> str:
         """Get value as string"""
         v = self.event.get_value_string()
-        if self.verdict != Verdict.INCON:
-            st = f"{self.key[0].status.value}/{self.verdict.value}"
+        if self.verdict != Verdict.INCON or self.key[0] != Status.EXPECTED:
+            st = f"{self.key[0].status.value}/{self.verdict.value}" if self.verdict != Verdict.INCON  \
+                else self.key[0].status.value
             v += f" [{st}]" if v else st
         return v
 
