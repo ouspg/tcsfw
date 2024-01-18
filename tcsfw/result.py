@@ -24,7 +24,9 @@ class Report:
     def print_properties(self, entity: NetworkNode, indent: str, writer: TextIO):
         """Print properties from entity"""
         for k, v in entity.properties.items():
-            writer.write(f"{indent}{k} {k.get_value_string(v)}\n")
+            if k == Properties.EXPECTED:
+                continue  # encoded into status string
+            writer.write(f"{indent}{k.get_value_string(v)}\n")
 
     def print_report(self, writer: TextIO):
         """Print textual report"""
@@ -38,23 +40,26 @@ class Report:
             if not h.is_relevant():
                 continue
             h_name = f"{h.name}"
-            writer.write(f"[{h.status_string()}] {h_name}\n")
-            for sw in h.components:
-                writer.write(f"  {sw.name} [{sw.status_string()}]\n")
-                sw_info = sw.info_string()
-                if sw_info:
-                    writer.write("    " + sw_info.replace("\n", "\n    ") + "\n")
+            writer.write(f"{h_name} [{h.status_string()}]\n")
             ads = [f"{a}" for a in sorted(h.addresses)]
             for a in ads:
                 rev_map.setdefault(a, []).append(h)
             ads = [a for a in ads if a != h_name]
             if ads:
-                writer.write(f"  " + ", ".join(ads) + "\n")
+                writer.write(f"  Addresses: " + " ".join(ads) + "\n")
+
+            for comp in h.components:
+                writer.write(f"  {comp.name} [Component]\n")
+                sw_info = comp.info_string()
+                if sw_info:
+                    writer.write("    " + sw_info.replace("\n", "\n    ") + "\n")
+                self.print_properties(comp, "    ", writer)
+
             self.print_properties(h, "  ", writer)
             for s in h.children:
                 auth = f" auth={s.authentication}" if isinstance(s, Service) else ""
-                writer.write(f"  {s.name} {s.status_string()}{auth}\n")
-                self.print_properties(s, "  ", writer)
+                writer.write(f"  {s.name} [{s.status_string()}]{auth}\n")
+                self.print_properties(s, "    ", writer)
         for ad, hs in sorted(rev_map.items()):
             if len(hs) > 1:
                 self.logger.warning(f"DOUBLE mapped {ad}: " + ", ".join([f"{h}" for h in hs]))
