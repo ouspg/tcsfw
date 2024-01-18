@@ -2,7 +2,7 @@ from tcsfw.address import HWAddress, Protocol, HWAddresses
 from tcsfw.inspector import Inspector
 from tcsfw.main import SystemBuilder, ICMP, UDP, ARP, EAPOL
 from tcsfw.traffic import IPFlow, EthernetFlow, NO_EVIDENCE
-from tcsfw.verdict import Verdict
+from tcsfw.verdict import Status, Verdict
 
 
 def test_icmp():
@@ -15,16 +15,25 @@ def test_icmp():
     assert cs.source.name == "1.0.0.1"
     assert cs.target.name == "ICMP"
     assert cs.target == dev1.entity
-    assert cs.status.verdict == Verdict.EXTERNAL
-    assert cs.source.status.verdict == Verdict.EXTERNAL
-    assert cs.target.status.verdict == Verdict.PASS
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
 
     cs = i.connection(IPFlow.IP("11:02:03:04:05:06", "1.0.0.1", 2) >> ("01:02:03:04:05:06", "1.0.1.1", 2))
     assert cs.source.name == "1.0.0.1"
     assert cs.target == dev1.entity.get_parent_host()
-    assert cs.status.verdict == Verdict.UNEXPECTED
-    assert cs.source.status.verdict == Verdict.EXTERNAL
-    assert cs.target.status.verdict == Verdict.PASS  # have not replied
+    assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
+
+    cs = i.connection(IPFlow.IP("11:02:03:04:05:06", "1.0.0.1", 1) << ("01:02:03:04:05:06", "1.0.1.1", 1))
+    assert cs.source.name == "1.0.0.1"
+    assert cs.target.name == "ICMP"
+    assert cs.target == dev1.entity
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+
 
 
 def test_arp():
@@ -41,9 +50,9 @@ def test_arp():
     assert cs.source.name == "21:02:03:04:05:06"
     assert cs.target.name == "ARP"
     assert cs.target.get_parent_host() == dev1.entity
-    assert cs.status.verdict == Verdict.EXTERNAL
-    assert cs.source.status.verdict == Verdict.EXTERNAL
-    assert cs.target.status.verdict == Verdict.PASS
+    assert cs.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.UNDEFINED)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.UNDEFINED)
     # response
     cs2 = i.connection(EthernetFlow(ev, HWAddress("01:02:03:04:05:06"), HWAddress("21:02:03:04:05:06"),
                                     protocol=Protocol.ARP))
@@ -56,16 +65,16 @@ def test_arp():
     assert cs.source.get_parent_host() == dev1.entity
     assert cs.target.name == "ARP"
     assert cs.target.get_parent_host().name == "ff:ff:ff:ff:ff:ff"
-    assert cs.status.verdict == Verdict.PASS  # NOTE: Cannot be irrelevant, as connection created in the model
-    assert cs.source.status.verdict == Verdict.PASS
-    assert cs.target.status.verdict == Verdict.PASS
+    assert cs.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs.source.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # NOTE: This will not match, should it? No!
     cs = i.connection(EthernetFlow(ev, HWAddress("21:02:03:04:05:06"), HWAddress("01:02:03:04:05:06"),
                                    payload=0x0806))
     assert cs.source.name == "21:02:03:04:05:06"
     assert cs.target == dev1.entity
-    assert cs.status.verdict == Verdict.UNEXPECTED
+    assert cs.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
 
 
 def test_eapol_name():
