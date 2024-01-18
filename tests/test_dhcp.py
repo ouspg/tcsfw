@@ -44,8 +44,8 @@ def test_dhcp():
     # reminder: inspector changes verdicts
     assert f1.status == Status.EXPECTED
     assert f2.status == Status.EXPECTED
-    assert f3.status == Status.UNEXPECTED
-    assert f4.status == Status.UNEXPECTED
+    assert f3.status == Status.EXTERNAL
+    assert f4.status == Status.EXTERNAL
 
     # one more time...
     # IP reassigned

@@ -10,7 +10,6 @@ class DHCPService(Service):
     def __init__(self, parent: Addressable, name="DHCP"):
         super().__init__(name, parent)
         # match any traffic with UDP port 67
-        # self.addresses.add(EndpointAddress(IPAddresses.BROADCAST, Protocol.UDP, 67))
         self.addresses.add(EndpointAddress.any(Protocol.UDP, 67))
         self.description = "DHCP service"
         self.clients: Set[Host] = set()

@@ -699,39 +699,45 @@ class ARP(ProtocolConfigurer):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
-        # ARP is replied
+        # ARP make requests and replies
         self.external_activity = ExternalActivity.UNLIMITED
 
     def get_service_(self, parent: HostBuilder) -> ServiceBuilder:
-        s = super().get_service_(parent)
+        host_s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
-        bc = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
-        arp_ser = bc.service_builders.get((self.transport, self.service_port))
-        if not arp_ser:
+        bc_node = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
+        bc_s = bc_node.service_builders.get((self.transport, self.service_port))
+        # Three entities:
+        # host_s: ARP service at host
+        # bc_node: Broadcast logical node
+        # bc_s: ARP service a the broadcast node
+        if not bc_s:
             # create ARP service
-            bc.new_address_(HWAddresses.BROADCAST)
-            s.entity.external_activity = ExternalActivity.PASSIVE
-            bc.entity.host_type = HostType.ADMINISTRATIVE
-            arp_ser = bc / ProtocolConfigurer(transport=Protocol.ARP, name="ARP")
-            arp_ser.entity.host_type = HostType.ADMINISTRATIVE
-            arp_ser.entity.con_type = ConnectionType.ADMINISTRATIVE
-            arp_ser.entity.external_activity = ExternalActivity.PASSIVE  # anyone can contact
-            s.entity.external_activity = self.external_activity
-        c_ok = any([c.source == s.entity for c in s.entity.get_parent_host().connections])
+            bc_node.new_address_(HWAddresses.BROADCAST)
+            bc_node.entity.external_activity = ExternalActivity.OPEN   # anyone can make broadcasts (it does not reply)
+            bc_node.entity.host_type = HostType.ADMINISTRATIVE
+            bc_s = bc_node / ProtocolConfigurer(transport=Protocol.ARP, name="ARP")
+            bc_s.entity.host_type = HostType.ADMINISTRATIVE
+            bc_s.entity.con_type = ConnectionType.ADMINISTRATIVE
+            bc_s.entity.external_activity = bc_node.entity.external_activity
+            host_s.entity.external_activity = self.external_activity
+        c_ok = any([c.source == host_s.entity for c in host_s.entity.get_parent_host().connections])
         if not c_ok:
-            s >> arp_ser
-        return arp_ser  # NOTE: the broadcast
+            host_s >> bc_s
+        return bc_s  # NOTE: the broadcast
 
 
 class DHCP(ProtocolConfigurer):
     def __init__(self, port=67):
         super().__init__(Protocol.UDP, port=port, name="DHCP")
-        self.external_activity = ExternalActivity.OPEN
+        self.external_activity = ExternalActivity.PASSIVE  # replies to anyone
 
     def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
-        s = ServiceBuilder(parent, DHCPService(parent.entity))
+        host_s = ServiceBuilder(parent, DHCPService(parent.entity))
+        host_s.entity.external_activity = self.external_activity
 
         def create_source(host: HostBuilder):
+            # DHCP client uses specific port 68 for requests
             src = UDP(port=68, name="DHCP")
             src.port_to_name = False
             cs = host / src
@@ -739,8 +745,8 @@ class DHCP(ProtocolConfigurer):
             cs.entity.con_type = ConnectionType.ADMINISTRATIVE
             cs.entity.client_side = True
             return cs
-        s.source_fixer = create_source
-        return s
+        host_s.source_fixer = create_source
+        return host_s
 
 
 class DNS(ProtocolConfigurer):

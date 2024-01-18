@@ -1,7 +1,7 @@
 import test_model
 from tcsfw.address import EndpointAddress, Protocol, IPAddress
 from tcsfw.inspector import Inspector
-from tcsfw.main import SystemBuilder, UDP, TCP, UNLIMITED
+from tcsfw.main import DHCP, ICMP, SystemBuilder, UDP, TCP, UNLIMITED
 from tcsfw.traffic import IPFlow, Evidence, EvidenceSource, ServiceScan, HostScan
 from tcsfw.verdict import Status, Verdict
 
@@ -167,3 +167,14 @@ def test_multicast():
     assert cs2.target.is_multicast()
     # target is the multicast 'host', not service - is that ok...
     assert cs2.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+
+
+def test_external_dhcp_multicast():
+    sb = SystemBuilder()
+    dev1 = sb.mobile().hw("1:0:0:0:0:1")  # unlimited activity
+    dev2 = sb.backend().serve(DHCP)       # listens for broafcasts to ff:ff:ff:ff:ff:ff
+    i = Inspector(sb.system)
+
+    cs1 = i.connection(IPFlow.UDP(
+        "1:0:0:0:0:1", "192.168.0.1", 68) >> ("ff:ff:ff:ff:ff:ff", "255.255.255.255", 67))
+    assert cs1.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
