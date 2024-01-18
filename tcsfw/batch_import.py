@@ -5,12 +5,13 @@ import pathlib
 import io
 from typing import Dict, List, Optional, Type
 from framing.raw_data import Raw
+from tcsfw.address import Addresses, AnyAddress
 from tcsfw.android_manifest_scan import AndroidManifestScan
 from tcsfw.censys_scan import CensysScan
 from tcsfw.event_interface import EventInterface
 from tcsfw.har_scan import HARScan
 from tcsfw.mitm_log_reader import MITMLogReader
-from tcsfw.model import EvidenceNetworkSource
+from tcsfw.model import EvidenceNetworkSource, IoTSystem
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.releases import ReleaseReader
@@ -31,6 +32,7 @@ class BatchImporter:
     """Batch importer for importing a batch of files from a directory."""
     def __init__(self, interface: EventInterface, filter: 'LabelFilter' = None):
         self.interface = interface
+        self.system = interface.get_system()
         self.filter = filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
 
@@ -71,7 +73,7 @@ class BatchImporter:
                 else:
                     try:
                         with meta_file.open("rb") as f:
-                            info = FileMetaInfo.parse_from_stream(f, dir_name)
+                            info = FileMetaInfo.parse_from_stream(f, dir_name, self.system)
                     except Exception as e:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
                 self.evidence.setdefault(info.label, [])
@@ -219,17 +221,23 @@ class FileMetaInfo:
         self.source = EvidenceNetworkSource(file_type)
 
     @classmethod
-    def parse_from_stream(cls, stream: io.BytesIO, directory_name: str) -> 'FileMetaInfo':
+    def parse_from_stream(cls, stream: io.BytesIO, directory_name: str, system: IoTSystem) -> 'FileMetaInfo':
         """Parse from stream"""
-        return cls.parse_from_json(json.load(stream), directory_name)
+        return cls.parse_from_json(json.load(stream), directory_name, system)
 
     @classmethod
-    def parse_from_json(cls, json: Dict, directory_name: str) -> 'FileMetaInfo':
+    def parse_from_json(cls, json: Dict, directory_name: str, system: IoTSystem) -> 'FileMetaInfo':
         """Parse from JSON"""
         label = str(json.get("label", directory_name))
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
         r.default_include = bool(json.get("include", True))
+        for add, ent in json.get("addresses", {}).items():
+            address = Addresses.parse_address(add)
+            entity = system.get_entity(ent)
+            if not entity:
+                raise ValueError(f"Unknown entity {ent}")
+            r.source.address_map[address] = entity
         return r
 
     def __repr__(self) -> str:

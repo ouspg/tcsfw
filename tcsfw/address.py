@@ -127,6 +127,19 @@ class Addresses:
                 add = a
         return add or IPAddresses.NULL
 
+    @classmethod
+    def parse_address(cls, address: str) -> AnyAddress:
+        """Parse any address type from string, type given as 'type/address'"""
+        v, _, t = address.rpartition("|")
+        if v == "":
+            t, v = "ip", t  # default is IP
+        if t == "ip":
+            return IPAddress.new(v)
+        if t == "hw":
+            return HWAddress.new(v)
+        if t == "name":
+            return DNSName(v)
+        raise Exception(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
 
 class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
