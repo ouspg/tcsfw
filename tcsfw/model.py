@@ -432,6 +432,7 @@ class IoTSystem(NetworkNode):
     def __init__(self, name="IoT system"):
         super().__init__(name)
         self.concept_name = "system"
+        self.status = Status.EXPECTED
         # network mask(s)
         self.ip_networks = [ipaddress.ip_network("192.168.0.0/16")]  # reasonable default
         # online resources
