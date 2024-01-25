@@ -149,7 +149,7 @@ class Inspector(EventInterface):
         key, val = update.key_value
         if key.model and key not in s.properties:
             self.logger.debug("Value for model property %s ignored, as it is not in model", key)
-            return e
+            return None
         key.update(s.properties, val)
         if isinstance(s, Addressable):
             self.system.call_listeners(lambda ln: ln.hostChange(s.get_parent_host()))
