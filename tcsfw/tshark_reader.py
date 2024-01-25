@@ -53,7 +53,7 @@ class TSharkReader(BaseFileCheckTool):
     def parse_hvc_event(self, raw: Dict, interface: EventInterface, evidence: Evidence) -> HWAddress:
         bd_addr = raw['bthci_evt.bd_addr']
         ev_code = int(raw['bthci_evt.le_advts_event_type'], 16)
-        add = HWAddress(bd_addr)  # FIXME: We need different HW address space for BL and Eth!
+        add = HWAddress.new(bd_addr)  # FIXME: We need different HW address space for BL and Eth!
         flow = BLEAdvertisementFlow(evidence, add, ev_code)
         interface.connection(flow)
         return add

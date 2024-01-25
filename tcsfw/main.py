@@ -464,7 +464,7 @@ class HostBuilder(HostInterface, NodeBuilder):
 
     def hw(self, address: str) -> 'HostBuilder':
         """Add HW address"""
-        add = self.new_address_(HWAddress(address))
+        add = self.new_address_(HWAddress.new(address))
         return self
 
     def ip(self, address: str) -> 'HostBuilder':

@@ -145,6 +145,7 @@ class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
     def __init__(self, data: str):
         self.data = data.lower()
+        # assert len(self.data) == 17, f"Expecting HW address syntax dd:dd:dd:dd:dd:dd, got {data}"
 
     @classmethod
     def new(cls, data: str) -> 'HWAddress':
@@ -307,7 +308,7 @@ class EndpointAddress(AnyAddress):
     @classmethod
     def hw(cls, hw_address: str, protocol: Protocol, port: int) -> 'EndpointAddress':
         """Shortcut to create HW-address endpoint"""
-        return EndpointAddress(HWAddress(hw_address), protocol, port)
+        return EndpointAddress(HWAddress.new(hw_address), protocol, port)
 
     def get_ip_address(self) -> Optional[IPAddress]:
         return self.host.get_ip_address()

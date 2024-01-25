@@ -95,15 +95,15 @@ def test_match_mix_unknown():
     assert cs7.source.name == "1:0:0:0:0:7"
     assert cs7.target.name == "UDP:1234"
 
-    dev1 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:1"))
+    dev1 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:1"))
     assert dev1.get_expected_verdict() == Verdict.INCON  # would be updated by inspector
-    dev_s = sb.system.get_endpoint(HWAddress("1:0:0:0:0:3")).get_entity("UDP:1234")
+    dev_s = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:3")).get_entity("UDP:1234")
     assert dev_s == cs2.target
     assert dev_s.get_expected_verdict() == Verdict.INCON  # would be updated by inspector
-    dev4 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:4"))
+    dev4 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:4"))
     assert dev4 == cs2.source
     assert dev4.get_expected_verdict() == Verdict.INCON
-    dev7 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:7"))
+    dev7 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:7"))
     assert dev7 == cs7.source
     assert dev7.get_expected_verdict() == Verdict.INCON
 
@@ -191,7 +191,7 @@ def test_host_merging():
     assert cs.source.name == "Device 1"
     assert cs.target.name == "1.0.0.2"
 
-    key = EndpointAddress(HWAddress("1:0:0:0:0:1"), Protocol.UDP, 1100), \
+    key = EndpointAddress(HWAddress.new("1:0:0:0:0:1"), Protocol.UDP, 1100), \
         EndpointAddress.ip("1.0.0.2", Protocol.UDP, 1234)
     assert sb.system.connections[key] == cs
 
@@ -242,7 +242,7 @@ def test_unknown_multicast():
 
 def test_unknown_ip_protocol():
     sb = simple_setup_1()
-    dev1 = sb.system.get_endpoint(HWAddress("1:0:0:0:0:1"))
+    dev1 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:1"))
     dev2 = sb.system.get_endpoint(IPAddress.new("192.168.0.2"))
     m = SystemMatcher(sb.system)
 

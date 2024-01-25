@@ -33,4 +33,4 @@ def test_parse_from_json():
     assert result.default_include == True
     assert len(result.source.address_map) == 2
     assert result.source.address_map[IPAddress.new("1.2.3.4")] == system.get_entity("Device 1")
-    assert result.source.address_map[HWAddress("1:2:3:4:5:6")] == system.get_entity("Device 2")
+    assert result.source.address_map[HWAddress.new("1:2:3:4:5:6")] == system.get_entity("Device 2")

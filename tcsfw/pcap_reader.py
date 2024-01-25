@@ -101,8 +101,8 @@ class PCAPReader(BaseFileCheckTool):
             pl_type = -1
         ev = Evidence(self.source, f":{self.frame_number}")
         fl = EthernetFlow(ev,
-                          source=HWAddress(EthernetII.source[frame].as_hw_address()),
-                          target=HWAddress(EthernetII.destination[frame].as_hw_address()),
+                          source=HWAddress.new(EthernetII.source[frame].as_hw_address()),
+                          target=HWAddress.new(EthernetII.destination[frame].as_hw_address()),
                           payload=pl_type,
                           protocol=protocol)
         fl.timestamp = self.timestamp
@@ -127,10 +127,10 @@ class PCAPReader(BaseFileCheckTool):
     def ip_flow_ends(cls, ethernet: EthernetII, ip: IPv4, source_port: int, destination_port: int):
         """Resolve ends for IP flow object"""
         return (
-            HWAddress(EthernetII.source[ethernet].as_hw_address()),
+            HWAddress.new(EthernetII.source[ethernet].as_hw_address()),
             IPAddress(IPv4.Source_IP[ip].as_ip_address()),
             source_port), (
-            HWAddress(EthernetII.destination[ethernet].as_hw_address()),
+            HWAddress.new(EthernetII.destination[ethernet].as_hw_address()),
             IPAddress(IPv4.Destination_IP[ip].as_ip_address()),
             destination_port
         )

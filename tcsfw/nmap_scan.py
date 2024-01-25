@@ -44,7 +44,7 @@ class NMAPScan(BaseFileCheckTool):
                     if addr_type == 'ipv4':
                         ip_addr = IPAddress.new(raw_addr)
                     elif addr_type == 'mac':
-                        hw_addr = HWAddress(raw_addr)
+                        hw_addr = HWAddress.new(raw_addr)
                     else:
                         self.logger.warning("Ignoring scanned address: %s", raw_addr)
                         continue

@@ -155,19 +155,19 @@ class EthernetFlow(Flow):
     @classmethod
     def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
         """New ethernet-based protocol flow"""
-        return EthernetFlow(NO_EVIDENCE, HWAddress(address), HWAddresses.NULL, protocol=protocol)
+        return EthernetFlow(NO_EVIDENCE, HWAddress.new(address), HWAddresses.NULL, protocol=protocol)
 
     def reverse(self) -> Self:
         """Reverse the flow"""
         return EthernetFlow(self.evidence, self.target, self.source, self.payload, self.protocol)
 
     def __rshift__(self, target: str) -> 'EthernetFlow':
-        self.target = HWAddress(target)
+        self.target = HWAddress.new(target)
         return self
 
     def __lshift__(self, source: str) -> 'EthernetFlow':
         self.target = self.source
-        self.source = HWAddress(source)
+        self.source = HWAddress.new(source)
         return self
 
     def __repr__(self):
@@ -198,27 +198,30 @@ class IPFlow(Flow):
 
     @classmethod
     def IP(cls, source_hw: str, source_ip: str, protocol: int) -> 'IPFlow':
-        return IPFlow(NO_EVIDENCE, source=(HWAddress(source_hw), IPAddress.new(source_ip), protocol), protocol=Protocol.IP)
+        return IPFlow(NO_EVIDENCE, source=(HWAddress.new(source_hw), IPAddress.new(source_ip), protocol), 
+                      protocol=Protocol.IP)
 
     @classmethod
     def UDP(cls, source_hw: str, source_ip: str, port: int) -> 'IPFlow':
-        return IPFlow(NO_EVIDENCE, source=(HWAddress(source_hw), IPAddress.new(source_ip), port), protocol=Protocol.UDP)
+        return IPFlow(NO_EVIDENCE, source=(HWAddress.new(source_hw), IPAddress.new(source_ip), port), 
+                      protocol=Protocol.UDP)
 
     @classmethod
     def TCP(cls, source_hw: str, source_ip: str, port: int) -> 'IPFlow':
-        return IPFlow(NO_EVIDENCE, source=(HWAddress(source_hw), IPAddress.new(source_ip), port), protocol=Protocol.TCP)
+        return IPFlow(NO_EVIDENCE, source=(HWAddress.new(source_hw), IPAddress.new(source_ip), port), 
+                      protocol=Protocol.TCP)
 
     @classmethod
     def udp_flow(cls, source_hw=HWAddresses.NULL.data, source_ip="0.0.0.0", source_port=0,
                  target_hw=HWAddresses.NULL.data, target_ip="0.0.0.0", target_port=0):
-        return IPFlow(NO_EVIDENCE, source=(HWAddress(source_hw), IPAddress.new(source_ip), source_port),
-                      target=(HWAddress(target_hw), IPAddress.new(target_ip), target_port), protocol=Protocol.UDP)
+        return IPFlow(NO_EVIDENCE, source=(HWAddress.new(source_hw), IPAddress.new(source_ip), source_port),
+                      target=(HWAddress.new(target_hw), IPAddress.new(target_ip), target_port), protocol=Protocol.UDP)
 
     @classmethod
     def tcp_flow(cls, source_hw=HWAddresses.NULL.data, source_ip="0.0.0.0", source_port=0,
                  target_hw=HWAddresses.NULL.data, target_ip="0.0.0.0", target_port=0):
-        return IPFlow(NO_EVIDENCE, source=(HWAddress(source_hw), IPAddress.new(source_ip), source_port),
-                      target=(HWAddress(target_hw), IPAddress.new(target_ip), target_port), protocol=Protocol.TCP)
+        return IPFlow(NO_EVIDENCE, source=(HWAddress.new(source_hw), IPAddress.new(source_ip), source_port),
+                      target=(HWAddress.new(target_hw), IPAddress.new(target_ip), target_port), protocol=Protocol.TCP)
 
     def stack(self, target: bool) -> Tuple[AnyAddress]:
         end = self.target if target else self.source
@@ -237,12 +240,12 @@ class IPFlow(Flow):
         return self.target[0] if self.target[1].is_null() else self.target[1]
 
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
-        self.target = HWAddress(target[0]), IPAddress.new(target[1]), target[2]
+        self.target = HWAddress.new(target[0]), IPAddress.new(target[1]), target[2]
         return self
 
     def __lshift__(self, source: Tuple[str, str, int]) -> 'IPFlow':
         self.target = self.source
-        self.source = HWAddress(source[0]), IPAddress.new(source[1]), source[2]
+        self.source = HWAddress.new(source[0]), IPAddress.new(source[1]), source[2]
         return self
 
     def __repr__(self):
@@ -267,14 +270,14 @@ class IPFlow(Flow):
             p_value = value[protocol]
             s_hw, s_ip, s_port = p_value["source"]
             t_hw, t_ip, t_port = p_value["target"]
-            return IPFlow(NO_EVIDENCE, (HWAddress(s_hw), IPAddress.new(s_ip), s_port),
-                          (HWAddress(t_hw), IPAddress.new(t_ip), t_port), protocol=Protocol.get_protocol(protocol))
+            return IPFlow(NO_EVIDENCE, (HWAddress.new(s_hw), IPAddress.new(s_ip), s_port),
+                          (HWAddress.new(t_hw), IPAddress.new(t_ip), t_port), protocol=Protocol.get_protocol(protocol))
         # Form 2
         protocol = Protocol.get_protocol(value["protocol"])
         s_ip, s_port = IPAddress.parse_with_port(value["source"])
         t_ip, t_port = IPAddress.parse_with_port(value["target"])
-        s_hw = HWAddress(value["source_hw"]) if "source_hw" in value else HWAddress.from_ip(s_ip)
-        t_hw = HWAddress(value["target_hw"]) if "target_hw" in value else HWAddress.from_ip(t_ip)
+        s_hw = HWAddress.new(value["source_hw"]) if "source_hw" in value else HWAddress.from_ip(s_ip)
+        t_hw = HWAddress.new(value["target_hw"]) if "target_hw" in value else HWAddress.from_ip(t_ip)
         return IPFlow(NO_EVIDENCE, (s_hw, s_ip, s_port), (t_hw, t_ip, t_port), protocol=protocol)
 
 

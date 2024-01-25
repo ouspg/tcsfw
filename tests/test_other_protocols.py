@@ -45,7 +45,7 @@ def test_arp():
     ev = NO_EVIDENCE
 
     # ARP query
-    cs = i.connection(EthernetFlow(ev, HWAddress("21:02:03:04:05:06"), HWAddress("01:02:03:04:05:06"),
+    cs = i.connection(EthernetFlow(ev, HWAddress.new("21:02:03:04:05:06"), HWAddress.new("01:02:03:04:05:06"),
                                    protocol=Protocol.ARP))
     assert cs.source.name == "21:02:03:04:05:06"
     assert cs.target.name == "ARP"
@@ -54,12 +54,12 @@ def test_arp():
     assert cs.source.status_verdict() == (Status.EXTERNAL, Verdict.INCON)
     assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.INCON)
     # response
-    cs2 = i.connection(EthernetFlow(ev, HWAddress("01:02:03:04:05:06"), HWAddress("21:02:03:04:05:06"),
+    cs2 = i.connection(EthernetFlow(ev, HWAddress.new("01:02:03:04:05:06"), HWAddress.new("21:02:03:04:05:06"),
                                     protocol=Protocol.ARP))
     assert cs2 == cs
 
     # broadcast
-    cs = i.connection(EthernetFlow(ev, HWAddress("01:02:03:04:05:06"), HWAddresses.BROADCAST,
+    cs = i.connection(EthernetFlow(ev, HWAddress.new("01:02:03:04:05:06"), HWAddresses.BROADCAST,
                                    protocol=Protocol.ARP))
     assert cs.source.name == "ARP"
     assert cs.source.get_parent_host() == dev1.entity
@@ -70,7 +70,7 @@ def test_arp():
     assert cs.target.status_verdict() == (Status.EXPECTED, Verdict.PASS)
 
     # NOTE: This will not match, should it? No!
-    cs = i.connection(EthernetFlow(ev, HWAddress("21:02:03:04:05:06"), HWAddress("01:02:03:04:05:06"),
+    cs = i.connection(EthernetFlow(ev, HWAddress.new("21:02:03:04:05:06"), HWAddress.new("01:02:03:04:05:06"),
                                    payload=0x0806))
     assert cs.source.name == "21:02:03:04:05:06"
     assert cs.target == dev1.entity
