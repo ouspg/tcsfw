@@ -44,7 +44,7 @@ class AndroidManifestScan(ComponentCheckTool):
                 software.permissions.add(name)
                 ver = Verdict.PASS
             else:
-                ver = Verdict.PASS if val else Verdict.UNEXPECTED
+                ver = Verdict.PASS if val else Verdict.FAIL
 
             if self.send_events:
                 ev = PropertyEvent(evidence, software, key.value(ver))

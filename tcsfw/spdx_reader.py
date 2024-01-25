@@ -54,7 +54,7 @@ class SPDXReader(ComponentCheckTool):
                 # component in baseline
                 software.components[name] = SoftwareComponent(name, version=version)
             elif not old_sc:
-                verdict = Verdict.UNEXPECTED  # unexpected claim not in baseline
+                verdict = Verdict.FAIL  # claim not in baseline
             if self.send_events:
                 ev = PropertyEvent(evidence, software, key.value(verdict, explanation=f"{name} {version}"))
                 interface.property_update(ev)
