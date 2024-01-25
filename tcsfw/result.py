@@ -26,7 +26,9 @@ class Report:
         for k, v in entity.properties.items():
             if k == Properties.EXPECTED:
                 continue  # encoded into status string
-            writer.write(f"{indent}{k.get_value_string(v)}\n")
+            com = k.get_explanation(v)
+            com = f" # {com}" if com else ""
+            writer.write(f"{indent}{k.get_value_string(v)}{com}\n")
 
     def print_report(self, writer: TextIO):
         """Print textual report"""

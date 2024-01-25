@@ -146,6 +146,9 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         # use 'this' key even with old value, as old may have wrong key type
         properties[self] = value
 
+    def get_value_string(self, value: PropertyVerdictValue) -> str:
+        return f"{self.get_name()}={value.verdict.value}"
+
     def get_verdict(self, properties: PropertyDict) -> Optional[Verdict]:
         """Get the verdict, if any, not verdict value objects"""
         v = properties.get(self)
