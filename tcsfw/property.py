@@ -135,6 +135,8 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         if old:
             if old.verdict == Verdict.IGNORE:
                 use_new = False  # ignore is sticky
+            elif old.verdict == Verdict.INCON:
+                use_new = True  # maybe we have a conclusion
             else:
                 use_new = value.verdict in {Verdict.IGNORE, Verdict.FAIL}
             if use_new:
