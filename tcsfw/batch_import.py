@@ -93,6 +93,17 @@ class BatchImporter:
                     continue
                 proc_list.append(child)
 
+            # sort files to specified order, if any
+            if info.file_load_order:
+                proc_files = {f.name: f for f in proc_list}
+                sorted_files = []
+                for fn in info.file_load_order:
+                    if fn in proc_files:
+                        sorted_files.append(proc_files[fn])
+                        del proc_files[fn]
+                sorted_files.extend(proc_files.values())
+                proc_list = sorted_files
+
             # filter by label
             skip_processing = not self.filter.filter(info.label)
 
@@ -216,6 +227,7 @@ class FileMetaInfo:
     """Batch file information."""
     def __init__(self, label="", file_type=BatchFileType.UNSPECIFIED):
         self.label = label
+        self.file_load_order: List[str] = []
         self.file_type = file_type
         self.default_include = True
         self.source = EvidenceNetworkSource(file_type)
@@ -231,6 +243,7 @@ class FileMetaInfo:
         label = str(json.get("label", directory_name))
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
+        r.file_load_order = json.get("file_order", [])
         r.default_include = bool(json.get("include", True))
         for add, ent in json.get("addresses", {}).items():
             address = Addresses.parse_address(add)
