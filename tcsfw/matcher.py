@@ -375,6 +375,8 @@ class MatchEngine:
             if isinstance(ad, IPAddress) and (system.is_external(ad) or ad.is_multicast()):
                 use_ad = ad  # must use the IP address
                 break
+            if use_ad.is_null() and not ad.is_null():
+                use_ad = ad  # prefer non-null address
         host = system.get_endpoint(use_ad)
         # target address with port
         ad = EndpointAddress(use_ad, flow.protocol, flow.port(target))

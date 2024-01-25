@@ -45,6 +45,7 @@ class MITMLogReader(BaseFileCheckTool):
                 if ev not in {"tls_established", "tls_failed"}:
                     continue
                 flow = IPFlow.tcp_flow(
+                    # we do not know HW addresses from the log
                     HWAddresses.NULL.data, s_add, int(s_port),
                     HWAddresses.NULL.data, d_add, int(d_port))
                 flow.evidence = evidence
