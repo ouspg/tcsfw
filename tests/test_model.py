@@ -53,7 +53,7 @@ def test_connection_match():
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:4", "192.168.0.4", 2004) >> ("1:0:0:0:0:5", "1.0.0.5", 2005))
     assert cs is not None
     assert cs.status == Status.EXTERNAL
-    assert cs.source.name == "1:0:0:0:0:4"
+    assert cs.source.name == "01:00:00:00:00:04"
     assert cs.target.name == "1.0.0.5"
 
     cs = m.connection(IPFlow.UDP("1:0:0:0:0:6", "1.0.0.6", 2006) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
@@ -89,10 +89,10 @@ def test_match_mix_unknown():
     assert all([c.status == Status.EXTERNAL for c in [cs2, cs4, cs4_2, cs5, cs6, cs7]])
 
     assert cs1.source.name == "Device 1"
-    assert cs1.target.name == "1:0:0:0:0:3"
-    assert cs2.source.name == "1:0:0:0:0:4"
+    assert cs1.target.name == "01:00:00:00:00:03"
+    assert cs2.source.name == "01:00:00:00:00:04"
     assert cs2.target.name == "UDP:1234"  # because there was reply
-    assert cs7.source.name == "1:0:0:0:0:7"
+    assert cs7.source.name == "01:00:00:00:00:07"
     assert cs7.target.name == "UDP:1234"
 
     dev1 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:1"))
@@ -131,7 +131,7 @@ def test_match_overlap_unknowns():
     assert cs2 == cs5
     assert cs1 != cs2
 
-    assert cs1.target.name == "1:0:0:0:0:3"
+    assert cs1.target.name == "01:00:00:00:00:03"
     assert cs2.target.name == "UDP:2002"
 
     cs11 = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1001) >> ("1:0:0:0:0:3", "192.168.0.3", 2001))
@@ -162,10 +162,10 @@ def test_match_local_and_remote():
     cs21 = m.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1001) >> ("1:0:0:0:0:1", "192.168.0.1", 2001))
     cs22 = m.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1001) >> ("1:0:0:0:0:1", "19.168.0.2", 2002))
 
-    assert cs01.target.name == "1:0:0:0:3:1"
+    assert cs01.target.name == "01:00:00:00:03:01"
     assert cs02.target.name == "19.168.3.2"
     assert cs11.target.name == "19.168.2.2"
-    assert cs12.target.name == "1:0:0:0:2:1"
+    assert cs12.target.name == "01:00:00:00:02:01"
     assert cs21.target.name == "Device 1"
     assert cs22.target.name == "19.168.0.2"
 
@@ -220,7 +220,7 @@ def test_unknown_multicast():
     assert cs1 == cs3
 
     assert cs1.source.is_host()
-    assert cs1.source.name == "1:0:0:0:0:1"
+    assert cs1.source.name == "01:00:00:00:00:01"
     assert cs1.target.is_host()  # no longer create services for broadcast targets
     assert cs1.target.name == "255.255.255.255"
 
@@ -331,14 +331,14 @@ def test_any_host():
     cs4 = m.connection(IPFlow.UDP(
         "1:0:0:0:0:5", "192.168.10.5", 2002) >> ("1:0:0:0:0:2", "192.168.20.10", 1003))
     assert cs4.status == Status.UNEXPECTED
-    assert cs4.source.name == "1:0:0:0:0:5"
+    assert cs4.source.name == "01:00:00:00:00:05"
     assert cs4.target.name == "UDP:1003"
 
     cs5, sad, tad, reply = m.connection_w_ends(IPFlow.UDP(
         "1:0:0:0:0:1", "192.168.10.1", 2002) >> ("1:0:0:0:0:2", "192.168.20.10", 1004))
     assert cs5.status == Status.UNEXPECTED
     assert cs5.source == dev1.entity
-    assert cs5.target.name == "1:0:0:0:0:2"  # not the any()
+    assert cs5.target.name == "01:00:00:00:00:02"  # not the any()
     assert sad == EndpointAddress.hw("1:0:0:0:0:1", Protocol.UDP, 2002)
     assert tad == EndpointAddress.hw("1:0:0:0:0:2", Protocol.UDP, 1004)
 

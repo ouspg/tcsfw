@@ -28,7 +28,7 @@ def test_dhcp():
     # IP reassigned
     f3 = m.connection(IPFlow.UDP("1:0:0:0:0:5", "0.0.0.0", 68) >> ("ff:ff:ff:ff:ff:ff", "255.255.255.255", 67))
     h2 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:5"))
-    assert h2.name == "1:0:0:0:0:5"
+    assert h2.name == "01:00:00:00:00:05"
     assert f3.source.get_parent_host() == h2
     assert f3.target == dhcp.entity
     f4 = m.connection(IPFlow.UDP("1:0:0:0:0:5", "192.168.0.1", 68) << ("1:0:0:0:0:2", "192.168.0.2", 67))
@@ -51,7 +51,7 @@ def test_dhcp():
     # IP reassigned
     m.connection(IPFlow.UDP("1:0:0:0:0:6", "0.0.0.0", 68) >> ("ff:ff:ff:ff:ff:ff", "255.255.255.255", 67))
     h3 = sb.system.get_endpoint(HWAddress.new("1:0:0:0:0:6"))
-    assert h3.name == "1:0:0:0:0:6"
+    assert h3.name == "01:00:00:00:00:06"
     m.connection(IPFlow.UDP("1:0:0:0:0:6", "192.168.0.1", 68) << ("1:0:0:0:0:2", "192.168.0.2", 67))
 
     assert dev1.entity.addresses == {HWAddress.new("1:0:0:0:0:1")}

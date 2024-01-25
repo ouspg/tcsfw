@@ -145,15 +145,18 @@ class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
     def __init__(self, data: str):
         self.data = data.lower()
-        # assert len(self.data) == 17, f"Expecting HW address syntax dd:dd:dd:dd:dd:dd, got {data}"
+        assert len(self.data) == 17, f"Expecting HW address syntax dd:dd:dd:dd:dd:dd, got {data}"
 
     @classmethod
     def new(cls, data: str) -> 'HWAddress':
         """New address, check something about the format"""
-        p = data.split(":")
+        p = list(data.split(":"))
         if len(p) != 6:
             raise Exception(f"Bad HW address '{data}'")
-        return HWAddress(data)
+        for i in range(6):
+            if len(p[i]) != 2:
+                p[i] = f"0{p[i]}"  # zero-prefix
+        return HWAddress(":".join(p))
 
     @classmethod
     def from_ip(cls, address: 'IPAddress') -> 'HWAddress':
