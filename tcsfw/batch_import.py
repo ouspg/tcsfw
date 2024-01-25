@@ -162,6 +162,7 @@ class BatchImporter:
                 if skip_processing:
                     self.logger.info(f"skipping ({info.label}) {file_path.as_posix()}")
                     return
+                reader.load_baseline = info.load_baseline
                 return reader.process_file(stream, file_name, self.interface, ev)
 
         except Exception as e:
@@ -171,6 +172,7 @@ class BatchImporter:
     def _do_process_files(self, files: List[pathlib.Path], info: 'FileMetaInfo', skip_processing: bool):
         """Process files"""
         tool = self.batch_tools[info.file_type](self.interface.get_system())
+        tool.load_baseline = info.load_baseline
 
         if skip_processing:
             self.logger.info(f"skipping ({info.label}) data files")
@@ -229,6 +231,7 @@ class FileMetaInfo:
         self.label = label
         self.file_load_order: List[str] = []
         self.file_type = file_type
+        self.load_baseline = False
         self.default_include = True
         self.source = EvidenceNetworkSource(file_type)
 
@@ -243,6 +246,7 @@ class FileMetaInfo:
         label = str(json.get("label", directory_name))
         file_type = BatchFileType.parse(json.get("file_type"))
         r = cls(label, file_type)
+        r.load_baseline = bool(json.get("load_baseline", False))
         r.file_load_order = json.get("file_order", [])
         r.default_include = bool(json.get("include", True))
         for add, ent in json.get("addresses", {}).items():
