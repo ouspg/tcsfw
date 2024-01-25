@@ -134,15 +134,13 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
         old = self.get(properties)
         if old:
             if old.verdict == Verdict.IGNORE:
-                use_old = True
+                use_new = False  # ignore is sticky
             else:
-                # pick the worst verdict
-                nv = Verdict.aggregate(old.verdict, value.verdict)
-                use_old = nv == old.verdict
-            if use_old:
-                value = PropertyVerdictValue(old.verdict, old.explanation or value.explanation)
-            else:
+                use_new = value.verdict in {Verdict.IGNORE, Verdict.FAIL}
+            if use_new:
                 value = PropertyVerdictValue(value.verdict, value.explanation or old.explanation)
+            else:
+                value = PropertyVerdictValue(old.verdict, old.explanation or value.explanation)
         # use 'this' key even with old value, as old may have wrong key type
         properties[self] = value
 
