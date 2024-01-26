@@ -201,6 +201,10 @@ class ClientAPI(ModelListener):
             lr.append(ls)
         return rs
 
+    def get_status_verdict(self, status: Status, verdict: Verdict) -> Dict:
+        """Get status and verdict for an entity"""
+        return f"{status.value}/{verdict.value}"
+
     def get_properties(self, properties: Dict[PropertyKey, Any]) -> Dict:
         """Get properties"""
         cs = {}
@@ -243,7 +247,7 @@ class ClientAPI(ModelListener):
             com_cs = {
                 "name": component.name,
                 "id": self.get_id(component),
-                "verdict": component.get_verdict(context.verdict_cache).value,
+                "status": self.get_status_verdict(component.status, component.get_verdict(context.verdict_cache)),
                 "properties": self.get_properties(component.properties)
             }
             if component.sub_components:
@@ -277,7 +281,7 @@ class ClientAPI(ModelListener):
             "id": self.get_id(entity),
             "description": entity.description,
             "addresses": sorted([f"{a}" for a in entity.addresses]),
-            "verdict": entity.get_verdict(context.verdict_cache).value,
+            "status": self.get_status_verdict(entity.status, entity.get_verdict(context.verdict_cache)),
         }
         if entity.is_multicast():
             r["type"] = "Broadcast"  # special type
@@ -328,7 +332,7 @@ class ClientAPI(ModelListener):
             "target": location(t),
             "target_id": self.get_id(t),
             "target_host_id": self.get_id(t.get_parent_host()),
-            "verdict": connection.get_verdict(context.verdict_cache).value,
+            "status": self.get_status_verdict(connection.status, connection.get_verdict(context.verdict_cache)),
             "type": connection.con_type.value,
             "properties": self.get_properties(connection.properties),
         }
