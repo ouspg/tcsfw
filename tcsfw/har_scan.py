@@ -29,11 +29,13 @@ class HARScan(NodeCheckTool):
         component = Cookies.cookies_for(host)
         evidence = Evidence(source)
 
+        unseen = set(component.cookies.keys())  # cookies not seen in HAR
         wildcards = {}  # cookie wildcards
         for n, c in component.cookies.items():
             if "*" in n:
                 pf = n[:n.rindex("*")]
                 wildcards[pf] = c
+                unseen.discard(n)
 
         def decode(s: str) -> str:
             return urllib.parse.unquote(s)
@@ -65,12 +67,14 @@ class HARScan(NodeCheckTool):
                         self.logger.warning("Double definition for cookie: %s", name)
                         # raise Exception("Double definition for cookie: " + name)
                     component.cookies[name] = n_cookie
+                    unseen.discard(name)
                 elif cookie:
                     # old exists, verify match
+                    unseen.discard(name)
                     if cookie.path != n_cookie.path or cookie.domain != n_cookie.domain:
                         verdict = Verdict.FAIL
                 else:
-                    verdict = Verdict.UNEXPECTED  # unexpected, not in baseline
+                    verdict = Verdict.FAIL  # unexpected, not in baseline
                 if self.send_events:
                     ev = PropertyEvent(evidence, component, p_key.value(verdict))
                     interface.property_update(ev)
@@ -83,6 +87,15 @@ class HARScan(NodeCheckTool):
                 txt = f"{response.get('status', '?')} {response.get('statusText', '?')}"
                 ev = PropertyAddressEvent(evidence, ep, Properties.HTTP_REDIRECT.value(Verdict.PASS, txt))
                 interface.property_address_update(ev)
+
+        for n, cookie in component.cookies.items():
+            if n in unseen:
+                # cookie not seen in HAR
+                p_key = PropertyVerdict("cookie", n)
+                properties.add(p_key)
+                if self.send_events:
+                    ev = PropertyEvent(evidence, component, p_key.value(Verdict.FAIL, "Not seen in HAR"))
+                    interface.property_update(ev)
 
         # cookie scan event
         if self.send_events:
