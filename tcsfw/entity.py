@@ -59,9 +59,9 @@ class Entity:
         v = cache.get(self)
         if v is None:
             for c in self.get_children():
-                v = Verdict.resolve(v, c.get_verdict(cache))
+                v = Verdict.aggregate(v, c.get_verdict(cache))
             for p in self.properties.values():
-                v = Verdict.resolve(v, p.get_verdict()) if isinstance(p, Verdictable) else v
+                v = Verdict.aggregate(v, p.get_verdict()) if isinstance(p, Verdictable) else v
             cache[self] = v = v or Verdict.INCON
         return v
 
