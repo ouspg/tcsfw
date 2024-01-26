@@ -62,7 +62,8 @@ class HARScan(NodeCheckTool):
                 if self.load_baseline:
                     # loading baseline values
                     if cookie is not None:
-                        raise Exception("Double definition for cookie: " + name)
+                        self.logger.warning("Double definition for cookie: %s", name)
+                        # raise Exception("Double definition for cookie: " + name)
                     component.cookies[name] = n_cookie
                 elif cookie:
                     # old exists, verify match
