@@ -66,7 +66,7 @@ class Entity:
         return v
 
     def is_relevant(self) -> bool:
-        """Is this entity relevant, i.e. not undefined or external?"""
+        """Is this entity relevant, i.e. not placeholder or external?"""
         return True
 
     def is_host(self) -> bool:

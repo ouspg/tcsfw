@@ -62,6 +62,10 @@ def test_connection_match():
     assert cs.source.name == "1.0.0.6"
     assert cs.target.name == "UDP:1234"
 
+    c_list = m.system.get_connections()
+    c_sts = [c.status for c in c_list]
+    assert c_sts == [Status.EXPECTED, Status.UNEXPECTED, Status.EXPECTED, Status.UNEXPECTED]
+
 
 def test_match_mix_unknown():
     sb = simple_setup_1()

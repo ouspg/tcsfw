@@ -53,8 +53,8 @@ class Connection(Entity):
         return self in system.originals
 
     def is_relevant(self, or_relevant_end=False) -> bool:
-        """Is this connection relevant, i.e. not undefined or external?"""
-        if self.status == Status.EXPECTED:
+        """Is this connection relevant, i.e. not placeholder or external?"""
+        if self.status == Status.EXPECTED or self.status == Status.UNEXPECTED:
             return True
         if or_relevant_end:
             return False
@@ -172,11 +172,10 @@ class NetworkNode(Entity):
         return False
 
     def is_relevant(self) -> bool:
-        """Is relevant entity?"""
-        return self.status == Status.EXPECTED
+        return self.status == Status.EXPECTED or self.status == Status.UNEXPECTED
 
     def get_connections(self) -> List[Connection]:
-        """Get connections excluding external and undefined"""
+        """Get relevant conneciions"""
         cs = []
         for c in self.children:
             cs.extend(c.get_connections())
@@ -352,6 +351,7 @@ class Host(Addressable):
         self.any_host = False  # can be one or many hosts
 
     def get_connections(self) -> List[Connection]:
+        """Get relevant connections"""
         cs = []
         for c in self.connections:
             if c.is_relevant(or_relevant_end=True):
