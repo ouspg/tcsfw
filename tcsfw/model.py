@@ -174,11 +174,11 @@ class NetworkNode(Entity):
     def is_relevant(self) -> bool:
         return self.status == Status.EXPECTED or self.status == Status.UNEXPECTED
 
-    def get_connections(self) -> List[Connection]:
+    def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""
         cs = []
         for c in self.children:
-            cs.extend(c.get_connections())
+            cs.extend(c.get_connections(relevant_only))
         return cs
 
     def get_system(self) -> 'IoTSystem':
@@ -350,13 +350,13 @@ class Host(Addressable):
         self.connections: List[Connection] = []  # connections initiated here
         self.any_host = False  # can be one or many hosts
 
-    def get_connections(self) -> List[Connection]:
+    def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant connections"""
         cs = []
         for c in self.connections:
-            if c.is_relevant(or_relevant_end=True):
+            if not relevant_only or c.is_relevant(or_relevant_end=True):
                 cs.append(c)
-        cs.extend(super().get_connections())
+        cs.extend(super().get_connections(relevant_only))
         return cs
 
     def get_parent_host(self) -> 'Host':
