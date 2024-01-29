@@ -308,13 +308,10 @@ class CoverageReport:
 
             def status_data(status: Optional[ClaimStatus]) -> Tuple[str, Verdict]:
                 if status:
-                    aut = status.authority.value
-                    if status.verdict != Verdict.FAIL and status.authority == ClaimAuthority.MODEL:
-                        # Model can only FAIL or be inconclusive
-                        verdict = Verdict.INCON
-                    else:
-                        verdict = Verdict.FAIL if status.verdict in {Verdict.UNEXPECTED, Verdict.MISSING} else \
-                            status.verdict
+                    # authority is manual or non-manual (tool)
+                    aut = status.authority.value if status.authority == ClaimAuthority.MANUAL \
+                        else ClaimAuthority.TOOL.value
+                    verdict = status.verdict
                 else:
                     # location is not relevant
                     aut = ClaimAuthority.TOOL.value  # nothing defined

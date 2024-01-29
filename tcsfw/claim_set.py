@@ -6,7 +6,7 @@ from tcsfw.components import Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
 from tcsfw.events import ReleaseInfo
 from tcsfw.model import IoTSystem, Connection, Host, Service, HostType, NetworkNode
-from tcsfw.property import Properties, PropertyKey, PropertyVerdictValue, PropertyVerdict, \
+from tcsfw.property import Properties, PropertyKey, PropertySet, PropertyVerdictValue, PropertyVerdict, \
     PropertySetValue
 from tcsfw.traffic import Tool
 from tcsfw.verdict import Verdict, Verdictable
@@ -26,7 +26,8 @@ class ClaimContext:
         property_key = claim.get_override_key(entity)
         override = entity.properties.get(property_key)
         is_override = isinstance(override, PropertyVerdictValue)
-        if is_override:
+        if is_override and override.verdict != Verdict.INCON:
+            # verdict overriden to non-inconclusive
             self.properties.setdefault((entity, claim), {})[property_key] = True
             cs = ClaimStatus(claim, verdict=override.verdict, explanation=override.explanation,
                              authority=ClaimAuthority.MANUAL)
@@ -228,6 +229,9 @@ class PropertyClaim(EntityClaim):
             # Value not set
             return ClaimStatus(self, authority=ClaimAuthority.TOOL)
         val = entity.properties.get(key)
+        if isinstance(key, PropertySet) and isinstance(val, PropertyVerdictValue):
+            # FIXME: A hack - claim value overriden to verdicts, but key sets expected
+            return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=val.explanation)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.get_value_string(val))
 
     # NOTE: We assume that key alone separates claims
@@ -252,9 +256,9 @@ class AlternativeClaim(EntityClaim):
             if r is None:
                 continue
             if best is None or (best.verdict == Verdict.INCON and r.verdict != Verdict.INCON):
-                best = r
+                best = r  # improve from inconclusive
             if best.verdict != Verdict.INCON:
-                break
+                break  # verdict is set now
         return best
 
     def get_sub_claims(self) -> Tuple[EntityClaim, ...]:
@@ -272,7 +276,7 @@ class AlternativeClaim(EntityClaim):
 
 
 class AggregateClaim(EntityClaim):
-    """Aggregate claim made up ofsub claims"""
+    """Aggregate claim made up of sub claims"""
     def __init__(self, claims: Tuple[EntityClaim, ...], description="", one_pass=False):
         super().__init__(description or ((" + " if one_pass else " * ") .join([f"{s}" for s in claims])))
         self.sequence = claims

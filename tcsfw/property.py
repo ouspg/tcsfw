@@ -187,7 +187,7 @@ class PropertySetValue:
         return v
 
 
-class PropertySet(PropertyKey):
+class PropertySet(PropertyKey[PropertySetValue]):
     """Property set"""
     def __init__(self, key: str, *more: str):
         super().__init__(key, *more)
