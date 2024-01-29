@@ -179,14 +179,15 @@ class ClientAPI(ModelListener):
             k = PropertyKey.parse(key) if key else None
             if k:
                 rs["property"] = f"{k}"
-            logs = self.registry.get_log(e, k)
+            logs = self.registry.logging.get_log(e, k)
         else:
-            logs = self.registry.get_log()
+            logs = self.registry.logging.get_log()
         if key:
             rs["property"] = key
         rs["logs"] = lr = []
         for lo in reversed(logs):
-            ev, en, key = lo
+            ev = lo.event
+            en, key = lo.key
             ls = {
                 "source": ev.evidence.source.name,
                 "info": ev.get_info(),
