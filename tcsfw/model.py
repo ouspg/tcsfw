@@ -376,6 +376,17 @@ class Host(Addressable):
                 return True
         return False
 
+    def get_verdict(self, cache: Dict[Entity, Verdict]) -> Verdict:
+        if self in cache:
+            return cache[self]
+        v = [super().get_verdict(cache)]
+        for c in self.connections:
+            if c.is_relevant():
+                v.append(c.get_verdict(cache))
+        rv = Verdict.aggregate(*v)
+        cache[self] = rv
+        return rv
+
 
 class Service(Addressable):
     """A service"""
