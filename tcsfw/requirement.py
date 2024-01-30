@@ -60,7 +60,8 @@ class Requirement:
 class SpecificationSelectorContext(SelectorContext):
     """Specify entities for specification"""
     def include_host(self, entity: Host) -> bool:
-        return entity.is_original() and not entity.is_multicast() and entity.host_type != HostType.ADMINISTRATIVE
+        # multicast is included here, but not in services
+        return entity.is_original() and entity.host_type != HostType.ADMINISTRATIVE
 
     def include_service(self, entity: Service) -> bool:
         return entity.is_original() and not entity.is_multicast() and entity.host_type != HostType.ADMINISTRATIVE

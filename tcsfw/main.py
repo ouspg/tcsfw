@@ -867,7 +867,8 @@ class UDP(ProtocolConfigurer):
 
     def as_multicast_(self, address: str, system: SystemBuilder) -> 'ServiceBuilder':
         b = system.get_host_(address, description="Multicast")
-        b.entity.host_type = HostType.ADMINISTRATIVE
+        # Explicitly configured multicast nodes, at least are not administrative
+        # b.entity.host_type = HostType.ADMINISTRATIVE
         addr = IPAddress.new(address)
         if addr not in b.entity.addresses:
             b.new_address_(addr)
