@@ -58,10 +58,11 @@ class DefaultSpecification(Specification):
             "conn-encrypt",
             Locations.CONNECTION ^ Claims.name("Connections are encrypted",
                                                EncryptionClaim() | Claims.HTTP_REDIRECT))
-        self.service_encrypt = self._req(
-            "service-encrypt",
-            Locations.SERVICE ^ Claims.name("Connections are encrypted",
-                                            EncryptionClaim() | Claims.HTTP_REDIRECT))
+        # NOTE: Covered by protocol best practises
+        # self.service_encrypt = self._req(
+        #     "service-encrypt",
+        #     Locations.SERVICE ^ Claims.name("Connections are encrypted",
+        #                                        EncryptionClaim() | Claims.HTTP_REDIRECT))
         # [ ] Private data is defined
         self.private_data = self._req(
             "private-data",
