@@ -50,9 +50,6 @@ user_email = system.data(["User e-mail"])
 measurements = system.data(["Measurements"])
 billing_info = system.data(["Billing info"])
 
-(gateway >> ble_ad).logical_only()
-(mobile >> ble_ad).logical_only()
-
 # Mobile application
 # https://play.google.com/store/apps/details?id=com.ruuvi.station
 

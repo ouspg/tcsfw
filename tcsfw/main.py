@@ -487,8 +487,9 @@ class HostBuilder(HostInterface, NodeBuilder):
         """Receive broadcast or multicast"""
         mc = multicast.entity
         assert mc.is_multicast(), "Can only receive multicast"
-        s = multicast.configurer.get_service_(self)
-        c = multicast >> s
+        # no service created, just connection from this to the multicast node
+        c = self >> multicast
+        c.logical_only()
         return c
 
     def cookies(self) -> 'CookieBuilder':
