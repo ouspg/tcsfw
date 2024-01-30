@@ -173,11 +173,10 @@ class MatchEngine:
         self._add_host(host)
 
     def _add_host(self, entity: Addressable) -> 'MatchEndpoint':
-
-        # if HW address(es), do not use IP addresses ?
-        # has_hw = any([a.is_hardware() for a in entity.addresses])
-        # ads = {a.get_host(): None for a in entity.get_addresses() if not has_hw or not a.get_ip_address()}.keys()
-        ads = {a.get_host(): None for a in entity.get_addresses()}.keys()
+        if entity.any_host:
+            ads = []  # always match by wildcards
+        else:
+            ads = {a.get_host(): None for a in entity.get_addresses()}.keys()
 
         if ads:
             # addressed host

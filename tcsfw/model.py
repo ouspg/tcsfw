@@ -274,6 +274,7 @@ class Addressable(NetworkNode):
         super().__init__(name)
         self.parent: Optional[NetworkNode] = None
         self.addresses: Set[AnyAddress] = set()
+        self.any_host = False  # can be one or many hosts
 
     def create_service(self, address: EndpointAddress) -> 'Service':
         s = Service(Service.make_name(f"{address.protocol.value.upper()}", address.port), self)
@@ -348,7 +349,6 @@ class Host(Addressable):
         self.parent = parent
         self.visual = True
         self.connections: List[Connection] = []  # connections initiated here
-        self.any_host = False  # can be one or many hosts
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant connections"""
