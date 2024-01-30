@@ -113,7 +113,7 @@ class SystemBuilder(SystemInterface):
         add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
         return self.multicast(add, conf)
 
-    def data(self, names: List[str], personal=False, password=False) -> 'DataPieceBuilder':
+    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBuilder':
         """Declare pieces of security-relevant data"""
         d = [SensitiveData(n, personal=personal, password=password) for n in names]
         return SensitiveDataBuilder(self, d)
@@ -498,8 +498,9 @@ class HostBuilder(HostInterface, NodeBuilder):
     def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
         """This host uses some sensitive data"""
         usage = DataStorages.get_storages(self.entity, add=True)
-        for d in data:
-            usage.sub_components.append(DataReference(usage, d))
+        for db in data:
+            for d in db.data:
+                usage.sub_components.append(DataReference(usage, d))
         return self
 
     def __truediv__(self, protocol: ProtocolType) -> ServiceBuilder:
