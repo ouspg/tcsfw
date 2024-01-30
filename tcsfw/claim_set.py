@@ -119,7 +119,17 @@ class EntityClaim(ExplainableClaim):
         unpack(claim)
         return s
 
+    def assert_system(self, entity: Entity, condition: Callable[[Host], bool] = None, message="") -> IoTSystem:
+        """Assert entity is the IoT system and get it or give custom message if not"""
+        assert isinstance(entity, IoTSystem), \
+            message or f"Claim '{self.description}' applies only to system, not: {entity}"
+        if condition:
+            assert condition(entity), \
+                message or f"Claim '{self.description}' condition not met for {entity}"
+        return entity
+
     def assert_host(self, entity: Entity, condition: Callable[[Host], bool] = None, message="") -> Host:
+        """Assert entity is a host and get it or give custom message if not"""
         assert isinstance(entity, Host), \
             message or f"Claim '{self.description}' applies only to host, not: {entity}"
         if condition:
@@ -127,7 +137,17 @@ class EntityClaim(ExplainableClaim):
                 message or f"Claim '{self.description}' condition not met for {entity}"
         return entity
 
+    def assert_node(self, entity: Entity, condition: Callable[[Host], bool] = None, message="") -> NetworkNode:
+        """Assert entity is a network node and get it or give custom message if not"""
+        assert isinstance(entity, NetworkNode), \
+            message or f"Claim '{self.description}' applies only to network nodes, not: {entity}"
+        if condition:
+            assert condition(entity), \
+                message or f"Claim '{self.description}' condition not met for {entity}"
+        return entity
+
     def assert_software(self, entity: Entity, condition: Callable[[Software], bool] = None, message="") -> Software:
+        """Assert entity is software and get it or give custom message if not"""
         assert isinstance(entity, Software), \
             message or f"Claim '{self.description}' applies only to SW, not: {entity}"
         if condition:
