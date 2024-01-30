@@ -116,23 +116,22 @@ class EventLogger(EventInterface):
     def get_log(self, entity: Optional[Entity] = None, key: Optional[PropertyKey] = None) \
             -> List[LoggingEvent]:
         """Get log, possibly filtered by entity and key"""
-        key_set = set()
-        if entity:
-            key_set.add((entity, key))
+        ent_set = set()
 
         def add(n: Entity):
-            for k in n.properties.keys():
-                key_set.add((n, k))
+            ent_set.add(n)
             for c in n.get_children():
-                key_set.add((c, None))
                 add(c)
-        if entity and key is None:
-            # add all properties for the entity
+        if entity is not None:
             add(entity)
-        if key_set:
-            r = [lo for lo in self.logs if lo.key in key_set]
-        else:
-            r = self.logs
+
+        r = []
+        for lo in self.logs:
+            if entity is not None and lo.key[0] not in ent_set:
+                continue
+            if key is not None and lo.key[1] != key:
+                continue
+            r.append(lo)
         return r
 
 

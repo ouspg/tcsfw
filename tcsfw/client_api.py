@@ -173,7 +173,7 @@ class ClientAPI(ModelListener):
         if key:
             rs["property"] = key
         rs["logs"] = lr = []
-        for lo in reversed(logs):
+        for lo in logs:
             ev = lo.event
             en, key = lo.key
             ls = {
