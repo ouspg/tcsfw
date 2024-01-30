@@ -190,8 +190,9 @@ class SoftwareSelector(RequirementSelector):
     """Select software entities"""
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Software]:
         for h in HostSelector().select(entity, context):
-            for s in Software.list_software(h):
-                yield s
+            if not h.is_multicast():  # Multicast node does not contain software
+                for s in Software.list_software(h):
+                    yield s
 
 
 class DataSelector(RequirementSelector):
