@@ -45,13 +45,10 @@ fw_nRF52811 = gateway.software("nRF52811 Firmware").updates_from(backend_2)
 system.online_resource("privacy-policy", url="https://ruuvi.com/privacy/")
 system.online_resource("security-policy", url="https://ruuvi.com/terms/vulnerability-policy/")
 
-# security-relevant data and parameters
-user_email = system.data(["User e-mail"], personal=True)
-user_email.used_by(web_1, backend_1)
-device_password = system.data(["Password"], password=True)
-device_password.used_by(tags, gateway)  # FIXME: How is the password used?
-auth_token = system.data(["Auth. token"])
-auth_token.authorize(gateway / HTTP, web_1 / TLS, web_2 / TLS, web_3 / TLS)
+# sensitive data
+user_email = system.data(["User e-mail"])
+measurements = system.data(["Measurements"])
+billing_info = system.data(["Billing info"])
 
 (gateway >> ble_ad).logical_only()
 (mobile >> ble_ad).logical_only()

@@ -250,15 +250,15 @@ ETSI_EN_303_645 = Specification("etsi-en-303-645", "ETSI EN 303 645", {
         "Make it easy for users to delete user data"),
     "5.11-1": requirement(
         "The user shall be provided with functionality such that user data can be erased"
-        " from the device in a simple manner.", "5.11", Claims.PRIVATE),
+        " from the device in a simple manner.", "5.11", Claims.SENSITIVE_DATA),
     "5.11-2": requirement(
         "The consumer should be provided with functionality on the device such that"
-        " personal data can be removed from associated services in a simple manner.", "5.11", Claims.PRIVATE),
+        " personal data can be removed from associated services in a simple manner.", "5.11", Claims.SENSITIVE_DATA),
     "5.11-3": requirement(
-        "Users should be given clear instructions on how to delete their personal data.", "5.11", Claims.PRIVATE),
+        "Users should be given clear instructions on how to delete their personal data.", "5.11", Claims.SENSITIVE_DATA),
     "5.11-4": requirement(
         "Users should be provided with clear confirmation that personal data has been"
-        " deleted from services, devices and applications.", "5.11", Claims.PRIVATE),
+        " deleted from services, devices and applications.", "5.11", Claims.SENSITIVE_DATA),
     "5.12": requirement(
         "Make installation and maintenance of devices easy"),
     "5.12-1": requirement(  # in FIN cybersecurity label
@@ -282,13 +282,13 @@ ETSI_EN_303_645 = Specification("etsi-en-303-645", "ETSI EN 303 645", {
         "The manufacturer shall provide consumers with clear and transparent information"
         " about what personal data is processed, how it is being used, by whom, and for"
         " what purposes, for each device and service. This also applies to third parties"
-        " that can be involved, including advertisers.", "6", Claims.PRIVATE),
+        " that can be involved, including advertisers.", "6", Claims.SENSITIVE_DATA),
     "6-2": requirement(
         "Where personal data is processed on the basis of consumers' consent, this"
-        " consent shall be obtained in a valid way.", "6", Claims.PRIVATE),
+        " consent shall be obtained in a valid way.", "6", Claims.SENSITIVE_DATA),
     "6-3": requirement(
         "Consumers who gave consent for the processing of their personal data shall have"
-        " the capability to withdraw it at any time.", "6", Claims.PRIVATE),
+        " the capability to withdraw it at any time.", "6", Claims.SENSITIVE_DATA),
     "6-4": requirement(
         "If telemetry data is collected from consumer IoT devices and services, the"
         " processing of personal data should be kept to the minimum necessary for the"

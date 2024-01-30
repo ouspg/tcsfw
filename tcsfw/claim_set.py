@@ -2,7 +2,7 @@ from typing import List, Optional, Tuple, Self, Dict, Set, Callable, Iterable, U
 
 from tcsfw.address import Protocol
 from tcsfw.claim import Claim
-from tcsfw.components import Software
+from tcsfw.components import DataReference, DataStorages, Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
 from tcsfw.events import ReleaseInfo
 from tcsfw.model import IoTSystem, Connection, Host, Service, HostType, NetworkNode
@@ -373,19 +373,17 @@ class ConnectionAsServiceClaim(EntityClaim):
         return (self.sub, )
 
 
-class InformationClaim(HostClaim):
-    """Information claim, possible filtering by private info"""
+class SensitiveDataClaim(PropertyClaim):
+    """Sensitive data claim, possible filtering by private info"""
     def __init__(self, private: Optional[bool] = None, pass_no_data=False, description="Information"):
-        super().__init__(description)
+        super().__init__(description, Properties.DATA_CONFIRMED)
         self.private = private
         self.pass_no_data = pass_no_data
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         # we assume that they are listed, but not checked
-        entity = self.assert_host(entity)
-        info = ", ".join([i.name for i in entity.information])
-        exp = "Stored sensitive data: " + info if info else "No sensitive data stored"
-        return ClaimStatus(self, verdict=Verdict.PASS, authority=ClaimAuthority.MANUAL, explanation=exp)
+        assert isinstance(entity, DataReference), f"Sensitive data check cannot process: {entity}"
+        return super().check(entity, context)
 
 
 class NoUnexpectedConnections(HostClaim):
@@ -761,9 +759,8 @@ class Claims:
     WEB_BEST_PRACTICE = PropertyClaim("Web best practises", Properties.WEB_BEST)
     HTTP_REDIRECT = HTTPRedirectClaim()
     NO_UNEXPECTED_SERVICES = NoUnexpectedServices()           # no unexpected services
-    PRIVATE = InformationClaim(private=True)                  # private user data or PII
     PERMISSIONS_LISTED = HostClaim("Permissions are listed")  # (Mobile) permissions listed
-    DATA_CONFIRMED = PropertyClaim("Data confirmed", Properties.DATA_CONFIRMED)
+    SENSITIVE_DATA = SensitiveDataClaim()                     # claims of sensitive data
 
 
 PropertyLocation = Tuple[Entity, PropertyKey]

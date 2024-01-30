@@ -87,14 +87,14 @@ class Connection(Entity):
 T = TypeVar("T")
 
 
-class PieceOfData:
-    """Piece of security-relevant data"""
+class SensitiveData:
+    """Piece of sensitive, security-relevant, data"""
     def __init__(self, name: str, personal=False, password=False):
         assert not (personal and password), "Data cannot be both 'personal' and 'password'"
         self.name = name
         self.personal = personal
         self.password = password
-        # list of services the data is authenticator for
+        # FIXME: Nuke - list of services the data is authenticator for
         self.authenticator_for: List[Service] = []
 
     def __repr__(self):

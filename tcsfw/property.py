@@ -246,7 +246,6 @@ class Properties:
     AUTH_BEST_PRACTICE = AUTHENTICATION.append_key("best-practice")  # Auth. crypto best practise
     AUTH_NO_VULNERABILITIES = AUTHENTICATION.append_key("no-vulnz")  # Auth. known vulnerabilities
     AUTH_BRUTE_FORCE = AUTHENTICATION.append_key("brute-force")  # Auth. brute force
-    AUTHENTICATION_DATA = PropertyVerdict("default", "auth").persistent()   # Data used in authentication
     AUTHENTICATION_GRANT = PropertySet("check", "auth", "grant")    # Authentication granted/rejected check
     NO_AUTHENTICATION = PropertySet("check", "no-auth")    # No authentication
     PROTOCOL = PropertySet("check", "protocol")      # Protocol-specific check, augment with protocol name

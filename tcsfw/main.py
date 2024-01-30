@@ -6,32 +6,35 @@ import json
 import logging
 import pathlib
 import sys
-from typing import Tuple, Dict, Callable, Optional, Union, Self, List, Type
+from typing import Callable, Dict, List, Optional, Self, Tuple, Type, Union
 
-from tcsfw.address import AnyAddress, HWAddress, IPAddress, EndpointAddress, Protocol, Addresses, \
-    DNSName, IPAddresses, HWAddresses
+from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress,
+                           HWAddress, HWAddresses, IPAddress, IPAddresses,
+                           Protocol)
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim import Claim
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest
-from tcsfw.components import Software, Cookies, CookieData, DataUsage, DataReference
+from tcsfw.components import (CookieData, Cookies, DataReference, DataStorages,
+                              Software)
 from tcsfw.coverage_result import CoverageReport
-from tcsfw.entity import Entity, ClaimAuthority
+from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
 from tcsfw.events import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.inspector import Inspector
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main_basic import SubLoader, BuilderInterface, NodeInterface, SystemInterface, SoftwareInterface, \
-    HostInterface
+from tcsfw.main_basic import (BuilderInterface, HostInterface, NodeInterface,
+                              SoftwareInterface, SubLoader, SystemInterface)
 from tcsfw.main_tools import EvidenceLoader
-from tcsfw.model import Host, Service, Connection, Addressable, ConnectionType, HostType, \
-    ExternalActivity, PieceOfData
-from tcsfw.property import PropertyKey, PropertyVerdict, Properties
+from tcsfw.model import (Addressable, Connection, ConnectionType,
+                         ExternalActivity, Host, HostType, SensitiveData,
+                         Service)
+from tcsfw.property import Properties, PropertyKey, PropertyVerdict
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
-from tcsfw.traffic import EvidenceSource, Evidence
+from tcsfw.traffic import Evidence, EvidenceSource
 from tcsfw.verdict import Status, Verdict
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
@@ -112,8 +115,8 @@ class SystemBuilder(SystemInterface):
 
     def data(self, names: List[str], personal=False, password=False) -> 'DataPieceBuilder':
         """Declare pieces of security-relevant data"""
-        d = [PieceOfData(n, personal=personal, password=password) for n in names]
-        return DataPieceBuilder(self, d)
+        d = [SensitiveData(n, personal=personal, password=password) for n in names]
+        return SensitiveDataBuilder(self, d)
 
     def online_resource(self, key: str, url: str) -> Self:
         """Document online resource"""
@@ -151,18 +154,20 @@ class SystemBuilder(SystemInterface):
     def finish_(self):
         """Finish the model"""
         # We want to have a authenticator related to each authenticated service
-        auth_map = DataUsage.map_authenticators(self.system, {})
-        for hb in self.hosts_by_name.values():
-            for sb in hb.service_builders.values():
-                s = sb.entity
-                if s not in auth_map and s.authentication:
-                    auth = PieceOfData(f"Auth-{s.name}")  # default authenticator
-                    auth.authenticator_for.append(s)
-                    hb.use_data(DataPieceBuilder(self, [auth]))
-                    # property to link from service to authentication
-                    exp = f"Authentication by {auth.name} (implicit)"
-                    prop_v = Properties.AUTHENTICATION_DATA.value(explanation=exp)
-                    prop_v[0].set(s.properties, prop_v[1])
+        return
+        # NOTE: Not ready to go into this level now...
+        # auth_map = DataUsage.map_authenticators(self.system, {})
+        # for hb in self.hosts_by_name.values():
+        #     for sb in hb.service_builders.values():
+        #         s = sb.entity
+        #         if s not in auth_map and s.authentication:
+        #             auth = PieceOfData(f"Auth-{s.name}")  # default authenticator
+        #             auth.authenticator_for.append(s)
+        #             hb.use_data(DataPieceBuilder(self, [auth]))
+        #             # property to link from service to authentication
+        #             exp = f"Authentication by {auth.name} (implicit)"
+        #             prop_v = Properties.AUTHENTICATION_DATA.value(explanation=exp)
+        #             prop_v[0].set(s.properties, prop_v[1])
 
 
 # Host types
@@ -490,11 +495,11 @@ class HostBuilder(HostInterface, NodeBuilder):
         """Configure cookies in a browser"""
         return CookieBuilder(self)
 
-    def use_data(self, *data: 'DataPieceBuilder') -> Self:
-        """This host uses some security-relevant data"""
-        usage = DataUsage.get_data_usage(self.entity)
-        for db in data:
-            usage.sub_components.extend([DataReference(usage, d) for d in db.data])
+    def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
+        """This host uses some sensitive data"""
+        usage = DataStorages.get_storages(self.entity, add=True)
+        for d in data:
+            usage.sub_components.append(DataReference(usage, d))
         return self
 
     def __truediv__(self, protocol: ProtocolType) -> ServiceBuilder:
@@ -503,10 +508,14 @@ class HostBuilder(HostInterface, NodeBuilder):
         return conf.get_service_(self)
 
 
-class DataPieceBuilder:
-    def __init__(self, parent: SystemBuilder, data: List[PieceOfData]):
+class SensitiveDataBuilder:
+    def __init__(self, parent: SystemBuilder, data: List[SensitiveData]):
         self.parent = parent
         self.data = data
+        # all sensitive data lives at least in system
+        usage = DataStorages.get_storages(parent.system, add=True)
+        for d in data:
+            usage.sub_components.append(DataReference(usage, d))
 
     def used_by(self, *host: HostBuilder) -> Self:
         """This data used/stored in a host"""
@@ -637,7 +646,7 @@ class ProtocolConfigurer:
         self.con_type = ConnectionType.UNKNOWN
         self.authentication = False
         self.external_activity: Optional[ExternalActivity.BANNED] = None
-        self.critical_parameter: List[PieceOfData] = []
+        self.critical_parameter: List[SensitiveData] = []
 
     def name(self, value: str) -> Self:
         """Name the service"""
@@ -666,7 +675,7 @@ class ProtocolConfigurer:
             # E.g. DHCP service fills this oneself
             b.entity.addresses.add(EndpointAddress(Addresses.ANY, self.transport, self.service_port))
         if self.critical_parameter:
-            parent.use_data(DataPieceBuilder(parent.system, self.critical_parameter))  # critical protocol parameters
+            parent.use_data(SensitiveDataBuilder(parent.system, self.critical_parameter))  # critical protocol parameters
         return b
 
     def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
@@ -821,7 +830,7 @@ class TLS(ProtocolConfigurer):
         if auth is not None:
             self.authentication = auth
         self.con_type = ConnectionType.ENCRYPTED
-        self.critical_parameter.append(PieceOfData("TLS-creds"))
+        # self.critical_parameter.append(PieceOfData("TLS-creds"))
 
 
 class NTP(ProtocolConfigurer):
@@ -837,7 +846,7 @@ class SSH(ProtocolConfigurer):
         super().__init__(Protocol.TCP, port=port, protocol=Protocol.SSH, name="SSH")
         self.authentication = True
         self.con_type = ConnectionType.ENCRYPTED
-        self.critical_parameter.append(PieceOfData("SSH-creds"))
+        # self.critical_parameter.append(PieceOfData("SSH-creds"))
 
 
 class TCP(ProtocolConfigurer):

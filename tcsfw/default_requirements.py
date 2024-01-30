@@ -65,10 +65,8 @@ class DefaultSpecification(Specification):
         # [ ] Private data is defined
         self.private_data = self._req(
             "private-data",
-            Locations.DATA.personal() ^ Claims.name("Private data is defined", Claims.DATA_CONFIRMED))
-        self.auth_credentials = self._req(
-            "auth-credentials",
-            Locations.DATA.parameters() ^ Claims.name("Authentication credentials", Claims.DATA_CONFIRMED))
+            Locations.DATA ^ Claims.name("Private data is defined", Claims.SENSITIVE_DATA))
+
         # [x] Privacy policy is defined
         self.privacy_policy = self._req(
             "privacy-policy",

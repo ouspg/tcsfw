@@ -2,9 +2,9 @@ from typing import List, TypeVar, Generic, Iterator
 
 from tcsfw.address import Protocol
 from tcsfw.claim import Claim
-from tcsfw.components import Software, DataUsage, DataReference
+from tcsfw.components import DataStorages, Software, DataReference
 from tcsfw.entity import Entity
-from tcsfw.model import Host, HostType, IoTSystem, Service, Connection
+from tcsfw.model import Host, HostType, IoTSystem, NetworkNode, Service, Connection
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
 from tcsfw.verdict import Status
 
@@ -195,13 +195,14 @@ class SoftwareSelector(RequirementSelector):
 
 
 class DataSelector(RequirementSelector):
-    """Select use of critical data"""
+    """Select data components"""
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[DataReference]:
-        for h in HostSelector().select(entity, context):
-            for c in h.components:
-                if isinstance(c, DataUsage):
-                    for r in c.sub_components:
-                        yield r
+        if not isinstance(entity, NetworkNode):
+            return None
+        for c in entity.components:
+            if isinstance(c, DataStorages):
+                for r in c.sub_components:
+                    yield r
 
     def personal(self, value=True) -> 'DataSelector':
         """Select personal data"""
