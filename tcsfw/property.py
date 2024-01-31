@@ -14,6 +14,11 @@ class PropertyKey(Generic[V]):
         self.segments: Tuple[str, ...] = name, *more
         self.model = False  # a model property?
 
+    def persistent(self) -> Self:
+        """Make a persistent property"""
+        self.model = True
+        return self
+
     def append_key(self, segment: str) -> Self:
         """Add key segment"""
         return self.create(self.segments + (segment, ))
@@ -113,11 +118,6 @@ class PropertyVerdict(PropertyKey[PropertyVerdictValue]):
     def create(cls, name: Tuple[str, ...]) -> 'PropertyVerdict':
         """Create new property key"""
         return PropertyVerdict(name[0], *name[1:])
-
-    def persistent(self) -> Self:
-        """Make a persistent property"""
-        self.model = True
-        return self
 
     def reset(self, value: PropertyVerdictValue) -> Optional[PropertyVerdictValue]:
         if self.model:
@@ -258,19 +258,19 @@ class Properties:
     CODE_REVIEW = PropertySet("check", "code-review")   # Source code review
     CODE_SCA = PropertySet("check", "sca")           # Software composition analysis (SCA)
     PERMISSIONS = PropertySet("check", "permissions")  # Permission check
-    UI = PropertySet("check", "ui")                   # User interface check
-    PHYSICAL = PropertySet("check", "physical")       # Physical manipulation or checks
+    UI = PropertySet("check", "ui")                  # User interface check
+    PHYSICAL = PropertySet("check", "physical")      # Physical manipulation or checks
     DOCUMENT_AVAILABILITY = PropertyVerdict("check", "avail")  # Document, web-page, etc. availabilty check
     DOCUMENT_CONTENT = PropertySet("check", "content")           # Document, web-page, etc. content check
     FUZZ = PropertySet("check", "fuzz")              # Fuzz testing!
     DATA_CONFIRMED = PropertySet("check", "data")    # Presence of data confirmed
     HTTP_REDIRECT = PropertyVerdict("default", "http-redirect").persistent()  # HTTP redirect detected
-    MITM = PropertyVerdict("check", "mitm")        # MITM successful?
-    EXPECTED_HOSTS = PropertyKey("check", "hosts")  # Expected entity is observed
+    MITM = PropertyVerdict("check", "mitm")          # MITM successful?
+    EXPECTED_HOSTS = PropertyKey("check", "hosts")   # Expected entity is observed
     EXPECTED_SERVICES = PropertyKey("check", "services")  # Expected entity is observed
     EXPECTED_CONNECTIONS = PropertyKey("check", "connections")  # Expected entity is observed
     UPDATE_SEEN = PropertyKey("default", "update-seen")            # Update is seen
-    REVIEW = PropertyKey("check", "review")         # IXIT etc. review
+    REVIEW = PropertyKey("check", "review")          # IXIT etc. review
     FUNCTIONAL = PropertyKey("other", "functional")
 
     @classmethod
