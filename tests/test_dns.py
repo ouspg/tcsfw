@@ -39,12 +39,12 @@ def test_dns_pcap():
     host = s.get_endpoint(DNSName("latinum.amazon.com"))
     assert host.addresses == {DNSName("latinum.amazon.com"), IPAddress.new("54.239.21.157")}
     assert host.name == "latinum.amazon.com"
-    assert host.status_verdict() == (Status.UNEXPECTED, Verdict.INCON)
+    assert host.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
 
     host = s.get_endpoint(DNSName("ns-923.amazon.com"))
     assert host.addresses == {DNSName("ns-923.amazon.com"), IPAddress.new("52.86.96.73")}
     assert host.name == "ns-923.amazon.com"
-    assert host.status_verdict() == (Status.UNEXPECTED, Verdict.INCON)
+    assert host.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
 
     c = m.connection(IPFlow.udp_flow(source_ip="192.168.20.132", target_ip="155.198.142.7", target_port=53))
     assert c.get_expected_verdict() == Verdict.PASS
