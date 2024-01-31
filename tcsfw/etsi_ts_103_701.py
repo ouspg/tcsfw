@@ -45,7 +45,7 @@ class IXIT:
     UpdMech = IXIT_Section("UpdMech", 7, UpdateConnectionSelector())
     UpdProc = IXIT_Section("UpdProc", 8)
     ReplSup = IXIT_Section("ReplSup", 9, DEVICE)
-    SecParam = IXIT_Section("SecParam", 10, DEVICE / Locations.DATA.parameters())
+    SecParam = IXIT_Section("SecParam", 10, DEVICE)  # NOTE: quick hack for now / Locations.DATA.parameters())
     # NOTE: ComMech in principle for all communication, but all claims about encryption
     ComMech = IXIT_Section("ComMech", 11, Locations.CONNECTION.encrypted())
     NetSecImpl = IXIT_Section("NetSecImpl", 12, Locations.SOFTWARE)
@@ -459,7 +459,8 @@ class EtsiTs103701(Specification):
             claim = CROSS_REFERENCE
             self.references[identifier] = reference
 
-        if claim in {REVIEW, CROSS_REFERENCE}:
+        if claim in {REVIEW, CROSS_REFERENCE, UI, PHYSICAL_MANIPULATION} or isinstance(claim, ContentClaim):
+            # these are not added to the requirements
             priority = 0
             props[Properties.REVIEW] = True
         else:
@@ -694,7 +695,7 @@ def verify_ixit_data(specification: EtsiTs103701, path=pathlib.Path("etsi/ixit_t
 
 
 # ETSI TS 103 701 test specification
-ETSI_TS_103_701 = EtsiTs103701("etsi_ts_103_701", "ETSI TS 103 701")
+ETSI_TS_103_701 = EtsiTs103701("etsi_ts_103_701", "ETSI TS 103 701 Security perimeter")
 # ...and subset with tests from Finnish Cybersecurity label
 ETSI_TS_103_701_FIN = ETSI_TS_103_701.get_finnish_label_tests()
 
