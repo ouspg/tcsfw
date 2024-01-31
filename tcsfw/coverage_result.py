@@ -284,9 +284,13 @@ class CoverageReport:
                 for req, st in stat.items():
                     r_map.setdefault(req, {})[ent] = st
 
+        req_legend = "Requirements"
+        cov_legend = "Coverage items"
         ignore_len_name = f"Tool {Verdict.IGNORE.value}"
         legend = {
-            f"": "Total coverage locations",
+            req_legend: "Requirements",
+            cov_legend: "Coverage items",
+            f"": "Coverage items",
             f"Tool {Verdict.PASS.value}": "Verification pass",
             f"Tool {Verdict.FAIL.value}": "Verification fail",
             ignore_len_name: "Not relevant",
@@ -296,6 +300,7 @@ class CoverageReport:
         }
         legend_c = {n: 0 for n in legend.keys()}
 
+        req_count = 0
         for sec_title, req_map in sec_map.items():
             cols: List[Entity] = sec_ent[sec_title]
             col_set = set(cols)
@@ -328,6 +333,7 @@ class CoverageReport:
                     continue  # quick hack
                 if not col_set.intersection(req_stats.keys()):
                     continue
+                req_count += 1
                 spec, ide = req.identifier
                 row_data = {
                     "spec": spec,
@@ -382,7 +388,8 @@ class CoverageReport:
             sec["section_verdict"] = sec_verdict.value
             sec["section_light"] = self._light(sec_verdict)
 
-        legend_c[""] = sum([s for n, s in legend_c.items() if n != ignore_len_name])
+        legend_c[req_legend] = req_count
+        legend_c[cov_legend] = sum([s for n, s in legend_c.items() if n != ignore_len_name])
         leg = root["legend"] = {}
         for leg_name, leg_c in legend_c.items():
             leg[leg_name] = {
