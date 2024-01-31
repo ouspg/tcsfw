@@ -255,9 +255,6 @@ class PropertyClaim(EntityClaim):
             # Value not set
             return ClaimStatus(self, authority=ClaimAuthority.TOOL)
         val = entity.properties.get(key)
-        if isinstance(key, PropertySet) and isinstance(val, PropertyVerdictValue):
-            # FIXME: A hack - claim value overriden to verdicts, but key sets expected
-            return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=val.explanation)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.get_value_string(val))
 
     # NOTE: We assume that key alone separates claims
