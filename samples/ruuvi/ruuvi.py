@@ -56,6 +56,8 @@ billing_info = system.data(["Billing info"])
 
 # More DNS names (why?)
 backend_2.dns("api.github.com").dns("objects.githubusercontent.com")
+# Gateway NTP servers
+gateway.ignore_name_requests("time.google.com", "time.nist.gov", "pool.ntp.org", "ntp1.glb.nist.gov")
 
 # Cookies
 cookies = user.cookies()

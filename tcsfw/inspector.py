@@ -129,14 +129,20 @@ class Inspector(EventInterface):
         address = event.address
         if event.service and event.service.captive_portal and event.address in event.service.parent.addresses:
             address = None  # it is just redirecting to itself
-        h = self.system.learn_named_address(DNSName(event.name), address)
+        name = DNSName(event.name)
+        h = self.system.learn_named_address(name, address)
         if h not in self.known_hosts:
             # new host
             if h.status == Status.UNEXPECTED:
                 # unexpected host, check if it can be external
                 for pe in event.peers:
+                    if name in pe.get_parent_host().ignore_name_requests:
+                        # this name is explicitly ok
+                        continue
                     if pe.external_activity < ExternalActivity.OPEN:
-                        break  # should not ask or reply with unknown names
+                        # should not ask or reply with unknown names
+                        h.set_seen_now()
+                        break
                 else:
                     # either unknown DNS requester or peers can be externally active
                     h.status = Status.EXTERNAL

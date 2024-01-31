@@ -348,6 +348,7 @@ class Host(Addressable):
         self.concept_name = "node"
         self.parent = parent
         self.visual = True
+        self.ignore_name_requests: Set[DNSName] = set()
         self.connections: List[Connection] = []  # connections initiated here
 
     def get_connections(self, relevant_only=True) -> List[Connection]:

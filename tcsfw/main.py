@@ -511,6 +511,11 @@ class HostBuilder(HostInterface, NodeBuilder):
         conf = ProtocolConfigurer.as_configurer(protocol)
         return conf.get_service_(self)
 
+    def ignore_name_requests(self, *name: str) -> Self:
+        """Ignore DNS name requests for these names"""
+        self.entity.ignore_name_requests.update([DNSName(n) for n in name])
+        return self
+
 
 class SensitiveDataBuilder:
     def __init__(self, parent: SystemBuilder, data: List[SensitiveData]):
