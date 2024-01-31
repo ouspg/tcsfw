@@ -8,6 +8,7 @@ from tcsfw.claim_set import ClaimContext
 from tcsfw.default_requirements import DEFAULT
 from tcsfw.entity import Entity, ClaimStatus, ClaimAuthority
 from tcsfw.etsi_ts_103_701 import ETSI_TS_103_701, ETSI_TS_103_701_FIN
+from tcsfw.event_logger import EventLogger
 from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.requirement import Specification, Requirement
@@ -16,8 +17,9 @@ from tcsfw.verdict import Verdict
 
 class CoverageReport:
     """Report of the system status"""
-    def __init__(self, system: IoTSystem, coverage: RequirementClaimMapper, details=True):
-        self.system = system
+    def __init__(self, logger: EventLogger, coverage: RequirementClaimMapper, details=True):
+        self.system = logger.get_system()
+        self.logging = logger
         self.coverage = coverage
         self.details = details
         self.logger = logging.getLogger("report")
@@ -254,13 +256,13 @@ class CoverageReport:
         """Get properties resolved for a claim"""
         r = {}
         for key, ps in status.context.properties.items():
-            ent, claim = key
-            tool_cov = self.coverage.tool_coverage.get(ent, {})
-            for p, v in ps.items():
-                tools = sorted(tool_cov.get(p, []))
+            ent, _ = key
+            sources = self.logging.get_property_sources(ent, keys=set(ps.keys()))
+            for p, s in sources.items():
+                v = ps.get(p)
                 r[p] = {
                     "value": True if v else False,  # boolean value
-                    "tools": [t.name for t in tools],
+                    "tools": [s.name],  # NOTE: perhaps we have many later
                 }
         return r
 

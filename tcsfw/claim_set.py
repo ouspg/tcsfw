@@ -13,9 +13,10 @@ from tcsfw.verdict import Verdict, Verdictable
 
 
 class ClaimContext:
-    """The context where claim is resolved"""
+    """The context where a claim is resolved"""
     def __init__(self):
         # Property keys which tools are reported they cover
+        # FIXME: Nuke tool keys, properties queried from event logging
         self.tool_coverage: Dict[Entity, Dict[PropertyKey, Set[Tool]]] = {}
         # Properties read by the claims, with their values (converted to bool, when possible)
         self.properties: Dict[Tuple[Entity, Claim], Dict[PropertyKey, Any]] = {}

@@ -278,7 +278,7 @@ class Builder(SystemBuilder):
         if out_form and out_form.startswith("coverage"):
             cmd, _, spec_id = out_form.partition(":")
             cmd = cmd[8:]
-            report = CoverageReport(self.system, cc)
+            report = CoverageReport(registry.logging, cc)
             spec = report.load_specification(spec_id)
             report.print_summary(sys.stdout, spec, cmd.strip("- "))
         elif out_form and out_form.startswith("latex"):

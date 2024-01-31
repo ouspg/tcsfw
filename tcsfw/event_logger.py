@@ -1,4 +1,4 @@
-from typing import List, TextIO, Tuple, Dict, Optional, cast
+from typing import List, Set, TextIO, Tuple, Dict, Optional, cast
 from tcsfw.address import AnyAddress
 
 from tcsfw.entity import Entity
@@ -7,7 +7,7 @@ from tcsfw.inspector import Inspector
 from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
-from tcsfw.traffic import HostScan, ServiceScan, Flow, Event
+from tcsfw.traffic import EvidenceSource, HostScan, ServiceScan, Flow, Event
 from tcsfw.verdict import Status, Verdict
 
 
@@ -134,4 +134,11 @@ class EventLogger(EventInterface):
             r.append(lo)
         return r
 
-
+    def get_property_sources(self, entity: Entity, keys: Set[PropertyKey]) -> Dict[PropertyKey, EvidenceSource]:
+        """Get property sources for an entity and set of properties"""
+        r = {}
+        for lo in self.logs:
+            if lo.key[0] != entity or lo.key[1] not in keys:
+                continue
+            r[lo.key[1]] = lo.event.evidence.source
+        return r

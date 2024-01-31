@@ -370,7 +370,7 @@ class ClientAPI(ModelListener):
         path = context.request.path
         spec_name = path[1:] if path.startswith("/") else ""
         spec = CoverageReport.load_specification(spec_name)
-        report = CoverageReport(self.registry.system, self.claim_coverage)
+        report = CoverageReport(self.registry.logging, self.claim_coverage)
         js = report.json(specification=spec)
         js["system"] = self.get_system_info(context)
         return js
