@@ -96,7 +96,9 @@ class EntityClaim(ExplainableClaim):
 
     def get_override_key(self, entity: Entity) -> Optional[PropertyKey]:
         """Get override key for this property / entity"""
-        return self.property_key
+        if self.property_key is None:
+            return None
+        return self.property_key.prefix_key(Properties.PREFIX_MANUAL)
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         """Check a claim for target entity"""
@@ -165,6 +167,9 @@ class NamedClaim(EntityClaim):
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         return context.check(self.named_claim, entity)
+
+    def get_override_key(self, entity: Entity) -> Optional[PropertyKey]:
+        return self.named_claim.get_override_key(entity)
 
     def __repr__(self):
         return f"{self.description}"
@@ -631,7 +636,7 @@ class ProtocolClaim(ServiceClaim):
         key = Properties.PROTOCOL.append_key(s.protocol.value)
         if self.property_tail:
             key = key.append_key(self.property_tail)
-        return key
+        return key.prefix_key(Properties.PREFIX_MANUAL)
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         key = self.get_override_key(entity)

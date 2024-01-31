@@ -24,9 +24,8 @@ class PropertyKey(Generic[V]):
         return self.create(self.segments + (segment, ))
 
     def prefix_key(self, segment: str, append="") -> Self:
-        """Re-prefix key segment, with possibly also adding a key segment"""
-        assert len(self.segments) > 1, "At least two-segment key required to change prefix"
-        return self.create((segment, ) + self.segments[1:] + ((append, ) if append else ()))
+        """Prefix key segment, with possibly also adding a key segment"""
+        return self.create((segment, ) + self.segments + ((append, ) if append else ()))
 
     @classmethod
     def create(cls, name: Tuple[str, ...]) -> 'PropertyKey':
@@ -273,6 +272,9 @@ class Properties:
     UPDATE_SEEN = PropertyKey("default", "update-seen")            # Update is seen
     REVIEW = PropertyKey("check", "review")          # IXIT etc. review
     FUNCTIONAL = PropertyKey("other", "functional")
+
+    # Manual override prefix
+    PREFIX_MANUAL = "manual"
 
     @classmethod
     def get_flags(cls, properties: Dict[PropertyKey, Any]) -> Set[str]:

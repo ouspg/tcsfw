@@ -915,13 +915,14 @@ class ClaimBuilder:
 
     def key(self, *segments: str) -> Self:
         """Add key to touch"""
-        self._keys.append(PropertyKey.create(segments))
+        self._keys.append(PropertyKey(Properties.PREFIX_MANUAL, *segments))
         return self
 
     def keys(self, *key: Tuple[str, ...]) -> Self:
         """Add keys to touch"""
         for k in key:
-            self._keys.append(PropertyKey.create(k))
+            assert isinstance(k, tuple), f"Bad key {k}"
+            self._keys.append(PropertyKey(Properties.PREFIX_MANUAL, *k))
         return self
 
     def at(self, *locations: Union[SystemBuilder, NodeBuilder, ConnectionBuilder]) -> 'Self':
