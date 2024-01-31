@@ -339,6 +339,7 @@ class CoverageReport:
                     "spec": spec,
                     "id": ide,
                     "text": req.get_text(with_identifier=False),
+                    "target": req.target_name,
                 }
                 s_info = specification.get_short_info(req)
                 row_data["short"] = s_info or ide

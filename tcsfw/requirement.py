@@ -42,6 +42,7 @@ class Requirement:
         self.priority = 0
         self.properties: Dict[PropertyKey, Any] = {}
         self.section_name = ""
+        self.target_name = ""
 
     def identifier_string(self, tail_only=False) -> str:
         if tail_only:
