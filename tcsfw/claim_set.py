@@ -395,7 +395,7 @@ class NoUnexpectedConnections(HostClaim):
         entity = self.assert_host(entity)
         exp_c, see_c, un_c = 0, 0, 0
         for c in entity.connections:
-            if c.is_expected():
+            if c.get_expected_verdict() == Verdict.PASS:
                 exp_c += 1
                 see_c += 1 if Properties.EXPECTED.get_verdict(c.properties) == Verdict.PASS else 0
             elif c.is_relevant():
@@ -494,7 +494,7 @@ class NoUnexpectedServices(EntityClaim):
         services = [c for c in entity.children if c.is_relevant()]
         exp_c, see_c, un_c = 0, 0, 0
         for c in services:
-            if c.is_expected():
+            if c.get_expected_verdict() == Verdict.PASS:
                 exp_c += 1
                 see_c += 1 if Properties.EXPECTED.get_verdict(c.properties) == Verdict.PASS else 0
             else:
