@@ -177,10 +177,15 @@ class PropertySetValue:
         for k in self.sub_keys:
             value = properties.get(k)
             if isinstance(value, Verdictable):
-                v = Verdict.aggregate(v, value.get_verdict())
+                kv = value.get_verdict()
+                if kv is None or kv == Verdict.IGNORE:
+                    continue
+                v = Verdict.aggregate(v, kv)
             elif isinstance(value, PropertySetValue):
-                sv = value.get_overall_verdict(properties)
-                v = Verdict.aggregate(v, sv)
+                kv = value.get_overall_verdict(properties)
+                if kv is None or kv == Verdict.IGNORE:
+                    continue
+                v = Verdict.aggregate(v, kv)
         if v is None or v == Verdict.IGNORE:
             v = Verdict.PASS  # no verdicts is pass
         return v
