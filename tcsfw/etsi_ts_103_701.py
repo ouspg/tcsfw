@@ -34,9 +34,8 @@ class IXIT_Section:
 
 DEVICE = Locations.HOST.type_of(HostType.DEVICE)
 
-
 class IXIT:
-    AuthMech = IXIT_Section("AuthMech", 1, Locations.SERVICE.authenticated())
+    AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Locations.SERVICE.authenticated())
     UserInfo = IXIT_Section("UserInfo", 2, Locations.SYSTEM)
     VulnTypes = IXIT_Section("VulnTypes", 3)
     Conf = IXIT_Section("Conf", 4)
@@ -46,8 +45,7 @@ class IXIT:
     UpdProc = IXIT_Section("UpdProc", 8)
     ReplSup = IXIT_Section("ReplSup", 9, DEVICE)
     SecParam = IXIT_Section("SecParam", 10, DEVICE)  # NOTE: quick hack for now / Locations.DATA.parameters())
-    # NOTE: ComMech in principle for all communication, but all claims about encryption
-    ComMech = IXIT_Section("ComMech", 11, Locations.CONNECTION.encrypted())
+    ComMech = IXIT_Section("ComMech", 11, Locations.CONNECTION)
     NetSecImpl = IXIT_Section("NetSecImpl", 12, Locations.SOFTWARE)
     SoftServ = IXIT_Section("SoftServ", 13, Locations.SERVICE.authenticated())
     SecMgmt = IXIT_Section("SecMgmt", 14)
