@@ -915,14 +915,20 @@ class ClaimBuilder:
 
     def key(self, *segments: str) -> Self:
         """Add key to touch"""
-        self._keys.append(PropertyKey(Properties.PREFIX_MANUAL, *segments))
+        key = PropertyKey.create(segments)
+        if key.is_protected():
+            key = key.prefix_key(Properties.PREFIX_MANUAL)
+        self._keys.append(key)
         return self
 
     def keys(self, *key: Tuple[str, ...]) -> Self:
         """Add keys to touch"""
-        for k in key:
-            assert isinstance(k, tuple), f"Bad key {k}"
-            self._keys.append(PropertyKey(Properties.PREFIX_MANUAL, *k))
+        for seg in key:
+            assert isinstance(seg, tuple), f"Bad key {seg}"
+            k = PropertyKey.create(seg)
+            if k.is_protected():
+                k = k.prefix_key(Properties.PREFIX_MANUAL)
+            self._keys.append(k)
         return self
 
     def at(self, *locations: Union[SystemBuilder, NodeBuilder, ConnectionBuilder]) -> 'Self':

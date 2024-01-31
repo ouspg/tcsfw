@@ -19,6 +19,10 @@ class PropertyKey(Generic[V]):
         self.model = True
         return self
 
+    def is_protected(self) -> bool:
+        """Is this a protected property?"""
+        return self.segments[0] in Properties.PROTECTED
+
     def append_key(self, segment: str) -> Self:
         """Add key segment"""
         return self.create(self.segments + (segment, ))
@@ -277,6 +281,9 @@ class Properties:
     UPDATE_SEEN = PropertyKey("default", "update-seen")            # Update is seen
     REVIEW = PropertyKey("check", "review")          # IXIT etc. review
     FUNCTIONAL = PropertyKey("other", "functional")
+
+    # Property prefixes protected from manual set
+    PROTECTED = {"default", "check"}
 
     # Manual override prefix
     PREFIX_MANUAL = "manual"
