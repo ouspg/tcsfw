@@ -755,6 +755,7 @@ class Claims:
         """Enough to met any of the claims"""
         return AlternativeClaim(list(claim))
 
+    EXPECTED = PropertyClaim("Expected", Properties.EXPECTED) # expected entity confirmed
     AUTOMATIC_UPDATES = UpdateClaim()                         # automatic software updates
     COOKIES_LISTED = HostClaim("Cookies are listed")          # Browser cookies listed
     WEB_BEST_PRACTICE = PropertyClaim("Web best practises", Properties.WEB_BEST)

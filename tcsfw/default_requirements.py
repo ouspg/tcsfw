@@ -23,15 +23,15 @@ class DefaultSpecification(Specification):
         # [x] Network nodes are defined
         self.no_unexpected_nodes = self._req(
             "no-unexp-nodes",
-            Locations.HOST.unexpected() ^ StatusClaim("Network nodes are defined"))
+            Locations.HOST.unexpected() ^ Claims.name("Network nodes are defined", Claims.EXPECTED))
         # [x] Network services are defined
         self.no_unexpected_services = self._req(
             "no-unexp-services",
-            Locations.SERVICE.unexpected() ^ StatusClaim("Network services are defined"))
+            Locations.SERVICE.unexpected() ^ Claims.name("Network services are defined", Claims.EXPECTED))
         # [ ] Network connections are defined
         self.no_unexpected_connections = self._req(
             "no-unexp-connections",
-            Locations.CONNECTION.unexpected() ^ StatusClaim("Network connections are defined"))
+            Locations.CONNECTION.unexpected() ^ Claims.name("Network connections are defined", Claims.EXPECTED))
         # Interface security
         # [ ] Protocol best practises are used
         self.protocol_best = self._req(
