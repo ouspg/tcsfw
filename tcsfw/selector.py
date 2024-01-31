@@ -5,6 +5,7 @@ from tcsfw.claim import Claim
 from tcsfw.components import DataStorages, Software, DataReference
 from tcsfw.entity import Entity
 from tcsfw.model import Host, HostType, IoTSystem, NetworkNode, Service, Connection
+from tcsfw.property import PropertyKey
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
 from tcsfw.verdict import Status
 
@@ -78,6 +79,15 @@ class HostSelector(RequirementSelector):
         class Selector(HostSelector):
             def select(self, entity: Entity, context: SelectorContext) -> Iterator[Entity]:
                 return (c for c in parent.select(entity, context) if c.host_type in types)
+        return Selector()
+
+    def with_property(self, key: PropertyKey) -> 'HostSelector':
+        """Select hosts with a property"""
+        parent = self
+
+        class Selector(HostSelector):
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Entity]:
+                return (c for c in parent.select(entity, context) if key in c.properties)
         return Selector()
 
 

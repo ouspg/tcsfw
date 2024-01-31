@@ -265,6 +265,7 @@ class Properties:
     FUZZ = PropertySet("check", "fuzz")              # Fuzz testing!
     DATA_CONFIRMED = PropertySet("check", "data")    # Presence of data confirmed
     HTTP_REDIRECT = PropertyVerdict("default", "http-redirect").persistent()  # HTTP redirect detected
+    SENSORS = PropertyVerdict("default", "sensors").persistent() # Has sensors
     MITM = PropertyVerdict("check", "mitm")          # MITM successful?
     EXPECTED_HOSTS = PropertyKey("check", "hosts")   # Expected entity is observed
     EXPECTED_SERVICES = PropertyKey("check", "services")  # Expected entity is observed

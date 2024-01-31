@@ -56,7 +56,7 @@ class IXIT:
     SecDev = IXIT_Section("SecDev", 19)
     SecBoot = IXIT_Section("SecBoot", 20, DEVICE / Locations.SOFTWARE)
     PersData = IXIT_Section("PersData", 21, Locations.DATA.personal())
-    ExtSens = IXIT_Section("ExtSens", 22, DEVICE)
+    ExtSens = IXIT_Section("ExtSens", 22, DEVICE.with_property(Properties.SENSORS))
     ResMech = IXIT_Section("ResMech", 23, Locations.SYSTEM)
     TelData = IXIT_Section("TelData", 24, Locations.SYSTEM)
     DelFunc = IXIT_Section("DelFunc", 25, Locations.SYSTEM)

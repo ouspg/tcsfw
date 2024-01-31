@@ -516,6 +516,12 @@ class HostBuilder(HostInterface, NodeBuilder):
         self.entity.ignore_name_requests.update([DNSName(n) for n in name])
         return self
 
+    def set_property(self, *key: str):
+        """Set a model property"""
+        p = PropertyVerdict.create(key).persistent()
+        self.entity.set_property(p.value())  # inconclusive
+        return self
+
 
 class SensitiveDataBuilder:
     def __init__(self, parent: SystemBuilder, data: List[SensitiveData]):
