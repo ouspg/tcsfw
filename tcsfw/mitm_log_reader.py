@@ -50,7 +50,7 @@ class MITMLogReader(BaseFileCheckTool):
                     HWAddresses.NULL.data, d_add, int(d_port))
                 flow.evidence = evidence
                 if d:
-                    # learn SNI
+                    # learn SNI, no peers in event, the connection will be UNEXPECTED if it is not expected
                     name = NameEvent(evidence, None, d, flow.target[1])
                     if name not in names:
                         interface.name(name)

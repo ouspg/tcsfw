@@ -524,9 +524,6 @@ class IoTSystem(NetworkNode):
 
         if named is None:
             named = self.get_endpoint(name)
-            # FIXME: If we would know who is asking, then could check its external_actvitity
-            if named.status == Status.UNEXPECTED:
-                named.status = Status.EXTERNAL
 
         if not add:
             # just use the named
