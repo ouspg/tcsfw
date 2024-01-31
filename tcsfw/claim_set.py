@@ -623,7 +623,8 @@ class ProtocolClaim(ServiceClaim):
             return target
         return None
 
-    def get_override_key(self, entity: Entity) -> Optional[PropertyKey]:
+    def _get_protocol_key(self, entity: Entity) -> Optional[PropertyKey]:
+        """Get the property key to use"""
         s = entity
         if isinstance(entity, Connection):
             s = entity.target
@@ -633,10 +634,14 @@ class ProtocolClaim(ServiceClaim):
         key = Properties.PROTOCOL.append_key(s.protocol.value)
         if self.property_tail:
             key = key.append_key(self.property_tail)
-        return key.prefix_key(Properties.PREFIX_MANUAL)
+        return key
+
+    def get_override_key(self, entity: Entity) -> Optional[PropertyKey]:
+        key = self._get_protocol_key(entity)
+        return None if key is None else key.prefix_key(Properties.PREFIX_MANUAL)
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
-        key = self.get_override_key(entity)
+        key = self._get_protocol_key(entity)
         if key is None:
             return None  # unknown protocol
         ver = context.get_property_verdict(entity, self, key, entity.properties)
