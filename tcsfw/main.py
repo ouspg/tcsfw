@@ -91,6 +91,8 @@ class SystemBuilder(SystemInterface):
         b = self.get_host_(name, "Any host")
         b.entity.any_host = True
         b.entity.host_type = HostType.ADMINISTRATIVE if node_type is None else node_type
+        # might serve other network nodes
+        b.entity.external_activity = ExternalActivity.UNLIMITED
         return b
 
     def infra(self, name="") -> 'HostBuilder':
@@ -815,6 +817,8 @@ class ICMP(ProtocolConfigurer):
         s.entity.name = "ICMP"  # a bit of hack...
         s.entity.host_type = HostType.ADMINISTRATIVE
         s.entity.con_type = ConnectionType.ADMINISTRATIVE
+        # ICMP can be a service for other hosts
+        s.entity.external_activity = max(self.external_activity, parent.entity.external_activity)
         return s
 
 

@@ -38,6 +38,7 @@ mobile >> backend_2 / TLS
 
 any_host = system.any("Service")
 gateway >> any_host / DHCP / DNS / NTP / ICMP
+gateway / ICMP
 
 fw_esp32 = gateway.software("ESP32 Firmware").updates_from(backend_2)
 fw_nRF52811 = gateway.software("nRF52811 Firmware").updates_from(backend_2)
