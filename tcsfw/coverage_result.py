@@ -276,12 +276,14 @@ class CoverageReport:
 
         sec_ent: Dict[str, List[Entity]] = {}
         sec_map: Dict[str, Dict[Requirement, Dict[Entity, RequirementStatus]]] = {}
+        use_targets = False
         for sec, reqs in mapping.get_entities_by_sections().items():
             cols = sec_ent[sec] = []
             r_map = sec_map[sec] = {}
             for ent, stat in reqs.items():
                 cols.append(ent)
                 for req, st in stat.items():
+                    use_targets = use_targets or req.target_name
                     r_map.setdefault(req, {})[ent] = st
 
         req_legend = "Requirements"
@@ -398,6 +400,7 @@ class CoverageReport:
                 "count": leg_c,
                 "description": legend.get(leg_name, "")
             }
+        root["use_targets"] = bool(use_targets)
         return root
 
     def json(self, specification: Specification) -> Dict:
