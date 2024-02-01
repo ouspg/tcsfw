@@ -487,18 +487,11 @@ class EtsiTs103701(Specification):
 
     def create_aliases(self, selected: Iterable[Tuple[Requirement, Entity, Claim]]) \
             -> Dict[Tuple[Requirement, Entity, Claim], str]:
-        # r = {}
-        # Just convert to location name
-        # for req, ent, claim in selected:
-        #     sel = req.selector
-        #     assert isinstance(sel, NamedSelector)
-        #     r[req, ent, claim] = sel.name
-        # Number each location to have unique aliases...
+        """ Create aliases by test targets"""
         bases: Dict[str, Set[Entity]] = {}
         for req, ent, claim in selected:
-            sel = req.selector
-            assert isinstance(sel, NamedSelector), f"Requirement selector should be named: {req.identifier_string()}"
-            bases.setdefault(sel.name, set()).add(ent)
+            assert req.target_name, f"Requirement {req.identifier_string()} has no target"
+            bases.setdefault(req.target_name, set()).add(ent)
         aliases: Dict[str, Dict[Entity, str]] = {}
         for base, es in bases.items():
             b_d = aliases[base] = {}
@@ -509,9 +502,7 @@ class EtsiTs103701(Specification):
                 b_d[e] = f"{base}-{i}"
         r = {}
         for req, ent, claim in selected:
-            sel = req.selector
-            assert isinstance(sel, NamedSelector)
-            b_d = aliases[sel.name]
+            b_d = aliases[req.target_name]
             r[req, ent, claim] = b_d[ent]
         return r
 
