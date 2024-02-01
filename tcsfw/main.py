@@ -210,7 +210,7 @@ class Builder(SystemBuilder):
         parser.add_argument("--test-post", nargs=2, help="Test API POST")
 
         parser.add_argument("--help-tools", action="store_true", help="List available tools")
-        parser.add_argument("--print-events", action="store_true", help="Print events and exit")
+        parser.add_argument("--log-events", action="store_true", help="Log events")
 
         self.parser = parser
         self.args = parser.parse_args()
@@ -227,6 +227,10 @@ class Builder(SystemBuilder):
 
         registry = Registry(Inspector(self.system))
         cc = RequirementClaimMapper(self.system)
+
+        if self.args.log_events:
+            # print events
+            registry.logging.event_logger = registry.logger
 
         for set_ip in self.args.set_ip or []:
             name, _, ips = set_ip.partition("=")
@@ -256,11 +260,6 @@ class Builder(SystemBuilder):
         for ln_list in all_loaders.values():
             for ln in ln_list:
                 ln.load(registry, cc)
-
-        if self.args.print_events:
-            print(f"== Event print ==")
-            registry.logging.print_events(sys.stdout)
-            return
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True

@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import Any, List, Set, TextIO, Tuple, Dict, Optional, cast
 from tcsfw.address import AnyAddress
 
@@ -50,22 +51,20 @@ class EventLogger(EventInterface, ModelListener):
         self.inspector = inspector
         self.logs: List[LoggingEvent] = []
         self.current: Optional[LoggingEvent] = None  # current event
-        # subscribe property events
-        inspector.system.model_listeners.append(self)
+        inspector.system.model_listeners.append(self) # subscribe property events
+        self.event_logger: Optional[Logger] = None
 
-    def print_events(self, writer: TextIO):
-        """Print all events for debugging"""
-        for lo in self.logs:
-            e = lo.event
-            if lo.entity:
-                s = f"{lo.entity.long_name()},"
-            s = f"{s:<40}"
-            s += f"{lo.get_value_string()},"
-            s = f"{s:<80}"
-            com = e.get_comment() or e.evidence.get_reference()
-            if com:
-                s += f" {com}"
-            writer.write(f"{s}\n")
+    def print_event(self, log: LoggingEvent):
+        """Print event for debugging"""
+        e = log.event
+        s = f"{log.entity.long_name()}," if log.entity else ""
+        s = f"{s:<40}"
+        s += f"{log.get_value_string()},"
+        s = f"{s:<80}"
+        com = e.get_comment() or e.evidence.get_reference()
+        if com:
+            s += f" {com}"
+        self.event_logger.info(s)
 
     def _add(self, event: Event, entity: Optional[Entity] = None, 
              property: Tuple[PropertyKey, Any] = None) -> LoggingEvent:
@@ -89,11 +88,15 @@ class EventLogger(EventInterface, ModelListener):
         # assign all property changes during an event
         ev = LoggingEvent(self.current.event, entity=entity, property=value)
         self.logs.append(ev)
+        if self.event_logger:
+            self.print_event(ev)
 
     def connection(self, flow: Flow) -> Connection:
         lo = self._add(flow)
         e = self.inspector.connection(flow)
         lo.pick_status_verdict(e)
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
@@ -101,18 +104,26 @@ class EventLogger(EventInterface, ModelListener):
         lo = self._add(event)
         e = self.inspector.name(event)
         lo.pick_status_verdict(e)
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
     def property_update(self, update: PropertyEvent) -> Entity:
-        self._add(update)
+        lo = self._add(update)
         e = self.inspector.property_update(update)
+        lo.entity = e
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
     def property_address_update(self, update: PropertyAddressEvent) -> Entity:
-        self._add(update)
+        lo = self._add(update)
         e = self.inspector.property_address_update(update)
+        lo.entity = e
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
@@ -120,6 +131,8 @@ class EventLogger(EventInterface, ModelListener):
         lo = self._add(scan)
         e = self.inspector.service_scan(scan)
         lo.pick_status_verdict(e)
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
@@ -127,6 +140,8 @@ class EventLogger(EventInterface, ModelListener):
         lo = self._add(scan)
         e = self.inspector.host_scan(scan)
         lo.pick_status_verdict(e)
+        if self.event_logger:
+            self.print_event(lo)
         self.current = None
         return e
 
