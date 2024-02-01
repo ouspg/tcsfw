@@ -4,7 +4,7 @@ from tcsfw.address import Protocol
 from tcsfw.claim import Claim
 from tcsfw.components import DataStorages, Software, DataReference
 from tcsfw.entity import Entity
-from tcsfw.model import Host, HostType, IoTSystem, NetworkNode, Service, Connection
+from tcsfw.model import Addressable, Host, HostType, IoTSystem, NetworkNode, Service, Connection
 from tcsfw.property import PropertyKey
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
 from tcsfw.verdict import Status
@@ -188,6 +188,19 @@ class ConnectionSelector(RequirementSelector):
                     target = c.target
                     if isinstance(target, Service) and target.protocol and target.protocol.value == name:
                         yield c
+        return Selector()
+
+    def endpoint(self, endpoint: RequirementSelector) -> 'ConnectionSelector':
+        """Select connections by endpoint"""
+        parent = self
+
+        class Selector(ConnectionSelector):
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
+                for c in parent.select(entity, context):
+                    s = endpoint.select(c.source, context)
+                    yield from s
+                    t = endpoint.select(c.target, context)
+                    yield from t
         return Selector()
 
 
