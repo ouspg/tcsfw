@@ -96,7 +96,7 @@ CONTENT = ContentClaim() % "Document content review"
 
 EXPECTED = StatusClaim("Expected network nodes")
 EXPECTED_CONNECTIONS = StatusClaim("Expected connections")
-EXPECTED_SERVICES = NoUnexpectedServices() % "Network nodes and connections"
+EXPECTED_SERVICES = NoUnexpectedServices() % "No unexpected services"
 EXPECTED_AUTH = StatusClaim("Network nodes and connections")
 SERVICE_BEST_PRACTICES = (Claims.WEB_BEST_PRACTICE + ProtocolClaim()
                           + Claims.HTTP_REDIRECT) % "Protocol checks"
