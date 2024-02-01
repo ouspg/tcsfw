@@ -175,15 +175,15 @@ class ClientAPI(ModelListener):
         rs["logs"] = lr = []
         for lo in logs:
             ev = lo.event
-            en, key = lo.key
+            ent = lo.entity
             ls = {
                 "source": ev.evidence.source.name,
                 "info": ev.get_info(),
                 "ref": ev.evidence.get_reference(),
-                "entity": en.long_name(),
+                "entity": ent.long_name() if ent else "",
             }
-            if key:
-                ls["property"] = f"{key}"
+            if lo.property:
+                ls["property"] = f"{lo.property[0]}"
             lo_v = ev.get_verdict() if isinstance(ev, Verdictable) else Verdict.INCON
             if lo_v != Verdict.INCON:
                 ls["verdict"] = ev.get_verdict().value
