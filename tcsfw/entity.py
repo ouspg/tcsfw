@@ -125,6 +125,9 @@ class ClaimStatus:
             return self.claim.explain(self)
         return self.claim.text()
 
+    def __repr__(self) -> str:
+        return f"{self.verdict.value} {self.get_explanation()}"
+
 
 class ExplainableClaim(Claim):
     """A claim which can be explained, with or without status"""
