@@ -78,11 +78,10 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 AuthMech_NotUserDefined = NamedSelector("AuthMech", Locations.SERVICE.authenticated())
 # Unexpected authentication mechanism
 AuthMech_Unexpected = NamedSelector("AuthMech", Locations.SERVICE.unexpected().authenticated())
-# Unexpected update connections
-UpdMech_Unexpected = NamedSelector("UpdMech",
-                                   Locations.HOST.type_of(HostType.DEVICE) / Locations.CONNECTION.unexpected())
-# Unexpected communication mechanisms
-ComMech_Unexpected = NamedSelector("ComMech", Locations.CONNECTION.unexpected())
+# All update connections, including unexpected
+UpdMech_All = NamedSelector("UpdMech", Locations.CONNECTION.unexpected().endpoint(DEVICE))
+# All communication mechanisms, including unexpected
+ComMech_All = NamedSelector("ComMech", Locations.CONNECTION.unexpected())
 # Unexpected communication mechanisms after secure boot failure
 SecBoot_Unexpected = NamedSelector("SecBoot", Locations.HOST.type_of(HostType.DEVICE)
                                    / Locations.CONNECTION.unexpected())
@@ -205,7 +204,7 @@ class EtsiTs103701(Specification):
         self.make("5.3-6-2c", IXIT.UpdMech, claim=UI)
         self.make("5.3-6-2d", IXIT.UpdMech, claim=UI)
         # 5.3.10.1 Test case 5.3-10-1 (conceptual/functional)
-        self.make("5.3-10-1c", IXIT.UpdMech, UpdMech_Unexpected, EXPECTED_CONNECTIONS)
+        self.make("5.3-10-1c", IXIT.UpdMech, UpdMech_All, EXPECTED_CONNECTIONS)
         self.make("5.3-13-2a", IXIT.UserInfo, claim=AVAILABILITY.resource("published-support-period"))
         self.make("5.3-13-2b", IXIT.UserInfo, claim=AVAILABILITY.resource("published-support-period"))
         self.make("5.3-13-2c", IXIT.UserInfo, claim=CONTENT.resource("published-support-period"))
@@ -235,15 +234,15 @@ class EtsiTs103701(Specification):
         self.make("5.5-4-2b", IXIT.SoftServ, claim=ACCESS_CONTROL)  # grant
         self.make("5.5-4-2c", IXIT.SoftServ, claim=AUTHENTICATION)  # dupe
         self.make("5.5-5-2a", IXIT.SoftServ, reference="5.5-4-2")  # to SoftServ tests
-        self.make("5.5-5-2b", IXIT.ComMech, ComMech_Unexpected, EXPECTED_CONNECTIONS)
+        self.make("5.5-5-2b", IXIT.ComMech, ComMech_All, EXPECTED_CONNECTIONS)
         self.make("5.5-6-2a", IXIT.SecParam, reference="5.5-1-2")  # to CommMech tests
         self.make("5.5-7-2a", IXIT.SecParam, reference="5.5-1-2")  # to ComMech tests, remote only
-        self.make("5.6-1-2a", IXIT.Intf, claim=EXPECTED)  # also physical interfaces
-        self.make("5.6-1-2b", IXIT.Intf, claim=EXPECTED)
-        self.make("5.6-2-2a", IXIT.Intf, claim=EXPECTED)  # could also scan service best practices
+        self.make("5.6-1-2a", IXIT.Intf, ComMech_All, claim=Claims.EXPECTED)  # also physical interfaces
+        self.make("5.6-1-2b", IXIT.Intf, ComMech_All, claim=Claims.EXPECTED)
+        self.make("5.6-2-2a", IXIT.Intf, ComMech_All, claim=Claims.EXPECTED)  # could also scan service best practices
         self.make("5.6-3-2a", IXIT.Intf, Intf_Physical, PHYSICAL_MANIPULATION)
         self.make("5.6-3-2b", IXIT.Intf, Intf_Physical, PHYSICAL_MANIPULATION)
-        self.make("5.6-3-2c", IXIT.Intf, claim=EXPECTED)  # only air interfaces
+        self.make("5.6-3-2c", IXIT.Intf, ComMech_All)  # only air interfaces
         self.make("5.6-3-2d", IXIT.Intf, Intf_Physical, EXPECTED_SERVICES)
         self.make("5.6-4-2a", IXIT.Intf, Intf_Physical, EXPECTED_SERVICES)
         self.make("5.6-4-2b", IXIT.Intf, Intf_Physical, EXPECTED_SERVICES)
@@ -446,7 +445,7 @@ class EtsiTs103701(Specification):
         self.requirement_map = new_r
 
     def make(self, identifier: str, ixit: IXIT_Section,
-             location: Optional[RequirementSelector] = None,  claim=EntityClaim(),
+             select: Optional[RequirementSelector] = None,  claim=EntityClaim(),
              reference="") -> Requirement:
         """Make a requirement"""
         assert identifier not in self.requirement_map, f"Double {identifier}"
@@ -470,10 +469,10 @@ class EtsiTs103701(Specification):
         unit = self.test_units[identifier]
         if unit.functional:
             props[Properties.FUNCTIONAL] = True
-        if ixit.location:
+        if select:
+            selector = select
+        elif ixit.location:
             selector = ixit.location
-        elif location:
-            selector = location
         else:
             assert False, f"No selector for {identifier}"
         r = Requirement((self.specification_id, identifier), unit.purpose, selector, claim)
@@ -498,7 +497,7 @@ class EtsiTs103701(Specification):
         bases: Dict[str, Set[Entity]] = {}
         for req, ent, claim in selected:
             sel = req.selector
-            assert isinstance(sel, NamedSelector)
+            assert isinstance(sel, NamedSelector), f"Requirement selector should be named: {req.identifier_string()}"
             bases.setdefault(sel.name, set()).add(ent)
         aliases: Dict[str, Dict[Entity, str]] = {}
         for base, es in bases.items():
