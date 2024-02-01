@@ -177,21 +177,11 @@ class CoverageReport:
                 flags = Properties.get_flags(ps)
                 if flags:
                     assert len(flags) == 1, f"Multiple flags for {r.identifier_string()} {ent.long_name()}"
-                cs_ps = set(flags)
-                tool_cov = self.coverage.tool_coverage.get(ent, {})
-                for p in ps.keys():
-                    cs_ps.update([t.name for t in tool_cov.get(p, ())])
-
                 ent_alias = mapping.aliases.get((r, ent, cs.claim))
                 s_name = f"{ent.long_name()} ({ent_alias})" if ent_alias else ent.long_name()
                 css = []
                 for p in sorted(ps.keys()):
-                    p_tools = tool_cov.get(p)
-                    if p_tools:
-                        pt_names = ",".join([t.name for t in sorted(p_tools)])
-                        css.append(f"{p.get_name()} ({pt_names})")
-                    else:
-                        css.append(p.get_name())
+                    css.append(p.get_name())
                 if cs.verdict in {Verdict.PASS, Verdict}:
                     cov_c += 1
                 m = self._status_marker(cs)
