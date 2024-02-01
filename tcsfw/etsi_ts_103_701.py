@@ -16,7 +16,7 @@ from tcsfw.model import HostType, IoTSystem, Host, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Specification, Requirement, SelectorContext, SpecificationSelectorContext, \
     EntitySelector
-from tcsfw.selector import Locations, UpdateConnectionSelector, RequirementSelector, NamedSelector
+from tcsfw.selector import Locations, UpdateConnectionSelector, RequirementSelector
 
 
 class IXIT_Section:
@@ -25,7 +25,7 @@ class IXIT_Section:
     def __init__(self, name: str, number: int, location: Optional[RequirementSelector] = None):
         self.name = name
         self.number = number
-        self.location = NamedSelector(name, location or EntitySelector())
+        self.location = location or EntitySelector()
         self.SectionList.append(self)
 
     def __repr__(self):
@@ -75,22 +75,21 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 
 # Special locators
 # Services which use passwords that are not defined by the user
-AuthMech_NotUserDefined = NamedSelector("AuthMech", Locations.SERVICE.authenticated())
+AuthMech_NotUserDefined = Locations.SERVICE.authenticated()
 # Unexpected authentication mechanism
-AuthMech_Unexpected = NamedSelector("AuthMech", Locations.SERVICE.unexpected().authenticated())
+AuthMech_Unexpected = Locations.SERVICE.unexpected().authenticated()
 # All update connections, including unexpected
-UpdMech_All = NamedSelector("UpdMech", Locations.CONNECTION.unexpected().endpoint(DEVICE))
+UpdMech_All = Locations.CONNECTION.unexpected().endpoint(DEVICE)
 # All communication mechanisms, including unexpected
-ComMech_All = NamedSelector("ComMech", Locations.CONNECTION.unexpected())
+ComMech_All = Locations.CONNECTION.unexpected()
 # Unexpected communication mechanisms after secure boot failure
-SecBoot_Unexpected = NamedSelector("SecBoot", Locations.HOST.type_of(HostType.DEVICE)
-                                   / Locations.CONNECTION.unexpected())
+SecBoot_Unexpected = Locations.HOST.type_of(HostType.DEVICE) / Locations.CONNECTION.unexpected()
 # A physical interface - FIXME: no filter for them!
-Intf_Physical = NamedSelector("Intf", Locations.HOST.type_of(HostType.DEVICE))
+Intf_Physical = Locations.HOST.type_of(HostType.DEVICE)
 # Personal data (items)
-UserInfo_Personal = NamedSelector("UserInfo", Locations.DATA.personal())
+UserInfo_Personal = Locations.DATA.personal()
 # No selector
-NO_SELECTOR = NamedSelector("None", Locations.SYSTEM)
+NO_SELECTOR = Locations.SYSTEM
 
 # Claims
 UI = UserInterfaceClaim() % "UI"
