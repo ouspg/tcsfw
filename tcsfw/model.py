@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from tcsfw.address import AnyAddress, Addresses, EndpointAddress, Protocol, IPAddress, HWAddress, DNSName
 from tcsfw.entity import Entity
+from tcsfw.property import PropertyKey
 from tcsfw.traffic import Flow, EvidenceSource
 from tcsfw.verdict import Status, Verdict
 
@@ -326,7 +327,7 @@ class Addressable(NetworkNode):
         """New connection with this entity either as source or target"""
         pass
 
-    def set_seen_now(self) -> Optional[Verdict]:
+    def set_seen_now(self) -> Optional[Tuple[PropertyKey, Any]]:
         v = super().set_seen_now()
         if self.parent and v is not None:
             # propagate to parent, it is also seen now
@@ -662,6 +663,10 @@ class ModelListener:
 
     def hostChange(self, host: Host):
         """Host created or changed"""
+        pass
+
+    def propertyChange(self, entity: Entity, value: Tuple[PropertyKey, Any]):
+        """Property changed. Not all changes create events, just the 'important' ones"""
         pass
 
 

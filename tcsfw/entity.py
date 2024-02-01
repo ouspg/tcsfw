@@ -30,7 +30,7 @@ class Entity:
         self.properties[key_value[0]] = key_value[1]
         return self
 
-    def set_seen_now(self) -> Optional[Verdict]:
+    def set_seen_now(self) -> Optional[Tuple[PropertyKey, Any]]:
         """The entity is seen now, update and return new verdict IF changed"""
         v = Properties.EXPECTED.get_verdict(self.properties)
         if self.status == Status.EXPECTED: 
@@ -43,8 +43,9 @@ class Entity:
             v = Verdict.FAIL
         else:
             return None  # does not matter if seen or not
-        self.set_property(Properties.EXPECTED.value(v))
-        return v
+        nv = Properties.EXPECTED.value(v)
+        self.set_property(nv)
+        return nv
 
     def get_expected_verdict(self, default: Optional[Verdict] = Verdict.INCON) -> Verdict:
         """Get the expected verdict or undefined"""
