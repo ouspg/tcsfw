@@ -254,6 +254,14 @@ class CoverageReport:
                     "value": True if v else False,  # boolean value
                     "tools": [s.name],  # NOTE: perhaps we have many later
                 }
+            # show properties without known sources, as well
+            for p, v in ps.items():
+                if p in sources:
+                    continue
+                r[p] = {
+                    "value": True if v else False,  # boolean value
+                    "tools": [],  # no source
+                }
         return r
 
     def _create_coverage(self, specification: Specification) -> Dict:
