@@ -74,22 +74,20 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 
 
 # Special locators
-# Services which use passwords that are not defined by the user
+# Services which use passwords, which are not defined by the user (not detectable)
 AuthMech_NotUserDefined = Locations.SERVICE.authenticated()
-# Unexpected authentication mechanism
-AuthMech_Unexpected = Locations.SERVICE.unexpected().authenticated()
+# All authentication mechanism, including unexpected
+AuthMech_All = Locations.SERVICE.unexpected().authenticated()
 # All update connections, including unexpected
 UpdMech_All = Locations.CONNECTION.unexpected().endpoint(DEVICE)
 # All communication mechanisms, including unexpected
 ComMech_All = Locations.CONNECTION.unexpected()
 # Unexpected communication mechanisms after secure boot failure
 SecBoot_Unexpected = Locations.HOST.type_of(HostType.DEVICE) / Locations.CONNECTION.unexpected()
-# A physical interface - FIXME: no filter for them!
+# A physical interface (not detetable)
 Intf_Physical = Locations.HOST.type_of(HostType.DEVICE)
 # Personal data (items)
 UserInfo_Personal = Locations.DATA.personal()
-# No selector
-NO_SELECTOR = Locations.SYSTEM
 
 # Claims
 UI = UserInterfaceClaim() % "UI"
@@ -183,14 +181,14 @@ class EtsiTs103701(Specification):
 
         # Test units for functional test cases (109)
 
-        self.make("5.1-1-2a", IXIT.AuthMech, AuthMech_Unexpected, EXPECTED_AUTH)  # UI junior partner
+        self.make("5.1-1-2a", IXIT.AuthMech, AuthMech_All, EXPECTED_AUTH)  # UI junior partner
         self.make("5.1-1-2b", IXIT.AuthMech, claim=UI)
         self.make("5.1-1-2c", IXIT.AuthMech, AuthMech_NotUserDefined, PASSWORDS_VALID)
         self.make("5.1-2-2a", IXIT.AuthMech, AuthMech_NotUserDefined, PASSWORDS_VALID)
         self.make("5.1-3-2a", IXIT.AuthMech, claim=AUTHENTICATION)
         self.make("5.1-4-2a", IXIT.AuthMech, claim=UI)
         self.make("5.1-4-2b", IXIT.AuthMech, claim=UI)
-        self.make("5.1-5-2a", IXIT.AuthMech, AuthMech_Unexpected, EXPECTED_AUTH)
+        self.make("5.1-5-2a", IXIT.AuthMech, AuthMech_All, EXPECTED_AUTH)
         self.make("5.1-5-2b", IXIT.AuthMech, claim=AUTH_BRUTE_FORCE)
         self.make("5.2-1-2a", IXIT.UserInfo, claim=AVAILABILITY.resource("vulnerability-disclosure-policy"))
         self.make("5.2-1-2b", IXIT.UserInfo, claim=CONTENT.resource("vulnerability-disclosure-policy"))
