@@ -24,13 +24,15 @@ class ClaimContext:
     def check(self, claim: 'EntityClaim', entity: Entity) -> Optional[ClaimStatus]:
         """Resolve claim results"""
         base_cs = claim.check(entity, self)  # always run the check for collecting data
-        property_key = claim.get_override_key(entity)
-        override = entity.properties.get(property_key)
-        is_override = isinstance(override, PropertyVerdictValue)
-        if is_override and override.verdict != Verdict.INCON:
-            # verdict overriden to non-inconclusive
-            self.properties.setdefault((entity, claim), {})[property_key] = True
-            cs = ClaimStatus(claim, verdict=override.verdict, explanation=override.explanation,
+        manual_key = claim.get_override_key(entity)
+        manual_val = entity.properties.get(manual_key) # the value may not match the PropertyKey expectations
+        if manual_key:
+            self.mark_coverage(entity, claim, manual_key, value=manual_val)
+        is_manual = isinstance(manual_val, PropertyVerdictValue)
+        if is_manual and manual_val.verdict != Verdict.INCON:
+            # manual override for the value
+            self.properties.setdefault((entity, claim), {})[manual_key] = True
+            cs = ClaimStatus(claim, verdict=manual_val.verdict, explanation=manual_val.explanation,
                              authority=ClaimAuthority.MANUAL)
         else:
             cs = base_cs
