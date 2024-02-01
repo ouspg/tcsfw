@@ -130,6 +130,7 @@ class ServiceSelector(RequirementSelector):
 
 
 class ConnectionSelector(RequirementSelector):
+    """Select connections"""
     def __init__(self, include_unexpected=False):
         self.include_unexpected = include_unexpected
 
@@ -137,7 +138,6 @@ class ConnectionSelector(RequirementSelector):
         """Include unexpected entities, too?"""
         return ConnectionSelector(include_unexpected=include)
 
-    """Select connections"""
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
         if isinstance(entity, Connection):
             if context.include_connection(entity):
@@ -156,20 +156,22 @@ class ConnectionSelector(RequirementSelector):
                 yield from self.select(c, context)
 
     def encrypted(self) -> 'ConnectionSelector':
+        """Select encrypted connections"""
         parent = self
 
         class Selector(ConnectionSelector):
-            def select(self, entity: Entity, context: SelectorContext) -> List[Connection]:
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
                 for c in parent.select(entity, context):
                     if c.is_encrypted():
                         yield c
         return Selector()
 
     def authenticated(self) -> 'ConnectionSelector':
+        """Select authenticated connections"""
         parent = self
 
         class Selector(ConnectionSelector):
-            def select(self, entity: Entity, context: SelectorContext) -> List[Connection]:
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
                 for c in parent.select(entity, context):
                     target = c.target
                     if isinstance(target, Service) and target.authentication:
@@ -177,10 +179,11 @@ class ConnectionSelector(RequirementSelector):
         return Selector()
 
     def protocol(self, name: str) -> 'ConnectionSelector':
+        """Select connections by protocol"""
         parent = self
 
         class Selector(ConnectionSelector):
-            def select(self, entity: Entity, context: SelectorContext) -> List[Connection]:
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
                 for c in parent.select(entity, context):
                     target = c.target
                     if isinstance(target, Service) and target.protocol and target.protocol.value == name:
@@ -190,7 +193,7 @@ class ConnectionSelector(RequirementSelector):
 
 class UpdateConnectionSelector(ConnectionSelector):
     """Select update connections of a software"""
-    def select(self, entity: Entity, context: SelectorContext) -> List[Connection]:
+    def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
         for sw in SoftwareSelector().select(entity, context):
             for c in sw.update_connections:
                 yield c
@@ -276,7 +279,7 @@ class AlternativeSelectors(RequirementSelector):
     def __add__(self, other: RequirementSelector) -> 'AlternativeSelectors':
         return AlternativeSelectors(self.sub + [other])
 
-    def select(self, entity: Entity, context: SelectorContext) -> List[Entity]:
+    def select(self, entity: Entity, context: SelectorContext) -> Iterator[Entity]:
         for s in self.sub:
             yield from s.select(entity, context)
 
