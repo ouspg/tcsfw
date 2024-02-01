@@ -62,7 +62,9 @@ class EventLogger(EventInterface, ModelListener):
             s = f"{s:<40}"
             s += f"{lo.get_value_string()},"
             s = f"{s:<80}"
-            s += e.get_comment() or e.evidence.get_reference()
+            com = e.get_comment() or e.evidence.get_reference()
+            if com:
+                s += f" {com}"
             writer.write(f"{s}\n")
 
     def _add(self, event: Event, entity: Optional[Entity] = None, 

@@ -63,10 +63,13 @@ class Inspector(EventInterface):
         send = set()  # connection, flow, source and/or target
 
         def update_seen_status(entity: Addressable):
-            prop = entity.set_seen_now()
-            if prop is not None:
+            changed = []
+            entity.set_seen_now(changed)
+            for ent in changed:
                 # verdict change, send event
+                prop = Properties.EXPECTED.value(ent.get_expected_verdict())
                 self.system.call_listeners(lambda ln: ln.propertyChange(entity, prop))
+
 
         # if we have a connection, the endpoints cannot be placeholders
         source, target = conn.source, conn.target

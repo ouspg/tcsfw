@@ -327,12 +327,12 @@ class Addressable(NetworkNode):
         """New connection with this entity either as source or target"""
         pass
 
-    def set_seen_now(self) -> Optional[Tuple[PropertyKey, Any]]:
-        v = super().set_seen_now()
-        if self.parent and v is not None:
+    def set_seen_now(self, changes: List[Entity] = None) -> bool:
+        r = super().set_seen_now(changes)
+        if r and self.parent and not isinstance(self.parent, IoTSystem):
             # propagate to parent, it is also seen now
-            self.parent.set_seen_now()
-        return v
+            self.parent.set_seen_now(changes)
+        return r
 
     def get_system(self) -> 'IoTSystem':
         return self.parent.get_system()
@@ -641,7 +641,7 @@ class IoTSystem(NetworkNode):
     def __repr__(self):
         s = []
         for h in self.get_hosts():
-            s.append(f"{h.status} {h.name} {sorted(h.addresses)}")
+            s.append(f"{h.status.value} {h.name} {sorted(h.addresses)}")
         for conn in self.connections.values():
             s.append(f"{conn.status} {conn}")
         return "\n".join(s)
