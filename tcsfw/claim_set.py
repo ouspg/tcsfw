@@ -497,23 +497,26 @@ class NoUnexpectedServices(EntityClaim):
             return ClaimStatus(self, verdict=Verdict.PASS, explanation="Browser cannot open services",
                                authority=ClaimAuthority.TOOL)
         services = [c for c in entity.children if c.is_relevant()]
-        exp_c, see_c, un_c = 0, 0, 0
+        un_exp = []
+        exp_c, see_c, = 0, 0
         for c in services:
-            if c.get_expected_verdict() == Verdict.PASS:
+            c_ver = c.get_expected_verdict()
+            if c_ver == Verdict.PASS:
                 exp_c += 1
-                see_c += 1 if Properties.EXPECTED.get_verdict(c.properties) == Verdict.PASS else 0
+                see_c += 1
+            elif c_ver == Verdict.INCON:
+                exp_c += 1
             else:
-                un_c += 1
-        if exp_c == 0 and un_c == 0:
-            exp = "No expected services"
-        else:
-            exp = f"{see_c}/{exp_c} expected services"
-        if un_c > 0:
-            exp += f", but {un_c} unexpected ones"
-        if see_c == 0 and exp_c > 0 and un_c == 0:
+                un_exp.append(c.name)
+        exp = f"{see_c}/{exp_c} expected services"
+        if len(un_exp) > 0:
+            exp += ", unexpected: " + ", ".join(un_exp)
+        if len(un_exp) > 0:
+            ver = Verdict.FAIL
+        if see_c < exp_c:
             ver = Verdict.INCON
         else:
-            ver = Verdict.PASS if un_c == 0 else Verdict.FAIL
+            ver = Verdict.PASS
         context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=exp)
 
