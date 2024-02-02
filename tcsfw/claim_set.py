@@ -484,7 +484,7 @@ class ContentClaim(AvailabilityClaim):
 
 
 class NoUnexpectedServices(EntityClaim):
-    """No unexpected services"""
+    """No unexpected services, covers also administrative services"""
     def __init__(self, description="No unexpected services found"):
         super().__init__(description)
 
@@ -500,7 +500,7 @@ class NoUnexpectedServices(EntityClaim):
         un_exp = []
         exp_c, see_c, = 0, 0
         for c in services:
-            c_ver = c.get_expected_verdict()
+            c_ver = context.get_property_verdict(c, self, Properties.EXPECTED, c.properties) or Verdict.INCON
             if c_ver == Verdict.PASS:
                 exp_c += 1
                 see_c += 1
@@ -517,7 +517,8 @@ class NoUnexpectedServices(EntityClaim):
             ver = Verdict.INCON
         else:
             ver = Verdict.PASS
-        context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
+        # FIXME: Nuke the property?
+        # context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=exp)
 
 
