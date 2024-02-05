@@ -67,6 +67,7 @@ class Inspector(EventInterface):
             entity.set_seen_now(changed)
             for ent in changed:
                 # verdict change, send event
+                send.add(entity)  # NOTE: Event sent after property event - not good
                 prop = Properties.EXPECTED.value(ent.get_expected_verdict())
                 self.system.call_listeners(lambda ln: ln.propertyChange(entity, prop))
 

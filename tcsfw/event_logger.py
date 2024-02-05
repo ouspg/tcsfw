@@ -152,9 +152,9 @@ class EventLogger(EventInterface, ModelListener):
             r[c] = []  # expected connections without flows
         for lo in self.logs:
             event = lo.event
-            if not isinstance(event, Flow):
-                continue
-            c = cast(Connection, lo.property[0])
+            if not isinstance(event, Flow) or lo.property:
+                continue  # only collect pure flows, not property updates
+            c = cast(Connection, lo.entity)
             cs = r.setdefault(c, [])
             s, t = event.get_source_address(), event.get_target_address()
             cs.append((s, t, event))
