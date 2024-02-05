@@ -4,7 +4,7 @@ from tcsfw.claim_set import Claims, EncryptionClaim, UpdateClaim, ReleaseClaim, 
     NoVulnerabilitiesClaim, ProtocolClaim, StatusClaim
 from tcsfw.model import HostType
 from tcsfw.requirement import Specification
-from tcsfw.selector import Locations
+from tcsfw.selector import ConnectionSelector, HostSelector, Locations, ServiceSelector
 
 
 def req(text: str, extends: Claim):
@@ -23,15 +23,15 @@ class DefaultSpecification(Specification):
         # [x] Network nodes are defined
         self.no_unexpected_nodes = self._req(
             "no-unexp-nodes",
-            Locations.HOST.unexpected() ^ Claims.name("Network nodes are defined", Claims.EXPECTED))
+            HostSelector(with_unexpected=True) ^ Claims.name("Network nodes are defined", Claims.EXPECTED))
         # [x] Network services are defined
         self.no_unexpected_services = self._req(
             "no-unexp-services",
-            Locations.SERVICE.unexpected() ^ Claims.name("Network services are defined", Claims.EXPECTED))
+            ServiceSelector(with_unexpected=True) ^ Claims.name("Network services are defined", Claims.EXPECTED))
         # [ ] Network connections are defined
         self.no_unexpected_connections = self._req(
             "no-unexp-connections",
-            Locations.CONNECTION.unexpected() ^ Claims.name("Network connections are defined", Claims.EXPECTED))
+            ConnectionSelector(with_unexpected=True) ^ Claims.name("Network connections are defined", Claims.EXPECTED))
         # Interface security
         # [ ] Protocol best practises are used
         self.protocol_best = self._req(

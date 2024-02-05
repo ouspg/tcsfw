@@ -16,7 +16,7 @@ from tcsfw.model import HostType, IoTSystem, Host, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Specification, Requirement, SelectorContext, SpecificationSelectorContext, \
     EntitySelector
-from tcsfw.selector import Locations, UpdateConnectionSelector, RequirementSelector
+from tcsfw.selector import ConnectionSelector, HostSelector, Locations, ServiceSelector, UpdateConnectionSelector, RequirementSelector
 
 
 class IXIT_Section:
@@ -33,7 +33,7 @@ class IXIT_Section:
 
 
 DEVICE = Locations.HOST.type_of(HostType.DEVICE)
-DEVICE_UNEXPECTED = Locations.HOST.unexpected().type_of(HostType.DEVICE)
+DEVICE_UNEXPECTED = HostSelector(with_unexpected=True).type_of(HostType.DEVICE)
 
 class IXIT:
     AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Locations.SERVICE.authenticated())
@@ -63,7 +63,7 @@ class IXIT:
     DelFunc = IXIT_Section("DelFunc", 25, Locations.SYSTEM)
     UserDec = IXIT_Section("UserDec", 26, Locations.SYSTEM)
     UserIntf = IXIT_Section("UserIntf", 27, Locations.SYSTEM)
-    ExtAPI = IXIT_Section("ExtAPI", 28, DEVICE / Locations.SERVICE.unexpected())
+    ExtAPI = IXIT_Section("ExtAPI", 28, DEVICE / ServiceSelector(with_unexpected=True))
     InpVal = IXIT_Section("InpVal", 29, DEVICE / Locations.SERVICE)
 
     # Not from ETSI
@@ -78,13 +78,13 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 # Services which use passwords, which are not defined by the user (not detectable)
 AuthMech_NotUserDefined = DEVICE / Locations.SERVICE.authenticated()
 # All authentication mechanism, including unexpected
-AuthMech_All = DEVICE / Locations.SERVICE.unexpected().authenticated()
+AuthMech_All = DEVICE / ServiceSelector(with_unexpected=True).authenticated()
 # All update connections, including unexpected
-UpdMech_All = Locations.CONNECTION.unexpected().endpoint(DEVICE)
+UpdMech_All = ConnectionSelector(with_unexpected=True).endpoint(DEVICE)
 # All communication mechanisms, including unexpected
-ComMech_All = Locations.CONNECTION.unexpected()
+ComMech_All = ConnectionSelector(with_unexpected=True)
 # Unexpected communication mechanisms after secure boot failure
-SecBoot_Unexpected = Locations.HOST.type_of(HostType.DEVICE) / Locations.CONNECTION.unexpected()
+SecBoot_Unexpected = Locations.HOST.type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
 # A physical interface (same as Intf now))
 Intf_Physical = DEVICE_UNEXPECTED
 # All hosts which can have ExtAPI

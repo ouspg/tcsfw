@@ -53,20 +53,15 @@ class SystemSelector(RequirementSelector):
 
 class HostSelector(RequirementSelector):
     """Select hosts"""
-    def __init__(self, include_unexpected=False):
-        self.include_unexpected = include_unexpected
-
-    def unexpected(self, include=True) -> 'HostSelector':
-        """Include unexpected entities, too?"""
-        # NOTE: This bypasses other selectors, so it should be first
-        return HostSelector(include_unexpected=include)
+    def __init__(self, with_unexpected=False):
+        self.with_unexpected = with_unexpected
 
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Host]:
         """Select child entities which are hosts"""
         if isinstance(entity, Host):
             if context.include_host(entity):
                 yield entity
-            elif self.include_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
+            elif self.with_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
                 yield entity
         elif entity.is_host_reachable():
             for c in entity.get_children():
@@ -94,18 +89,14 @@ class HostSelector(RequirementSelector):
 
 class ServiceSelector(RequirementSelector):
     """Select services"""
-    def __init__(self, include_unexpected=False):
-        self.include_unexpected = include_unexpected
-
-    def unexpected(self, include=True) -> 'ServiceSelector':
-        """Include unexpected entities, too?"""
-        return ServiceSelector(include_unexpected=include)
+    def __init__(self, with_unexpected=False):
+        self.with_unexpected = with_unexpected
 
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Service]:
         if isinstance(entity, Service):
             if context.include_service(entity):
                 yield entity
-            elif self.include_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
+            elif self.with_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
                 # NOTE: all unexpected are included, even administrative
                 yield entity
         elif entity.is_host_reachable():
@@ -133,18 +124,14 @@ class ServiceSelector(RequirementSelector):
 
 class ConnectionSelector(RequirementSelector):
     """Select connections"""
-    def __init__(self, include_unexpected=False):
-        self.include_unexpected = include_unexpected
-
-    def unexpected(self, include=True) -> 'ConnectionSelector':
-        """Include unexpected entities, too?"""
-        return ConnectionSelector(include_unexpected=include)
+    def __init__(self, with_unexpected=False):
+        self.with_unexpected = with_unexpected
 
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
         if isinstance(entity, Connection):
             if context.include_connection(entity):
                 yield entity
-            elif self.include_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
+            elif self.with_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
                 # NOTE: all unexpected are included, even administrative
                 yield entity
         elif isinstance(entity, IoTSystem):
