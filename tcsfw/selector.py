@@ -58,6 +58,7 @@ class HostSelector(RequirementSelector):
 
     def unexpected(self, include=True) -> 'HostSelector':
         """Include unexpected entities, too?"""
+        # NOTE: This bypasses other selectors, so it should be first
         return HostSelector(include_unexpected=include)
 
     def select(self, entity: Entity, context: SelectorContext) -> Iterator[Host]:
@@ -105,6 +106,7 @@ class ServiceSelector(RequirementSelector):
             if context.include_service(entity):
                 yield entity
             elif self.include_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
+                # NOTE: all unexpected are included, even administrative
                 yield entity
         elif entity.is_host_reachable():
             for c in entity.get_children():
@@ -143,6 +145,7 @@ class ConnectionSelector(RequirementSelector):
             if context.include_connection(entity):
                 yield entity
             elif self.include_unexpected and entity.is_relevant() and entity.status == Status.UNEXPECTED:
+                # NOTE: all unexpected are included, even administrative
                 yield entity
         elif isinstance(entity, IoTSystem):
             dupes = set()
