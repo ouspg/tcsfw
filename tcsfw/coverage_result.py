@@ -213,15 +213,15 @@ class CoverageReport:
             writer.write(f"  {n:<4} {cc / c * 100:.0f}% {cc}/{c}\n")
 
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
-        if status is None:
-            return "."
-        if status.verdict == Verdict.INCON:
-            return "?"
-        if status.verdict != Verdict.PASS:
-            return "!"
-        if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
-            return "X"  # actually verified!
-        return "x"
+        if status is None or status.verdict == Verdict.INCON:
+            return " "
+        if status.verdict == Verdict.IGNORE:
+            return "-"
+        if status.verdict == Verdict.PASS:
+            if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
+                return "X"
+            return "x"
+        raise Exception(f"Unknown verdict {status.verdict}")
 
     @classmethod
     def _light(self, verdict: Verdict) -> str:
