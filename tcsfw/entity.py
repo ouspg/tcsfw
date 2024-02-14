@@ -104,9 +104,9 @@ class Entity:
 
 class ClaimAuthority(enum.Enum):
     """Claim or claim status authority"""
-    TOOL = "Tool"            # Tool verified
-    MANUAL = "Manual"        # Manually verified
-    MODEL = "Model"          # Original model claim, not verified
+    MODEL = "Model"          # Model claim, inferred from model
+    TOOL = "Tool"            # Tool verified claim
+    MANUAL = "Manual"        # Manually verified claim
 
 
 class ClaimStatus:

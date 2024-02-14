@@ -216,7 +216,9 @@ class CoverageReport:
         if status is None or status.verdict == Verdict.INCON:
             return " "
         if status.verdict == Verdict.IGNORE:
-            return "-"
+            if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
+                return "-"
+            return "."
         if status.verdict == Verdict.PASS:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "X"
