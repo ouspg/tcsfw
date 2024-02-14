@@ -95,7 +95,7 @@ class CoverageReport:
             passed = [s for s in er.values() if s.result.verdict == Verdict.PASS]
             s = specification.get_short_info(req)
             s = f"{s:<40}"
-            s += f" {len(passed):>3}/{len(er):<3}"
+            s += f" {len(passed):>3}/{len(all):<3}"
             props = set()
             for st in er.values():
                 for pd in st.context.properties.values():
