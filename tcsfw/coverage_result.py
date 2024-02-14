@@ -89,11 +89,18 @@ class CoverageReport:
         mapping = self._get_mappings(specification)
         requirements = mapping.get_by_requirements()
 
-        for req, er in requirements.items():
+        for req in specification.requirement_map.values():
+            er = requirements.get(req, {})
+            all = [s for s in er.values() if s.result.verdict != Verdict.IGNORE]
             passed = [s for s in er.values() if s.result.verdict == Verdict.PASS]
             s = specification.get_short_info(req)
             s = f"{s:<40}"
             s += f" {len(passed):>3}/{len(er):<3}"
+            props = set()
+            for st in er.values():
+                for pd in st.context.properties.values():
+                    props.update([p for p, v in pd.items() if v is not None])
+            s += " " + ", ".join(sorted([p.get_name() for p in props]))
             writer.write(f"{s}\n")
 
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
