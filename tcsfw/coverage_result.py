@@ -53,9 +53,7 @@ class CoverageReport:
         if "_" in name:
             name, _, ps= name.rpartition("_")
             pri = int(ps)
-        if name == "reqs":
-            self._print_by_requirements(writer, specification, priority=pri)
-        elif name == "stats":
+        if name == "stats":
             self._print_statistics(writer, specification)
         elif not name:
             self._print_coverage(writer, specification)
@@ -89,128 +87,14 @@ class CoverageReport:
 
     def _print_statistics(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
+        requirements = mapping.get_by_requirements()
 
-        columns = {Verdict.PASS: 0, Verdict.FAIL: 1, Verdict.INCON: 2, Verdict.IGNORE: 3}
-        verdicts: Dict[str, Dict[str, List[Set[int]]]] = {
-            "ui+": {},
-            "def": {},
-        }
-        properties: Dict[str, Dict[str, Dict[Requirement, Set[str]]]] = {
-            "ui+": {},
-            "def": {},
-        }
-
-        for req, er in mapping.get_by_requirements().items():
-            props: Dict[PropertyKey, bool] = {}
-            ver = None
-            for ent, stat in er.items():
-                props.update(self._list_properties(stat))
-                ver = Verdict.aggregate(ver, stat.result.verdict)
-            target = req.selector.get_name()
-            flags = sorted(Properties.get_flags(props))
-            flag = "ui+" if flags else "def"
-            ds = verdicts[flag]
-            v_col = ds.get(target)
-            if not v_col:
-                v_col = ds[target] = [set() for _ in range(0, len(columns))]
-            v_col[columns[ver]].add(req)
-            p_set = properties[flag].setdefault(target, {})
-            pp_set = p_set.setdefault(req, set())
-            for p in props.keys():
-                pn = p.get_name()
-                pp_set.add(pn[6:] if pn.startswith("check:") else pn)  # remove the obvious prefix
-
-        def print_set(value: Tuple[str, ...]) -> str:
-            return ",".join(value)
-
-        writer.write("== Requirement statistics ==\n")
-        writer.write(f"  {'':<10} Pass Fail Nots Unde Igno  +++\n")
-        for flag, fs in verdicts.items():
-            writer.write(f"Flag {flag}\n")
-            c_sum = [0] * (len(columns) + 1)
-            for target, ts in fs.items():
-                f_sum = 0
-                for f in range(0, len(columns)):
-                    c_sum[f] += len(ts[f])
-                    f_sum += len(ts[f])
-                vals = [f"{len(v):>4}" for v in ts]
-                vals.append(f"{f_sum:>4}")
-
-                t_props = properties[flag].get(target, [])
-                ps_counts: Dict[Tuple[str, ...], int] = {}
-                ps_count_tot = 0
-                for p_set in t_props.values():
-                    p_key = tuple(sorted(p_set))
-                    ps_counts[p_key] = ps_counts.get(p_key, 0) + 1
-                    ps_count_tot += 1
-                ps_str = " ".join([f"{v}({print_set(k)})" for k, v in ps_counts.items()])
-
-                writer.write(f"  {target:<10} {' '.join(vals)}  {ps_str}\n")
-                c_sum[-1] += f_sum
-
-                # assert f_sum == ps_count_tot, f"Req counts {f_sum} != {ps_count_tot}"
-
-            writer.write(f"  {'':<10} {'---- ' * (len(columns) + 1)}\n")
-            sums = [f"{s:>4}" for s in c_sum]
-            writer.write(f"  {'':<10} {' '.join(sums)}\n")
-
-    def _print_by_requirements(self, writer: TextIO, specification: Specification, priority: int):
-        """Print coverage by requirements"""
-        try:
-            width = os.get_terminal_size(0).columns
-        except OSError:
-            width = 80
-
-        mapping = self._get_mappings(specification)
-        results_by_req = mapping.get_by_requirements()
-        covered: Dict[str, Tuple[int, int]] = {}
-        for r in specification.requirement_map.values():
-            if r.priority < priority:
-                continue
-
-            results_by_ent = results_by_req.get(r, {})
-            ent_lines: List[str] = []
-            cov_c = 0
-            for ent, stat in results_by_ent.items():
-                cs = stat.result
-                ps = self._list_properties(stat)
-                flags = Properties.get_flags(ps)
-                if flags:
-                    assert len(flags) == 1, f"Multiple flags for {r.identifier_string()} {ent.long_name()}"
-                ent_alias = mapping.aliases.get((r, ent, cs.claim))
-                s_name = f"{ent.long_name()} ({ent_alias})" if ent_alias else ent.long_name()
-                css = []
-                for p in sorted(ps.keys()):
-                    css.append(p.get_name())
-                if cs.verdict in {Verdict.PASS, Verdict}:
-                    cov_c += 1
-                m = self._status_marker(cs)
-                ent_lines.append(f"[{m}] {s_name}: {','.join(css)}")
-
-            r_covered = cov_c == len(results_by_ent)  # the requirement covered?
-            flags = Properties.get_flags(r.properties)
-            if flags:
-                assert len(flags) == 1, f"Multiple flags for {r.identifier_string()}"
-            flag = list(flags)[0] if flags else "oth"
-            old = covered.get(flag, (0, 0))
-            covered[flag] = old[0] + (1 if r_covered else 0), old[1] + 1
-
-            writer.write(f"Req {r.identifier_string(tail_only=True)} flag={flag}")
-            writer.write(f" cov={cov_c / len(results_by_ent) * 100:.0f}")
-            writer.write(f" sel={r.selector.get_name()} claim={r.claim.get_base_claim().text()}")
-            writer.write("\n")
-            for li in ent_lines:
-                writer.write(f"  {li}\n")
-
-            text = "\n  ".join(textwrap.wrap(f"{r.text}", width=width - 4))
-            writer.write(f"  {text}\n")
-
-            writer.write("\n")
-
-        writer.write("Coverage summary:\n")
-        for n, counts in covered.items():
-            cc, c = counts
-            writer.write(f"  {n:<4} {cc / c * 100:.0f}% {cc}/{c}\n")
+        for req, er in requirements.items():
+            passed = [s for s in er.values() if s.result.verdict == Verdict.PASS]
+            s = specification.get_short_info(req)
+            s = f"{s:<40}"
+            s += f" {len(passed):>3}/{len(er):<3}"
+            writer.write(f"{s}\n")
 
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
         if status is None or status.verdict == Verdict.INCON:
