@@ -252,7 +252,7 @@ class Builder(SystemBuilder):
                 print(f"{label:<20} {sl_s}")
             return
 
-        # product claims, then tool provided
+        # product claims, then explicit loaders (if any)
         for sub in self.claimSet.finish_loaders():
             sub.load(registry, cc, filter=label_filter)
         for ln in self.loaders:
