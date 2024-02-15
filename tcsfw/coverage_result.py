@@ -56,11 +56,11 @@ class CoverageReport:
         if name == "stats":
             self._print_statistics(writer, specification)
         elif not name:
-            self._print_coverage(writer, specification)
+            self._print_coverage_sections(writer, specification)
         else:
             raise Exception(f"No such coverage info '{name}'")
 
-    def _print_coverage(self, writer: TextIO, specification: Specification):
+    def _print_coverage_sections(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
         sections = mapping.get_entities_by_sections()
 
@@ -68,20 +68,17 @@ class CoverageReport:
             writer.write(f"== {sec} ===\n")
             for entity, rs in ents.items():
                 writer.write(f"{entity.long_name()}\n")
-                tool_cov = self.coverage.tool_coverage.get(entity, {})
                 for req, stat in rs.items():
                     mark = self._status_marker(stat.result)
                     props = self._list_properties(stat)
-                    writer.write(f"  [{mark}] {req.identifier_string()} ({stat.result.verdict.value})\n")
+                    writer.write(f"  [{mark}] {specification.get_short_info(req)} ({stat.result.verdict.value})\n")
                     exp = stat.result.get_explanation()
                     lines = "\n".join(textwrap.wrap(exp, 80, replace_whitespace=False))
                     lines = lines.replace("\n", "\n      ")
                     writer.write(f"      {lines}\n")
                     prop_s = []
                     for k, v in props.items():
-                        k_tools = tool_cov.get(k, set())
-                        tool_s = ", ".join([t.name for t in k_tools])
-                        prop_s.append(("[x] " if v else "[ ] ") + f"{k}" + (f" ({tool_s})" if tool_s else ""))
+                        prop_s.append(("[x] " if v else "[ ] ") + f"{k}")
                     if prop_s:
                         writer.write(f"      " + " ".join(prop_s) + "\n")
 
