@@ -128,7 +128,7 @@ class ServiceSelector(RequirementSelector):
         class Selector(ServiceSelector):
             def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
                 for c in parent.select(entity, context):
-                    if Properties.HTTP_REDIRECT.get(c.properties) is None:
+                    if not c.is_multicast() and Properties.HTTP_REDIRECT.get(c.properties) is None:
                         yield c
         return Selector()
 
