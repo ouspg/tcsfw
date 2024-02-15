@@ -114,7 +114,7 @@ class CoverageReport:
             er = requirements.get(req, {})
             all = [s for s in er.values() if s.result.verdict != Verdict.IGNORE]
             passed = [s for s in er.values() if s.result.verdict == Verdict.PASS]
-            s = specification.get_short_info(req)
+            s = specification.get_short_info(req) or req.identifier_string(tail_only=False)
             s = f"{s:<40}"
             s += f" {len(passed):>3}/{len(all):<3}"
             props = set()
