@@ -68,7 +68,7 @@ class Inspector(EventInterface):
             for ent in changed:
                 # verdict change, send event
                 send.add(entity)  # NOTE: Event sent after property event - not good
-                prop = Properties.EXPECTED.value(ent.get_expected_verdict())
+                prop = Properties.EXPECTED.verdict(ent.get_expected_verdict())
                 self.system.call_listeners(lambda ln: ln.propertyChange(entity, prop))
 
 
@@ -113,7 +113,7 @@ class Inspector(EventInterface):
                     # external target, send update even that verdict remains inconclusve
                     exp = conn.target.get_expected_verdict(default=None)
                     if exp is None:
-                        target.set_property(Properties.EXPECTED.value(Verdict.INCON))
+                        target.set_property(Properties.EXPECTED.verdict(Verdict.INCON))
                         send.add(target)
             else:
                 # a reply
@@ -214,7 +214,7 @@ class Inspector(EventInterface):
                     break
             else:
                 # child address not in scan results
-                c.set_property(Properties.EXPECTED.value(Verdict.FAIL))
+                c.set_property(Properties.EXPECTED.verdict(Verdict.FAIL))
         self.known_hosts.add(host)
         self.system.call_listeners(lambda ln: ln.hostChange(host))
         return host

@@ -43,7 +43,7 @@ class Entity:
             v = Verdict.FAIL
         else:
             return False  # does not matter if seen or not
-        self.set_property(Properties.EXPECTED.value(v))
+        self.set_property(Properties.EXPECTED.verdict(v))
         if changes is not None:
             changes.append(self)
         return True
@@ -93,9 +93,9 @@ class Entity:
     def status_string(self) -> str:
         """Get a status string"""
         st = self.status.value
-        v = Properties.EXPECTED.get(self.properties)
+        v = Properties.EXPECTED.get_verdict(self.properties)
         if v is not None:
-            st = f"{st}/{v.get_verdict().value}"
+            st = f"{st}/{v.value}"
         return st
 
     def __repr__(self):

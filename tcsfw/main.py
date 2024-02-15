@@ -30,7 +30,7 @@ from tcsfw.main_tools import EvidenceLoader
 from tcsfw.model import (Addressable, Connection, ConnectionType,
                          ExternalActivity, Host, HostType, SensitiveData,
                          Service)
-from tcsfw.property import Properties, PropertyKey, PropertyVerdict
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
@@ -516,8 +516,8 @@ class HostBuilder(HostInterface, NodeBuilder):
 
     def set_property(self, *key: str):
         """Set a model property"""
-        p = PropertyVerdict.create(key).persistent()
-        self.entity.set_property(p.value())  # inconclusive
+        p = PropertyKey.create(key).persistent()
+        self.entity.set_property(p.verdict())  # inconclusive
         return self
 
 
@@ -811,7 +811,7 @@ class HTTP(ProtocolConfigurer):
         s = super().get_service_(parent)
         if self.redirect_only:
             # persistent property
-            s.entity.set_property(Properties.HTTP_REDIRECT.value(explanation="HTTP redirect to TLS"))
+            s.entity.set_property(Properties.HTTP_REDIRECT.verdict(explanation="HTTP redirect to TLS"))
         return s
 
 
@@ -995,7 +995,7 @@ class ClaimBuilder:
                 evidence = Evidence(this.source)
                 for loc in locations:
                     for key in keys:
-                        kv = PropertyVerdict.create(key.segments).value(this._verdict, explanation=this._explanation)
+                        kv = PropertyKey.create(key.segments).verdict(this._verdict, explanation=this._explanation)
                         ev = PropertyEvent(evidence, loc, kv)
                         registry.property_update(ev)
         return ClaimLoader()

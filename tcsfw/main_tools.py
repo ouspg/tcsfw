@@ -16,7 +16,7 @@ from tcsfw.mitm_log_reader import MITMLogReader
 from tcsfw.model import EvidenceNetworkSource, HostType
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
-from tcsfw.property import PropertyKey, PropertyVerdict
+from tcsfw.property import PropertyKey
 from tcsfw.registry import Registry
 from tcsfw.releases import ReleaseReader
 from tcsfw.spdx_reader import SPDXReader
@@ -49,7 +49,7 @@ class EvidenceLoader(SubLoader):
         sl = ToolPLanLoader(label, tool_name)
         sl.location = location
         for k in key:
-            pk = PropertyVerdict.create(k).value(Verdict.PASS, explanation="Tool plan")
+            pk = PropertyKey.create(k).verdict(Verdict.PASS, explanation="Tool plan")
             sl.properties[pk[0]] = pk[1]
         self.subs.append(sl)
         return sl

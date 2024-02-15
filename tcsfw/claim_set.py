@@ -6,7 +6,7 @@ from tcsfw.components import DataReference, DataStorages, Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
 from tcsfw.events import ReleaseInfo
 from tcsfw.model import IoTSystem, Connection, Host, Service, HostType, NetworkNode
-from tcsfw.property import Properties, PropertyKey, PropertySet, PropertyVerdictValue, PropertyVerdict, \
+from tcsfw.property import Properties, PropertyKey, PropertyVerdictValue, \
     PropertySetValue
 from tcsfw.traffic import Tool
 from tcsfw.verdict import Verdict, Verdictable
@@ -230,7 +230,7 @@ class PropertyClaim(EntityClaim):
         """Create custom property claim"""
         if isinstance(key, PropertyKey):
             return PropertyClaim(description, key)
-        return PropertyClaim(description, key=PropertyVerdict.create(key))
+        return PropertyClaim(description, key=PropertyKey.create(key))
 
     def pre_filter(self, entity: Entity, context: ClaimContext) -> bool:
         """Filter before property check"""

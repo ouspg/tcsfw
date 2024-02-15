@@ -233,7 +233,7 @@ class MatchEngine:
                 if te.entity.status != Status.EXTERNAL and \
                         te.entity.external_activity < ExternalActivity.OPEN:
                     # target should not reply
-                    c.connection.set_property(Properties.EXPECTED.value(Verdict.FAIL))
+                    c.connection.set_property(Properties.EXPECTED.verdict(Verdict.FAIL))
 
             rc = ConnectionMatch(c.connection, c.source, c.target, reply=True)
             self.observed[flow] = rc

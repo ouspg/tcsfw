@@ -11,7 +11,7 @@ from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import Entity
 from tcsfw.model import Addressable, NetworkNode, Connection, Host, Service, ModelListener, IoTSystem, NodeComponent
 from tcsfw.pcap_reader import PCAPReader
-from tcsfw.property import PropertyKey, PropertyVerdict, PropertySet
+from tcsfw.property import PropertyKey, PropertySetValue, PropertyVerdictValue
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.traffic import Evidence, NO_EVIDENCE, Flow, IPFlow
@@ -197,24 +197,19 @@ class ClientAPI(ModelListener):
     def get_properties(self, properties: Dict[PropertyKey, Any]) -> Dict:
         """Get properties"""
         cs = {}
-        for key_val in properties.items():
-            key, val = key_val
+        for key, p  in properties.items():
             vs = {
                 "name": key.get_name(short=True),
             }
-            if isinstance(val, Verdictable):
-                vs["verdict"] = val.get_verdict().value
-            p = PropertyVerdict.cast(key_val)
-            if p is not None:
+            if isinstance(p, PropertyVerdictValue):
+                vs["verdict"] = p.verdict.value
                 vs["info"] = p.explanation or key.get_name()
-            if p is None:
-                p = PropertySet.cast(key_val)
-                if p is not None:
-                    vs["verdict"] = p.get_overall_verdict(properties).value
-                    vs["info"] = p.explanation or key.get_name()
-                    vs["checks"] = sorted([f"{k}" for k in p.sub_keys])
-            if p is None:
-                vs["info"] = f"{val}"
+            elif isinstance(p, PropertySetValue):
+                vs["verdict"] = p.get_overall_verdict(properties).value
+                vs["info"] = p.explanation or key.get_name()
+                vs["checks"] = sorted([f"{k}" for k in p.sub_keys])
+            else:
+                vs["info"] = f"{p}"
             cs[key.get_name()] = vs
         return cs
 
