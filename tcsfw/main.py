@@ -251,15 +251,12 @@ class Builder(SystemBuilder):
                 print(f"{label:<20} {sl_s}")
             return
 
-        all_loaders = {}  # loaders by labels
+        # product claims, then tool provided
         for sub in self.claimSet.finish_loaders():
-            sub.pre_load(registry, all_loaders, cc)
+            sub.load(registry, cc)
         for ln in self.loaders:
             for sub in ln.subs:
-                sub.pre_load(registry, all_loaders, cc)
-        for ln_list in all_loaders.values():
-            for ln in ln_list:
-                ln.load(registry, cc)
+                sub.load(registry, cc)
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True

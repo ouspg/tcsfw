@@ -77,10 +77,6 @@ class SubLoader:
         return EvidenceNetworkSource(self.loader_name, self.base_ref, self.source_label, address_map=add_map,
                                      activity_map=ext_map)
 
-    def pre_load(self, registry: Registry, labels: Dict[str, List['SubLoader']], coverage: RequirementClaimMapper):
-        """Pre-load run, even for excluded"""
-        labels.setdefault(self.source_label, []).append(self)
-
     def load(self, registry: Registry, coverage: RequirementClaimMapper):
         """Load evidence"""
         pass

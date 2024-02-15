@@ -57,10 +57,6 @@ class EvidenceLoader(SubLoader):
         for t in tools:
             t.groups.append(group_label)
 
-    def pre_load(self, registry: Registry, labels: Dict[str, List['SubLoader']], coverage: RequirementClaimMapper):
-        super().pre_load(registry, labels, coverage)
-        labels.update(self.groups)
-
 
 class ToolLoader(SubLoader):
     def __init__(self, tool: CheckTool, source_label: str = None):
@@ -71,10 +67,6 @@ class ToolLoader(SubLoader):
         self.tool_plan_coverage: Dict[RequirementSelector, List[Tuple[Tool, PropertyKey]]] = {}
         self.groups: List[str] = []
 
-    def pre_load(self, registry: Registry, labels: Dict[str, List['SubLoader']], coverage: RequirementClaimMapper):
-        super().pre_load(registry, labels, coverage)
-        for g in self.groups:
-            labels.setdefault(g, []).append(self)
 
 class FabricationLoader(SubLoader):
     """Fabricate evidence for testing or visualization"""
