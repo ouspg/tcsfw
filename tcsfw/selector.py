@@ -5,7 +5,7 @@ from tcsfw.claim import Claim
 from tcsfw.components import DataStorages, Software, DataReference
 from tcsfw.entity import Entity
 from tcsfw.model import Addressable, Host, HostType, IoTSystem, NetworkNode, Service, Connection
-from tcsfw.property import PropertyKey
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
 from tcsfw.verdict import Status
 
@@ -119,6 +119,17 @@ class ServiceSelector(RequirementSelector):
         class Selector(ServiceSelector):
             def select(self, entity: Entity, context: SelectorContext) -> Iterator[Service]:
                 return (c for c in parent.select(entity, context) if c.protocol in {Protocol.HTTP, Protocol.TLS})
+        return Selector()
+
+    def direct(self) -> 'ServiceSelector':
+        """Select direct services"""
+        parent = self
+
+        class Selector(ServiceSelector):
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Connection]:
+                for c in parent.select(entity, context):
+                    if Properties.HTTP_REDIRECT.get(c.properties) is None:
+                        yield c
         return Selector()
 
 

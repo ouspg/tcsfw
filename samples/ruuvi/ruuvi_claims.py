@@ -29,7 +29,7 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
         .at(web_1 / SSH, web_2 / SSH)
 
     claims.reviewed("HTTP redirect missed by used tools, but it is there") \
-        .key("check", "http-redirect").at(web_2 / HTTP)
+        .key("default", "http-redirect").at(web_2 / HTTP)
 
     claims.ignore("Tag updates require manual work") \
         .software(tags).key("check", "update-mechanism")

@@ -50,8 +50,8 @@ class DefaultSpecification(Specification):
         # [x] Services are authenticated
         self.service_authenticate = self._req(
             "service-auth",
-            Locations.SERVICE ^ Claims.name("Services are authenticated",
-                                            AuthenticationClaim() | Claims.HTTP_REDIRECT))
+            Locations.SERVICE.direct() ^ Claims.name("Services are authenticated",
+                                                     AuthenticationClaim() | Claims.HTTP_REDIRECT))
         # Data protection
         # [x] Connections are encrypted
         self.connection_encrypt = self._req(

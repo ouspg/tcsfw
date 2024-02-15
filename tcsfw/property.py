@@ -278,12 +278,12 @@ class Properties:
     EXPECTED_HOSTS = PropertyKey("check", "hosts")   # Expected entity is observed
     EXPECTED_SERVICES = PropertyKey("check", "services")  # Expected entity is observed
     EXPECTED_CONNECTIONS = PropertyKey("check", "connections")  # Expected entity is observed
-    UPDATE_SEEN = PropertyKey("default", "update-seen")            # Update is seen
+    UPDATE_SEEN = PropertyKey("check", "update-seen")            # Update is seen
     REVIEW = PropertyKey("check", "review")          # IXIT etc. review
     FUNCTIONAL = PropertyKey("other", "functional")
 
     # Property prefixes protected from manual set
-    PROTECTED = {"default", "check"}
+    PROTECTED = {"check"}
 
     # Manual override prefix
     PREFIX_MANUAL = "manual"
