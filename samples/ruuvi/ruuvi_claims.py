@@ -48,7 +48,8 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
         ' as possible about what steps we are taking during the remediation process, including on issues or challenges'
         ' that may delay resolution."') \
         .software(gateway, tags, user, backend_1, backend_2, web_1, web_2, web_3) \
-        .key("check", "vulnz")
+        .key("check", "vulnz") \
+        .verdict_ignore()
 
     claims.ignore("Release information not available").software(user, backend_1, backend_2, web_1, web_2, web_3) \
         .key("check", "release-history")
@@ -63,11 +64,13 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
         .key("check", "auth").at(backend_1 / TLS, web_1 / TLS, web_2 / TLS)
 
     claims.ignore("3rd party services do not authenticate users") \
-        .key("check", "auth").at(backend_2 / TLS, web_3 / TLS)
+        .key("check", "auth").at(backend_2 / TLS, web_3 / TLS) \
+        .verdict_ignore
 
     claims.reviewed("Ruuvi Cloud is updated directly on the backend, no user interaction is required") \
         .software(backend_1, backend_2, web_1, web_2, web_3) \
-        .key("check", "update-mechanism")
+        .key("check", "update-mechanism") \
+        .verdict_ignore()
 
     # NOTE - DEMO: Not really reviewed at all
     claims.ignore("Reviewed vulnerabilities").software(mobile).vulnerabilities(

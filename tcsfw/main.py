@@ -930,6 +930,16 @@ class ClaimBuilder:
             self._keys.append(k)
         return self
 
+    def verdict_ignore(self) -> Self:
+        """Override verdict to ignore"""
+        self._verdict = Verdict.IGNORE
+        return self
+
+    def verdict_pass(self) -> Self:
+        """Override verdict to pass"""
+        self._verdict = Verdict.PASS
+        return self
+
     def at(self, *locations: Union[SystemBuilder, NodeBuilder, ConnectionBuilder]) -> 'Self':
         """Set claimed location(s)"""
         for lo in locations:
