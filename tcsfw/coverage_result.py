@@ -86,6 +86,8 @@ class CoverageReport:
             requirements = mapping.get_by_requirements()
             for req in specification.requirement_map.values():
                 name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+                if req.target_name:
+                    name += f"|{req.target_name}"
                 writer.write(f"== {name} ==\n")
                 for ent, stat in requirements.get(req, {}).items():
                     name = ent.long_name()
@@ -99,6 +101,8 @@ class CoverageReport:
                     writer.write(f"{entity.long_name()}\n")
                     for req, stat in rs.items():
                         name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+                        if req.target_name:
+                            name += f"|{req.target_name}"
                         s = print_status(name, stat)
                         writer.write(f"{s}\n")
 
