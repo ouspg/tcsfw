@@ -126,19 +126,40 @@ class CoverageReport:
         mapping = self._get_mappings(specification)
         requirements = mapping.get_by_requirements()
 
-        for req in specification.requirement_map.values():
+        target_verdicts: Dict[str, Tuple[int, int]] = {}
+        target_reqs: Dict[str, Tuple[int, int]] = {}
+
+        for req in specification.list_requirements():
             er = requirements.get(req, {})
-            all = [s for s in er.values() if s.result.verdict != Verdict.IGNORE]
-            passed = [s for s in er.values() if s.result.verdict == Verdict.PASS]
-            s = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+            all_c = len([s for s in er.values() if s.result.verdict != Verdict.IGNORE])
+            pass_c = len([s for s in er.values() if s.result.verdict == Verdict.PASS])
+
+            if all_c == 0:
+                continue  # no requirements
+
+            target = req.target_name
+            old_verdicts = target_verdicts.get(target, (0, 0))
+            target_verdicts[target] = (old_verdicts[0] + all_c, old_verdicts[1] + pass_c)
+            old_reqs = target_reqs.get(target, (0, 0))
+            target_reqs[target] = (old_reqs[0] + 1, old_reqs[1] + (1 if pass_c == all_c else 0))
+
+            s = specification.get_short_info(req) or req.identifier_string(tail_only=True)
             s = f"{s:<40}"
-            s += f" {len(passed):>3}/{len(all):<3}"
+            s += f" {pass_c:>3}/{all_c:<3}"
             props = set()
             for st in er.values():
                 for pd in st.context.properties.values():
                     props.update([p for p, v in pd.items() if v is not None])
             s += " " + ", ".join(sorted([p.get_name() for p in props]))
             writer.write(f"{s}\n")
+
+        # group by targets?
+        use_targets = any([r.target_name for r in specification.requirement_map.values()])
+        if use_targets:
+            writer.write("\n== Targets ==\n")
+            for t, (all, passed) in target_verdicts.items():
+                r_all, r_pass = target_reqs[t]
+                writer.write(f"{t:<40} {passed:>3}/{all:<3} pass/reqs={r_pass}/{r_all}\n")
 
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
         if status is None or status.verdict == Verdict.INCON:
