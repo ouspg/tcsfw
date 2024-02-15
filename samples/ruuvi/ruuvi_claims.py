@@ -88,8 +88,8 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
         ("okhttp", "CVE-2016-2402"),
     )
 
+    # Tool planning
     plans = system.load()
-    # ETSI TS 103 701 - PLANNING
     plans.plan_tool("conn-tls-check", "TLS conn. audit*", Locations.CONNECTION.protocol("tls"),
                     ("check", "traffic", "tls"))
     basic_func = plans.plan_tool("basic-func", "Basic function test*",

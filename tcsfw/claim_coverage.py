@@ -98,17 +98,6 @@ class RequirementClaimMapper:
         # max. coverage by introduced tools
         self.tool_coverage: Dict[Entity, Dict[PropertyKey, Set[Tool]]] = {}
 
-    def introduce_tool_plans(self, plan: Dict[RequirementSelector, List[Tuple[Tool, PropertyKey]]]):
-        """Introduce tool plans"""
-        if not plan:
-            return
-        for sel, tps in plan.items():
-            sel_es = sel.select(self.system, SelectorContext())
-            for s in sel_es:
-                s_prop = self.tool_coverage.setdefault(s, {})
-                for tool, key in tps:
-                    s_prop.setdefault(key, set()).add(tool)
-
     def map_claims(self, specification: Specification) -> ClaimMapping:
         """Map claims and verdicts"""
         mapping = ClaimMapping(specification)

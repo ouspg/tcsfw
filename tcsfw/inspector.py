@@ -166,6 +166,9 @@ class Inspector(EventInterface):
             self.system.call_listeners(lambda ln: ln.hostChange(s.get_parent_host()))
             return s
         if isinstance(s, NodeComponent):
+            entity = s.entity
+            if isinstance(entity, IoTSystem):
+                return s  # no event
             self.system.call_listeners(lambda ln: ln.hostChange(s.entity.get_parent_host()))
             return s
         if isinstance(s, Connection):
