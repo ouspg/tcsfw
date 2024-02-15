@@ -69,9 +69,10 @@ class CoverageReport:
             for entity, rs in ents.items():
                 writer.write(f"{entity.long_name()}\n")
                 for req, stat in rs.items():
+                    name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
                     mark = self._status_marker(stat.result)
                     props = self._list_properties(stat)
-                    writer.write(f"  [{mark}] {specification.get_short_info(req)} ({stat.result.verdict.value})\n")
+                    writer.write(f"  [{mark}] {name} ({stat.result.verdict.value})\n")
                     exp = stat.result.get_explanation()
                     lines = "\n".join(textwrap.wrap(exp, 80, replace_whitespace=False))
                     lines = lines.replace("\n", "\n      ")
