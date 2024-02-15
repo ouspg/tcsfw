@@ -499,22 +499,30 @@ class NoUnexpectedServices(EntityClaim):
         services = [c for c in entity.children if c.is_relevant()]
         un_exp = []
         exp_c, see_c, = 0, 0
+        exp_non_admin, see_non_admin = 0, 0
         for c in services:
+            non_admin = c.host_type != HostType.ADMINISTRATIVE
+            if non_admin:
+                exp_non_admin += 1
             c_ver = context.get_property_verdict(c, self, Properties.EXPECTED, c.properties) or Verdict.INCON
             if c_ver == Verdict.PASS:
                 exp_c += 1
                 see_c += 1
+                if non_admin:
+                    see_non_admin += 1
             elif c_ver == Verdict.INCON:
                 exp_c += 1
             else:
                 un_exp.append(c.name)
-        exp = f"{see_c}/{exp_c} expected services"
+        exp = f"{see_non_admin}/{exp_non_admin} expected services"
+        if exp_c > exp_non_admin:
+            exp += f" ({see_c - see_non_admin}/{exp_c - exp_non_admin} admin services)"
         if len(un_exp) > 0:
             exp += ", unexpected: " + ", ".join(un_exp)
         if len(un_exp) > 0:
             ver = Verdict.FAIL
-        if see_c < exp_c:
-            ver = Verdict.INCON
+        if see_non_admin < exp_non_admin:
+            ver = Verdict.INCON  # not all non-admin services seen
         else:
             ver = Verdict.PASS
         # FIXME: Nuke the property?
