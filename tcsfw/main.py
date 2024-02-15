@@ -133,7 +133,8 @@ class SystemBuilder(SystemInterface):
         self.loaders.append(el)
         return el
 
-    def claims(self) -> 'ClaimSetBuilder':
+    def claims(self, base_label="explain") -> 'ClaimSetBuilder':
+        self.claimSet.base_label = base_label
         return self.claimSet
 
     def get_host_(self, name: str, description: str) -> 'HostBuilder':
@@ -901,9 +902,11 @@ class BLEAdvertisement(ProtocolConfigurer):
 
 class ClaimBuilder:
     """Claim builder"""
-    def __init__(self, builder: 'ClaimSetBuilder', explanation: str, verdict: Verdict, authority=ClaimAuthority.MODEL):
+    def __init__(self, builder: 'ClaimSetBuilder', explanation: str, verdict: Verdict, label: str,
+                 authority=ClaimAuthority.MODEL):
         self.builder = builder
         self.authority = authority
+        self.source = EvidenceSource("Statement explanations", label=label)
         self._explanation = explanation
         self._keys: List[PropertyKey] = []
         self._locations: List[Entity] = []
@@ -984,12 +987,12 @@ class ClaimBuilder:
         class ClaimLoader(SubLoader):
             def __init__(self):
                 super().__init__("Manual checks")
-                self.source_label = this.builder.source.label
+                self.source_label = this.source.label
 
             def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
                 if not filter.filter(self.source_label):
                     return
-                evidence = Evidence(this.builder.source)
+                evidence = Evidence(this.source)
                 for loc in locations:
                     for key in keys:
                         kv = PropertyVerdict.create(key.segments).value(this._verdict, explanation=this._explanation)
@@ -1003,19 +1006,24 @@ class ClaimSetBuilder(BuilderInterface):
     def __init__(self, builder: SystemBuilder):
         self.builder = builder
         self.claim_builders: List[ClaimBuilder] = []
-        self.source = EvidenceSource("Statement explanations", label="explain")
+        self.base_label = "explain"
 
     def claim(self, explanation: str, verdict=Verdict.PASS) -> ClaimBuilder:
         """Self-made claims"""
-        return ClaimBuilder(self, explanation, verdict)
+        return ClaimBuilder(self, explanation, verdict, self.base_label)
 
     def reviewed(self, explanation="", verdict=Verdict.PASS) -> ClaimBuilder:
         """Make reviewed claims"""
-        return ClaimBuilder(self, explanation, verdict, ClaimAuthority.MANUAL)
+        return ClaimBuilder(self, explanation, verdict, self.base_label, ClaimAuthority.MANUAL)
 
     def ignore(self, explanation="") -> ClaimBuilder:
         """Ignore claims or requirements"""
-        return ClaimBuilder(self, explanation, Verdict.IGNORE)
+        return ClaimBuilder(self, explanation, Verdict.IGNORE, self.base_label)
+
+    def set_base_label(self, base_label: str) -> Self:
+        """Set label for the claims"""
+        self.base_label = base_label
+        return self
 
     def finish_loaders(self) -> List[SubLoader]:
         """Finish"""

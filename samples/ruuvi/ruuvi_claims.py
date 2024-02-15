@@ -4,7 +4,7 @@ from tcsfw.main import Builder, TLS, HTTP, SSH
 
 
 def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend_2, web_1, web_2, web_3, ble_ad):
-    claims = system.claims()
+    claims = system.claims(base_label="false-positives")
 
     # Ignore some finding(s)
     claims.ignore() \
@@ -27,6 +27,8 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
         .key("ssh-audit", "del", "mac", "hmac-sha1") \
         .key("ssh-audit", "del", "mac", "hmac-sha1-etm@openssh.com") \
         .at(web_1 / SSH, web_2 / SSH)
+
+    claims.set_base_label("explain")  # in effect below
 
     claims.reviewed("HTTP redirect missed by used tools, but it is there") \
         .key("default", "http-redirect").at(web_2 / HTTP)
