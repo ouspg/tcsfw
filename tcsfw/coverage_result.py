@@ -50,38 +50,57 @@ class CoverageReport:
     def print_summary(self, writer: TextIO, specification: Specification, name: str):
         """Print coverage summary"""
         pri = specification.cutoff_priority
-        if "_" in name:
-            name, _, ps= name.rpartition("_")
+        if "-" in name:
+            name, _, ps= name.rpartition("-")
             pri = int(ps)
         if name == "stats":
             self._print_statistics(writer, specification)
+        elif name == "reqs":
+            self._print_coverage_sections(writer, specification, by_requirements=True)
         elif not name:
             self._print_coverage_sections(writer, specification)
         else:
             raise Exception(f"No such coverage info '{name}'")
 
-    def _print_coverage_sections(self, writer: TextIO, specification: Specification):
+    def _print_coverage_sections(self, writer: TextIO, specification: Specification, by_requirements=False):
         mapping = self._get_mappings(specification)
-        sections = mapping.get_entities_by_sections()
 
-        for sec, ents in sections.items():
-            writer.write(f"== {sec} ===\n")
-            for entity, rs in ents.items():
-                writer.write(f"{entity.long_name()}\n")
-                for req, stat in rs.items():
-                    name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
-                    mark = self._status_marker(stat.result)
-                    props = self._list_properties(stat)
-                    writer.write(f"  [{mark}] {name} ({stat.result.verdict.value})\n")
-                    exp = stat.result.get_explanation()
-                    lines = "\n".join(textwrap.wrap(exp, 80, replace_whitespace=False))
-                    lines = lines.replace("\n", "\n      ")
-                    writer.write(f"      {lines}\n")
-                    prop_s = []
-                    for k, v in props.items():
-                        prop_s.append(("[x] " if v else "[ ] ") + f"{k}")
-                    if prop_s:
-                        writer.write(f"      " + " ".join(prop_s) + "\n")
+        def print_status(name: str, status: RequirementStatus) -> str:
+            s = ""
+            mark = self._status_marker(status.result)
+            props = self._list_properties(status)
+            s += f"[{mark}] {name} ({status.result.verdict.value})"
+            exp = status.result.get_explanation()
+            lines = "\n".join(textwrap.wrap(exp, 80, replace_whitespace=False))
+            lines = lines.replace("\n", "\n    ")
+            if lines:
+                s += f"\n    {lines}"
+            prop_s = []
+            for k, v in props.items():
+                prop_s.append(("[x] " if v else "[ ] ") + f"{k}")
+            if prop_s:
+                s += f"\n    " + " ".join(prop_s)
+            return s
+
+        if by_requirements:
+            requirements = mapping.get_by_requirements()
+            for req in specification.requirement_map.values():
+                name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+                writer.write(f"== {name} ==\n")
+                for ent, stat in requirements.get(req, {}).items():
+                    name = ent.long_name()
+                    s = print_status(name, stat)
+                    writer.write(f"{s}\n")
+        else:
+            sections = mapping.get_entities_by_sections()
+            for sec, ents in sections.items():
+                writer.write(f"== {sec} ===\n")
+                for entity, rs in ents.items():
+                    writer.write(f"{entity.long_name()}\n")
+                    for req, stat in rs.items():
+                        name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+                        s = print_status(name, stat)
+                        writer.write(f"{s}\n")
 
     def _print_statistics(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
