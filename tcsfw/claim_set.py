@@ -15,9 +15,6 @@ from tcsfw.verdict import Verdict, Verdictable
 class ClaimContext:
     """The context where a claim is resolved"""
     def __init__(self):
-        # Property keys which tools are reported they cover
-        # FIXME: Nuke tool keys, properties queried from event logging
-        self.tool_coverage: Dict[Entity, Dict[PropertyKey, Set[Tool]]] = {}
         # Properties read by the claims, with their values (converted to bool, when possible)
         self.properties: Dict[Tuple[Entity, Claim], Dict[PropertyKey, Any]] = {}
 
@@ -251,11 +248,7 @@ class PropertyClaim(EntityClaim):
         """Do the check for any key"""
         ver = context.get_property_verdict(entity, self, key, entity.properties)
         if ver is None:
-            tools = context.tool_coverage.get(entity, {}).get(key)
-            if not tools:
-                return None  # no tool to set the value
-            # Value not set
-            return ClaimStatus(self, authority=ClaimAuthority.TOOL)
+            return None
         val = entity.properties.get(key)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=key.get_value_string(val))
 
@@ -665,11 +658,6 @@ class ProtocolClaim(ServiceClaim):
             return None
         # no verdict for connection - try the service
         res = self.check(entity.target, context)
-        # fix also tool coverage references
-        tool_cov = context.tool_coverage
-        for ent, kvs in tool_cov.copy().items():
-            if ent == entity.target:
-                tool_cov.setdefault(entity, {}).update(kvs)
         return res
 
 
