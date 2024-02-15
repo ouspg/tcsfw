@@ -55,14 +55,17 @@ class CoverageReport:
             pri = int(ps)
         if name == "stats":
             self._print_statistics(writer, specification)
+        elif name == "tars":
+            self._print_coverage(writer, specification, by_targets=True)
         elif name == "reqs":
-            self._print_coverage_sections(writer, specification, by_requirements=True)
+            self._print_coverage(writer, specification, by_requirements=True)
         elif not name:
-            self._print_coverage_sections(writer, specification)
+            self._print_coverage(writer, specification)
         else:
             raise Exception(f"No such coverage info '{name}'")
 
-    def _print_coverage_sections(self, writer: TextIO, specification: Specification, by_requirements=False):
+    def _print_coverage(self, writer: TextIO, specification: Specification, by_targets=False,
+                        by_requirements=False):
         mapping = self._get_mappings(specification)
 
         def print_status(name: str, status: RequirementStatus) -> str:
@@ -82,10 +85,23 @@ class CoverageReport:
                 s += f"\n    " + " ".join(prop_s)
             return s
 
-        if by_requirements:
+        if by_targets:
+            targets = sorted(set([r.target_name for r in specification.requirement_map.values()]))
+            for tar in targets:
+                writer.write(f"== {tar} ==\n")
+                requirements = mapping.get_by_requirements()
+                for req in specification.list_requirements():
+                    if req.target_name != tar:
+                        continue
+                    name = specification.get_short_info(req) or req.identifier_string(tail_only=True)
+                    writer.write(f"=== {name} ===\n")
+                    for ent, stat in requirements.get(req, {}).items():
+                        s = print_status(f"{ent.long_name()}", stat)
+                        writer.write(f"{s}\n")
+        elif by_requirements:
             requirements = mapping.get_by_requirements()
-            for req in specification.requirement_map.values():
-                name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+            for req in specification.list_requirements():
+                name = specification.get_short_info(req) or req.identifier_string(tail_only=True)
                 if req.target_name:
                     name += f"|{req.target_name}"
                 writer.write(f"== {name} ==\n")
@@ -100,7 +116,7 @@ class CoverageReport:
                 for entity, rs in ents.items():
                     writer.write(f"{entity.long_name()}\n")
                     for req, stat in rs.items():
-                        name = specification.get_short_info(req) or req.identifier_string(tail_only=False)
+                        name = specification.get_short_info(req) or req.identifier_string(tail_only=True)
                         if req.target_name:
                             name += f"|{req.target_name}"
                         s = print_status(name, stat)
