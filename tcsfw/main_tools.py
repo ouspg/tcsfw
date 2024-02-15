@@ -3,6 +3,7 @@ import pathlib
 from typing import List, Dict, Tuple, Self, Optional
 
 from tcsfw.android_manifest_scan import AndroidManifestScan
+from tcsfw.batch_import import LabelFilter
 from tcsfw.censys_scan import CensysScan
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.components import Software
@@ -79,7 +80,9 @@ class FabricationLoader(SubLoader):
         self.flows.append(flow)
         return self
 
-    def load(self, registry: Registry, coverage: RequirementClaimMapper):
+    def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
+        if not filter.filter(self.source_label):
+            return
         evi = Evidence(self.get_source())
         for f in self.flows:
             f.evidence = evi  # override evidence

@@ -240,7 +240,8 @@ class Builder(SystemBuilder):
             for ip in ips.split(","):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
 
-        batch_import = BatchImporter(registry, filter=LabelFilter(self.args.def_loads or ""))
+        label_filter = LabelFilter(self.args.def_loads or "")
+        batch_import = BatchImporter(registry, filter=label_filter)
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
@@ -253,10 +254,10 @@ class Builder(SystemBuilder):
 
         # product claims, then tool provided
         for sub in self.claimSet.finish_loaders():
-            sub.load(registry, cc)
+            sub.load(registry, cc, filter=label_filter)
         for ln in self.loaders:
             for sub in ln.subs:
-                sub.load(registry, cc)
+                sub.load(registry, cc, filter=label_filter)
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True
@@ -983,9 +984,11 @@ class ClaimBuilder:
         class ClaimLoader(SubLoader):
             def __init__(self):
                 super().__init__("Manual checks")
-                self.source_label = "manual"
+                self.source_label = this.builder.source.label
 
-            def load(self, registry: Registry, coverage: RequirementClaimMapper):
+            def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
+                if not filter.filter(self.source_label):
+                    return
                 evidence = Evidence(this.builder.source)
                 for loc in locations:
                     for key in keys:
