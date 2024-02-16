@@ -1,7 +1,106 @@
 # Tools
 
-## List of supported tools
-
+The tcsfw can read output from several different tools to verify the security statement and claims.
+The tool output is read from a directly structure, which root must be provided to the framework by `--read <directory>` command-line arguement.
 
 ## Batch files and directories
+
+The back directory structure can be arbitarily deep. Each directory which contains data files, must have special metafile `00meta.json`. The metafile must always contain at least `file_type` of the data files. For example, consider the following metafile `00meta.json` for NMAP output data files.
+
+```json
+{
+    "file_type": "nmap"
+}
+```
+
+Each batch directory has also _label_, which allows to filter the processed data.
+By default, label is the name of the directory, but it can be changed in the metafile, e.g. the following NMAP data is filtered by label `nmap-01`.
+```json
+{
+    "file_type": "nmap",
+    "label": "nmap-01"
+}
+```
+
+See [end of this page](#advanced-metafile-definitions) for advanced options required with some data types.
+
+## List of supported tools
+
+The following lists the supported tools and formats and shortly describes what is actually supported.
+A sample command to capture the output in proper format is shown for command-line tools.
+
+### Android Manifest
+
+Data files are APK manifest XML files with suffix `.xml`.
+Example metafile `00meta.json`:
+
+```json
+{
+    "file_type": "apk"
+}
+```
+
+A manifest file can be extracted from Android package file by `apktool' or simply using 'unzip'.
+
+```
+$ apktool d <package>.apk -f -o apk-files
+```
+The file can be found from `apk-file/AndroidManifest.xml`.
+As the package file is a zip, the following works as well.
+```
+$ unzip <package>.apk AndroidManifest.xml
+```
+
+### Black Duck vulnerabilities
+
+Data files are csv-files downloaded from Black Duck binary analyser and named as `<component>.csv` where `<component>` is the name of the SW component.
+Example metafile `00meta.json`:
+
+```json
+{
+    "file_type": "blackduck-vulnerabilities",
+}
+```
+
+### Censys
+
+Data files are json-files fetched by Censys search API and named as `<address>.json` where `<address>` is address of the scanned remote host.
+Example metafile `00meta.json`:
+
+```json
+{
+    "file_type": "censys",
+}
+```
+
+### Github releses
+
+### HAR
+
+### MITM proxy
+
+### Nmap
+
+### PCAP
+
+### SPDX
+
+### Ssh-audit
+
+### Testssl.sh
+
+### Tshark (BLE)
+
+### HTTP responses
+
+### ZED proxy
+
+## Advanced metafile definitions
+
+FIXME: To be done.
+
+- Specify order to load data directores
+- Specify addresses
+- Specify extenal policy
+
 
