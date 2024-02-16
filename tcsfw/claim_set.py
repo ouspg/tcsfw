@@ -305,6 +305,8 @@ class AggregateClaim(EntityClaim):
         for c in self.sequence:
             # visit all to collect data
             r = context.check(c, entity)
+            if r is None:
+                r = ClaimStatus(c)  # inconclusive
             sub.append(r)
         ver = None
         auth = ClaimAuthority.TOOL
