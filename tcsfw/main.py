@@ -205,7 +205,7 @@ class Builder(SystemBuilder):
 
         parser.add_argument("--http-server", type=int, help="Listen HTTP requests at port")
         parser.add_argument("--test-delay", type=int, help="HTTP request artificial test delay, ms")
-        parser.add_argument("--no-auth-ok", action="store_true", help="Skip check for auth token in TT_SERVER_API_KEY")
+        parser.add_argument("--no-auth-ok", action="store_true", help="Skip check for auth token in TCSFW_SERVER_API_KEY")
 
         parser.add_argument("--test-get", action="append", help="Test API GET, repeat for many")
         parser.add_argument("--test-post", nargs=2, help="Test API POST")
