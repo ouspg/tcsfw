@@ -209,7 +209,7 @@ class BatchFileType(StrEnum):
     HAR = "har"
     MITMPROXY = "mitmproxy"
     NMAP = "nmap"
-    RELEASES = "releases"  # Github format
+    RELEASES = "github-releases"  # Github format
     SPDX = "spdx"
     SSH_AUDIT = "ssh-audit"
     TESTSSL = "testssl"
