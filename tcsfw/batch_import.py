@@ -112,10 +112,13 @@ class BatchImporter:
             if as_batch:
                 self._do_process_files(proc_list, info, skip_processing)
 
+            if not info.label:
+                self.logger.info(f"skipping all files as no 00meta.json")
+
             # recursively scan the directory
             for child in proc_list:
                 if info and child.is_file():
-                    if as_batch:
+                    if as_batch or not info.label:
                         continue
                     # process the files individually
                     if not info.default_include and info.label not in self.filter.included:
