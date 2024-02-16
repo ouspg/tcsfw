@@ -58,7 +58,7 @@ Example metafile `00meta.json`:
 
 ```json
 {
-    "file_type": "blackduck-vulnerabilities",
+    "file_type": "blackduck-vulnerabilities"
 }
 ```
 
@@ -69,19 +69,102 @@ Example metafile `00meta.json`:
 
 ```json
 {
-    "file_type": "censys",
+    "file_type": "censys"
 }
+```
+
+Use of Censys API requires an account with suitable permissions. Once account has been set up property, the framework utility can be used to fetch the JSON through API:
+```
+$ python tcsfw/censys_scan <address>
 ```
 
 ### Github releses
 
+Data files are release json-files fetched from GitHub and named as `<component>.json` where `<component>` is the name of the SW component.
+Example metafile `00meta.json`:
+
+```json
+{
+    "file_type": "github-releases"
+}
+```
+
 ### HAR
+
+Data files are HAR json-files saved by browser and named as `<host>.json` where `<host>` is the name of the browsing host.
+Example metafile `00meta.json`:
+
+```json
+{
+    "file_type": "har"
+}
+```
+Chrome can save HAR-files compatible with the reader.
+The way to save HAR-file depends on the browser.
 
 ### MITM proxy
 
+Data files are custom log-files captured with MITM proxy having suffix  `.log`. Example metafile `00meta.json`:
+```json
+{
+    "file_type": "mitmproxy"
+}
+```
+
+The custom data is saved using the following very simple MTIM proxy addon hook (yes, very unsatisfactory, sorry):
+
+```python
+import logging
+from datetime import datetime
+
+class TLSCheck:
+    """Log connection attempts with possible error message"""
+    def tls_established_client(self, data):
+        conn = data.conn
+        ser = data.context.server
+        logging.info("tls_established,%s,%d,%s,%d,%s,%s",
+            conn.peername[0], conn.peername[1],
+            ser.peername[0], ser.peername[1],
+            conn.sni or "", conn.error or "")
+
+    def tls_failed_client(self, data):
+        conn = data.conn
+        ser = data.context.server
+        logging.info("tls_failed,%s,%d,%s,%d,%s,%s",
+            conn.peername[0], conn.peername[1],
+            ser.peername[0], ser.peername[1],
+            conn.sni or "", conn.error or "")
+
+
+addons = [TLSCheck()]
+```
+
+Refer MITM proxy documentation how to use addon hooks.
+
 ### Nmap
 
+Data files are Nmap XML-formatted output files with suffix `.xml`. Example metafile `00meta.json`:
+```json
+{
+    "file_type": "nmap"
+}
+```
+The nmap-command is ran in the following manner to capture the data:
+
+```
+$ nmap -oX <file>.xml <target>
+```
+
 ### PCAP
+
+Data files are PCAP (not pcap-ng) files with suffix `.pcap`. Example metafile `00meta.json`:
+```json
+{
+    "file_type": "pcap"
+}
+```
+
+Files can be captured by _Wireshark_ or `tcpdump`, see their documentation for instructions.
 
 ### SPDX
 
@@ -103,4 +186,11 @@ FIXME: To be done.
 - Specify addresses
 - Specify extenal policy
 
-
+```json
+{
+    "file_type": "mitmproxy",
+    "addresses": {
+        "192.168.4.8": "Ruuvi app"
+    }
+}
+```
