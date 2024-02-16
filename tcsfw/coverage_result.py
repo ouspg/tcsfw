@@ -148,8 +148,7 @@ class CoverageReport:
             s += f" {pass_c:>3}/{all_c:<3}"
             props = set()
             for st in er.values():
-                for pd in st.context.properties.values():
-                    props.update([p for p, v in pd.items() if v is not None])
+                props.update(self._list_properties(st).keys())
             s += " " + ", ".join(sorted([p.get_name() for p in props]))
             writer.write(f"{s}\n")
 
