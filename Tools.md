@@ -12,6 +12,7 @@ The back directory structure can be arbitarily deep. Each directory which contai
     "file_type": "nmap"
 }
 ```
+The data files have to usually be named according the template dictated by file type. The templates are discussed below with file types.
 
 Each batch directory has also _label_, which allows to filter the processed data.
 By default, label is the name of the directory, but it can be changed in the metafile, e.g. the following NMAP data is filtered by label `nmap-01`.
@@ -168,29 +169,111 @@ Files can be captured by _Wireshark_ or `tcpdump`, see their documentation for i
 
 ### SPDX
 
+Data is Software Package Data Exchange (SPDX) xml-files with suffix `.xml`.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "sdpx"
+}
+```
+
+SPDX file import is tested with files downloaded from Black Duck service.
+
 ### Ssh-audit
+
+Data is output from `Ssh-audit` tool named as `<address>.<port>.json` where `<address>` is the host address and `<port>` is TCP port number.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "ssh-audit"
+}
+```
+
+See the tool manual for how to save scanning data.
 
 ### Testssl.sh
 
-### Tshark (BLE)
+Data is output from `Testssl.sh` tool named as `<address>.<port>.json` where `<address>` is the host address and `<port>` is TCP port number.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "testssl"
+}
+```
+
+See the tool manual for how to save scanning data.
+
+### Tshark (BLE only)
+
+Data files are `tshark` command JSON-formatted PCAP of Bluetooth Low-Energy (BLE) traffic with suffix `.json`.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "capture-json"
+}
+```
+
+Note, only BLE data is read from JSON-formatted papture. The  command-line tool `tshark` can capture data in this format and convert pcap-files to it. See `tshark` documentation for instructions.
 
 ### HTTP responses
 
-### ZED proxy
+Data files are the HTTP requests and their payloads with suffix `.http`.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "http"
+}
+```
+
+Files can be saved e.g. by `curl` with following syntax where `<url>` is the service URL.
+```
+$ curl -L -i -o <url>.http <url>
+```
+NOTE: The actual save file name must be URL-encoded (`%3a` for dot, etc.)!
+
+### ZED attack proxy (ZAP)
+
+Data is output from _ZED attack proxy_ (ZAP) tool named as `<address>.json` where `<address>` is the host address.
+Example metafile `00meta.json`:
+```json
+{
+    "file_type": "zap"
+}
+```
+
+See the tool manual for how to save scanning data.
 
 ## Advanced metafile definitions
 
-FIXME: To be done.
-
-- Specify order to load data directores
-- Specify addresses
-- Specify extenal policy
-
+Sometimes IP or HW addresses change between tool runs.
+The following shows how addresses can be customized per batch directory.
 ```json
 {
     "file_type": "mitmproxy",
     "addresses": {
-        "192.168.4.8": "Ruuvi app"
+        "192.168.4.8": "Ruuvi app",
+        "30:c6:f7:52:db:5d|wd": "Ruuvi Gateway",
     }
+}
+```
+
+External activity policy detemines the type of unexpected external connections allowed for a host or services.
+The following shows how to allow UNLIMITED external connections if host is a router etc. in a data batch.
+```json
+{
+    "file_type": "capture",
+    "external_activity": {
+        "Ruuvi Gateway": "UNLIMITED"
+    }
+}
+```
+
+Network node names and addresses are learned from captures and other data. Sometimes, this must happen before some other data batch can be successfully read.
+Normally directories and files are read in alphabetical order, which may not be correct.
+The following shows how to force specific directories to be read first. Unlisted directories are read after specified ones.
+
+```json
+{
+   "file_order": ["pcap-prefix", "pcap-data"]
 }
 ```
