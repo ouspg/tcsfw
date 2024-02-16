@@ -90,20 +90,23 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
 
     # Tool planning
     plans = system.load()
-    plans.plan_tool("conn-tls-check", "TLS conn. audit*", Locations.CONNECTION.protocol("tls"),
-                    ("check", "traffic", "tls"))
+    tls_check = plans.plan_tool("conn-tls-check", "TLS conn. audit*", Locations.CONNECTION.protocol("tls"),
+                                ("check", "traffic", "tls"))
+    plans.group("basic-tools", tls_check)
+
+    isolate = plans.plan_tool("isolate", "Isolate network/power*", Locations.SYSTEM + Locations.HOST,
+                              ("action", "isolate"))
+    code = plans.plan_tool("code", "Code analysis*", Locations.SOFTWARE, ("check", "code-review"))
+    fuzz = plans.plan_tool("fuzz", "Fuzzer*", Locations.SERVICE, ("check", "fuzz"))
+    plans.group("advanced-tools", isolate, code, fuzz)
+
     basic_func = plans.plan_tool("basic-func", "Basic function test*",
                                  Locations.SYSTEM + Locations.HOST.type_of(HostType.DEVICE),
                                  ("check", "basic-function"))
-    isolate = plans.plan_tool("isolate", "Isolate network/power*", Locations.SYSTEM + Locations.HOST,
-                              ("action", "isolate"))
-    # auth_scan = plans.plan_tool("auth-scan", "Auth scanner*", Locations.SERVICE, ("check", "no-auth"))
-    auth_grant = plans.plan_tool("auth-grant", "Auth audit*", Locations.SERVICE.authenticated(),
-                                 ("check", "auth"), ("check", "auth-grant"))
-    tele = plans.plan_tool("tele", "Telemetry audit*", Locations.SYSTEM, ("check", "telemetry"))
-    password_crack = plans.plan_tool("password-crack", "Password cracker*", Locations.SERVICE.authenticated(),
-                                     ("check", "password-cracking"))
-    code = plans.plan_tool("code", "Code analysis*", Locations.SOFTWARE, ("check", "code-security"))
+    auth = plans.plan_tool("auth-grant", "Auth audit*", Locations.SERVICE.authenticated(),
+                           ("check", "auth", "best-practice"), ("check", "auth", "no-vulnz"), 
+                           ("check", "auth", "brute-force"),
+                           ("check", "auth"), ("check", "auth", "grant"))
     modify_sw = plans.plan_tool("modify_sw", "Modify device SW*", Locations.SOFTWARE,("check", "modify-sw"))
     storage = plans.plan_tool("storage", "Secure storage analysis*", Locations.DATA.parameters(),
                               ("check", "secure-storage"))
@@ -111,9 +114,8 @@ def make_claims(system: Builder, gateway, tags, user, mobile, backend_1, backend
                                     Locations.DATA.parameters(),("check", "param-changed"))
     password_valid = plans.plan_tool("password-valid", "Password validator*", Locations.SERVICE.authenticated(),
                                      ("check", "password-validity"))
-    fuzz = plans.plan_tool("fuzz", "Fuzzer*", Locations.SERVICE, ("check", "fuzz"))
     update_crack = plans.plan_tool("update-crack", "Update cracker*", Locations.CONNECTION + Locations.SOFTWARE,
                                    ("check", "mod-update"))
+    tele = plans.plan_tool("tele", "Telemetry audit*", Locations.SYSTEM, ("check", "telemetry"))
 
-    plans.group("internals", code, storage)
-    plans.group("disturbing", isolate, password_crack, fuzz, update_crack)
+    plans.group("custom-tools", auth, basic_func, modify_sw, storage, param_changed, password_valid, update_crack, tele)
