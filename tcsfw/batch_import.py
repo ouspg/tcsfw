@@ -210,7 +210,7 @@ class BatchFileType(StrEnum):
     SPDX = "spdx"
     SSH_AUDIT = "ssh-audit"
     TESTSSL = "testssl"
-    VULNERABILITIES = "vulnerabilities"  # BlackDuck csv output
+    VULNERABILITIES = "blackduck-vulnerabilities"  # BlackDuck csv output
     WEB_LINK = "web-link"
     ZAP = "zap"  # ZED Attack Proxy
 
