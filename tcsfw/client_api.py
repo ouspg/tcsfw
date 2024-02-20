@@ -44,6 +44,7 @@ class APIRequest:
     def change_path(self, path: str) -> 'APIRequest':
         """Change the path"""
         r = APIRequest(path)
+        r.parameters.update(self.parameters)
         r.get_connections = self.get_connections
         r.get_visual = self.get_visual
         return r
@@ -129,7 +130,7 @@ class ClientAPI(ModelListener):
         r = {}
         if path == "reset":
             param = json.load(data) if data else {}
-            self.post_evidence_filter(param.get("evidence", {}))
+            self.post_evidence_filter(param.get("evidence", {}), include_all=param.get("include_all", False))
         elif path == "flow":
             flow, ref = self.parse_flow(NO_EVIDENCE, json.load(data))
             self.registry.connection(flow)
@@ -146,7 +147,7 @@ class ClientAPI(ModelListener):
             raise NotImplementedError("Bad API request")
         return r
 
-    def post_evidence_filter(self, filter_list: Dict):
+    def post_evidence_filter(self, filter_list: Dict, include_all: bool = False):
         """Post new evidence filter and reset the model"""
         fs = {ev.label: ev for ev in self.registry.all_evidence}
         e_filter = {}
@@ -154,7 +155,7 @@ class ClientAPI(ModelListener):
             ev = fs.get(f"{fn}")
             if ev:
                 e_filter[ev] = sel
-        self.registry.reset(e_filter)
+        self.registry.reset(e_filter, include_all)
 
     def get_log(self, entity="", key="") -> Dict:
         """Get log"""

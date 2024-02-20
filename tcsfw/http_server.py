@@ -189,7 +189,8 @@ class HTTPServerRunner:
         # initial model
         # do not async so that no updates between getting model and putting it to the queue
         session.subscribed = True
-        self.dump_model(session)
+        if req.parameters.get("load_all", "").lower() != "false":  # can avoid JSON dump for debugging
+            self.dump_model(session)
         self.sessions.append(session)
 
         async def receive_loop():
