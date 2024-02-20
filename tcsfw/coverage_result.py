@@ -71,7 +71,6 @@ class CoverageReport:
         mapping = self._get_mappings(specification)
         sources = self.logging.get_all_property_sources()
 
-        # requirements = mapping.get_by_requirements()
         rs: Dict[EvidenceSource, Dict[Requirement, Dict[Entity, Tuple[PropertyKey, RequirementStatus]]]] = {}
         for prop, src_ents in sources.items():
             for src, ents in src_ents.items():
@@ -81,6 +80,9 @@ class CoverageReport:
                         for stat_props in stat.context.properties.values():
                             if prop in stat_props:
                                 source_rs.setdefault(req, {}).setdefault(ent, []).append((prop, stat))
+
+        # NOTE: Properties not read by Claims are not collected now.
+        # E.g. ignore property
 
         for source, reqs in rs.items():
             writer.write(f"== {source} ==\n")
