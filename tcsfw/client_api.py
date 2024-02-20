@@ -353,13 +353,14 @@ class ClientAPI(ModelListener):
     def get_evidence_filter(self) -> Dict:
         """Get evidence filter"""
         r = {}
-        for s, v in self.registry.trail_filter.items():
-            sr = r[s.label] = {
-                "name": s.name,
-                "selected": v
+        for ev in sorted(self.registry.all_evidence, key=lambda x: x.label):
+            filter_v = self.registry.trail_filter.get(ev.label, False)
+            sr = r[ev.label] = {
+                "name": ev.name,
+                "selected": filter_v
             }
-            if s.timestamp is not None:
-                sr["time_s"] = s.timestamp.strftime(FORMAT_YEAR_MONTH_DAY)
+            if ev.timestamp is not None:
+                sr["time_s"] = ev.timestamp.strftime(FORMAT_YEAR_MONTH_DAY)
         return r
 
     def get_coverage(self, context: RequestContext) -> Dict:
