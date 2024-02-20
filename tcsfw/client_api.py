@@ -148,7 +148,7 @@ class ClientAPI(ModelListener):
 
     def post_evidence_filter(self, filter_list: Dict):
         """Post new evidence filter and reset the model"""
-        fs = {ev.label: ev for ev in self.registry.trail_filter.keys()}
+        fs = {ev.label: ev for ev in self.registry.all_evidence}
         e_filter = {}
         for fn, sel in filter_list.items():
             ev = fs.get(f"{fn}")

@@ -453,7 +453,7 @@ class IoTSystem(NetworkNode):
         # online resources
         self.online_resources: Dict[str, str] = {}
         # original entities and connections
-        self.originals: Set[Entity] = set()
+        self.originals: Set[Entity] = {self}
         # consumer for specific message types
         self.message_listeners: Dict[Addressable, Protocol] = {}
         # change listener
