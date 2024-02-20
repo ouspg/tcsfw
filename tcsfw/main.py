@@ -261,9 +261,6 @@ class Builder(SystemBuilder):
             for sub in ln.subs:
                 sub.load(registry, cc, filter=label_filter)
 
-        if log_events:
-            return  # stop after load
-
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True
         if self.args.test_post:
