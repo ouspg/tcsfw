@@ -61,24 +61,33 @@ def test_reset_2():
 
     c1 = r.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234))
     assert c1.status == Status.EXPECTED
+    assert c1.is_relevant(ignore_ends=True)
     c2 = r.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:3", "1.0.0.3", 1234))
     assert c2.status == Status.UNEXPECTED
+    assert c2.is_relevant(ignore_ends=True)
     c3 = r.connection(IPFlow.UDP("1:0:0:1:0:4", "192.168.0.3", 1100) >> ("1:0:0:0:0:4", "1.0.0.4", 1234))
     assert c3.status == Status.EXTERNAL
+    assert not c3.is_relevant(ignore_ends=True)
     flows = r.logging.collect_flows()
     assert len(flows) == 3
 
     r.reset(evidence_filter={NO_EVIDENCE.source: False}).do_all_tasks()
     assert c1.status == Status.EXPECTED
+    assert c1.is_relevant(ignore_ends=True)
     assert c2.status == Status.PLACEHOLDER
+    assert not c2.is_relevant(ignore_ends=True)
     assert c3.status == Status.PLACEHOLDER
+    assert not c3.is_relevant(ignore_ends=True)
     flows = r.logging.collect_flows()
     assert len(flows) == 1
 
     r.reset().do_all_tasks()
     assert c1.status == Status.EXPECTED
+    assert c1.is_relevant(ignore_ends=True)
     assert c2.status == Status.UNEXPECTED
+    assert c2.is_relevant(ignore_ends=True)
     assert c3.status == Status.EXTERNAL
+    assert not c3.is_relevant(ignore_ends=True)
     flows = r.logging.collect_flows()
     assert len(flows) == 3
 
