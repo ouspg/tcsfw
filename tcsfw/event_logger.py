@@ -191,3 +191,12 @@ class EventLogger(EventInterface, ModelListener):
                 continue
             r[lo.property[0]] = lo.event.evidence.source
         return r
+
+    def get_all_property_sources(self) -> Dict[PropertyKey, Dict[EvidenceSource, List[Entity]]]:
+        """Get all property sources"""
+        r = {}
+        for lo in self.logs:
+            if lo.property is None or lo.entity is None:
+                continue
+            r.setdefault(lo.property[0], {}).setdefault(lo.event.evidence.source, []).append(lo.entity)
+        return r
