@@ -16,7 +16,7 @@ class LoggingEvent:
     """Event with logging"""
     def __init__(self, event: Event, entity: Optional[Entity] = None, property: Tuple[PropertyKey, Any] = None):
         self.event = event
-        self.property = property
+        self.property = property  # implicit property set
         self.entity = entity
         self.verdict = Verdict.INCON
 
@@ -37,6 +37,16 @@ class LoggingEvent:
         else:
             v += (" " if v else "") + self.property[0].get_value_string(self.property[1])
         return v
+
+    def get_properties(self) -> Set[PropertyKey]:
+        """Get implicit and explicit properties"""
+        r = set()
+        if self.property:
+            r.add(self.property[0])
+        ev = self.event
+        if isinstance(ev, PropertyEvent):
+            r.add(ev.key_value[0])
+        return r
 
     def __repr__(self):
         v = ""
@@ -176,7 +186,7 @@ class EventLogger(EventInterface, ModelListener):
         for lo in self.logs:
             if entity is not None and lo.entity not in ent_set:
                 continue
-            if key is not None and lo.property[0] != key:
+            if key is not None and key in lo.get_properties():
                 continue
             r.append(lo)
         return r
@@ -196,7 +206,6 @@ class EventLogger(EventInterface, ModelListener):
         """Get all property sources"""
         r = {}
         for lo in self.logs:
-            if lo.property is None or lo.entity is None:
-                continue
-            r.setdefault(lo.property[0], {}).setdefault(lo.event.evidence.source, []).append(lo.entity)
+            for p in lo.get_properties():
+                r.setdefault(p, {}).setdefault(lo.event.evidence.source, []).append(lo.entity)
         return r
