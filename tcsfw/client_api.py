@@ -292,7 +292,7 @@ class ClientAPI(ModelListener):
             if context.request.get_connections:
                 cj: List[Dict] = r.setdefault("connections", [])
                 for c in entity.connections:
-                    if c.status != Status.PLACEHOLDER:
+                    if c.is_relevant(ignore_ends=True):
                         cj.append(self.get_connection(c, context))
         r["properties"] = self.get_properties(entity.properties)
         return entity, r
@@ -421,6 +421,8 @@ class ClientAPI(ModelListener):
             ln.systemReset({"system": d}, system)
 
     def connectionChange(self, connection: Connection):
+        if not connection.is_relevant(ignore_ends=True):
+            return
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
             d = self.get_connection(connection, context)
