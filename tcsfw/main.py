@@ -194,7 +194,8 @@ class Builder(SystemBuilder):
     def __init__(self, name="Unnamed system"):
         super().__init__(name)
         parser = argparse.ArgumentParser()
-        parser.add_argument("--read", "-r", action="append", help="Read tool output from files or directories")
+        parser.add_argument("--read", "-r", action="append", help="Read tool output from batch directories")
+        parser.add_argument("--help-tools", action="store_true", help="List tools read from batch")
         parser.add_argument("--def-loads", "-L", type=str, help="Comma-separated list of tools to load")
         parser.add_argument("--set-ip", action="append", help="Set DNS-name for entity, format 'name=ip, ...'")
         parser.add_argument("--output", "-o", help="Output format")
@@ -210,7 +211,6 @@ class Builder(SystemBuilder):
         parser.add_argument("--test-get", action="append", help="Test API GET, repeat for many")
         parser.add_argument("--test-post", nargs=2, help="Test API POST")
 
-        parser.add_argument("--help-tools", action="store_true", help="List available tools")
         parser.add_argument("--log-events", action="store_true", help="Log events")
 
         self.parser = parser
