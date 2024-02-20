@@ -93,10 +93,6 @@ class CoverageReport:
                         mark = self._status_marker(stat.result)
                         writer.write(f"      [{mark}] {stat.result.get_explanation()}\n")
 
-
-
-
-
     def _print_coverage(self, writer: TextIO, specification: Specification, by_targets=False,
                         by_requirements=False):
         mapping = self._get_mappings(specification)
