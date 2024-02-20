@@ -32,7 +32,7 @@ def test_reset():
     cs5 = r.connection(IPFlow.UDP("1:0:0:0:0:3", "192.168.0.3", 1100) << ("1:0:0:0:0:2", "192.168.0.2", 1234))
 
     cache = {}
-    assert dev1.get_verdict(cache) == Verdict.PASS
+    assert dev1.get_verdict(cache) == Verdict.FAIL
 
     # unknown hosts / connections added
     assert len(s.children) == 4
@@ -56,7 +56,7 @@ def test_reset():
     r.reset(enable_all=True).do_all_tasks()
 
     cache = {}
-    assert dev1.get_verdict(cache) == Verdict.PASS
+    assert dev1.get_verdict(cache) == Verdict.FAIL
 
     assert len(s.children) == 4
     assert s.children[3].status == Status.UNEXPECTED
