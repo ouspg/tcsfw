@@ -229,8 +229,9 @@ class Builder(SystemBuilder):
         registry = Registry(Inspector(self.system))
         cc = RequirementClaimMapper(self.system)
 
-        if self.args.log_events:
-            # print events
+        log_events = self.args.log_events
+        if log_events:
+            # print event log
             registry.logging.event_logger = registry.logger
 
         for set_ip in self.args.set_ip or []:
@@ -259,6 +260,9 @@ class Builder(SystemBuilder):
         for ln in self.loaders:
             for sub in ln.subs:
                 sub.load(registry, cc, filter=label_filter)
+
+        if log_events:
+            return  # stop after load
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         dump_report = True
