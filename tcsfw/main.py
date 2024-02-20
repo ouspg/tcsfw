@@ -910,7 +910,9 @@ class ClaimBuilder:
                  authority=ClaimAuthority.MODEL):
         self.builder = builder
         self.authority = authority
-        self.source = EvidenceSource("Statement explanations", label=label)
+        self.source = builder.sources.get(label)
+        if self.source is None:
+            builder.sources[label] = self.source = EvidenceSource(f"Claims '{label}'", label=label)
         self._explanation = explanation
         self._keys: List[PropertyKey] = []
         self._locations: List[Entity] = []
@@ -1011,6 +1013,7 @@ class ClaimSetBuilder(BuilderInterface):
         self.builder = builder
         self.claim_builders: List[ClaimBuilder] = []
         self.base_label = "explain"
+        self.sources: Dict[str, EvidenceSource] = {}
 
     def claim(self, explanation: str, verdict=Verdict.PASS) -> ClaimBuilder:
         """Self-made claims"""
