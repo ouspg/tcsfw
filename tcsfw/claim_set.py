@@ -671,6 +671,10 @@ class EncryptionClaim(PropertyClaim):
     def pre_filter(self, entity: Entity, context: ClaimContext) -> bool:
         return (isinstance(entity, NetworkNode) or isinstance(entity, Connection)) and entity.is_encrypted()
 
+    def do_check(self, key: PropertyKey, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
+        if isinstance(entity, Connection):
+            entity = entity.target  # lacking connection check tools now, we check the target
+        return super().do_check(key, entity, context)
 
 class HTTPRedirectClaim(PropertyClaim):
     """Is a service a HTTP redirection to HTTPS?"""
