@@ -209,6 +209,7 @@ class ClientAPI(ModelListener):
                 vs["info"] = p.explanation or key.get_name()
                 vs["checks"] = sorted([f"{k}" for k in p.sub_keys])
             else:
+                vs["verdict"] = ""  # no verdict
                 vs["info"] = f"{p}"
             cs[key.get_name()] = vs
         return cs
