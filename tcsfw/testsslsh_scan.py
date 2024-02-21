@@ -54,14 +54,14 @@ class TestSSLScan(EndpointCheckTool):
                 bp_keys.add(kv[0])
             event_sink.property_address_update(ev)
 
-        # all findings are in best-practices
+        # send several property events
         key = self.property_key
-        properties = [
+        events = [
             key.verdict(Verdict.PASS, f"{self.tool.name} confirm TLS"),
             key.append_key("best-practices").value_set(bp_keys, f"{self.tool.name} best practices"),
             key.append_key("no-vulnz").value_set(vn_keys, f"{self.tool.name} no vulnerabilities"),
             Properties.ENCRYPTION.verdict(Verdict.PASS, f"{self.tool.name} encryption")
         ]
-        for p in properties:
+        for p in events:
             ev = PropertyAddressEvent(evidence, endpoint, p)
             event_sink.property_address_update(ev)
