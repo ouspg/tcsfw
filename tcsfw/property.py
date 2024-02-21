@@ -232,9 +232,6 @@ class Properties:
     HTTP_REDIRECT = PropertyKey("default", "http-redirect").persistent()  # HTTP redirect detected
     SENSORS = PropertyKey("default", "sensors").persistent()  # Has sensors
     MITM = PropertyKey("check", "mitm")              # MITM successful?
-    EXPECTED_HOSTS = PropertyKey("check", "hosts")   # Expected entity is observed
-    EXPECTED_SERVICES = PropertyKey("check", "services")  # Expected entity is observed
-    EXPECTED_CONNECTIONS = PropertyKey("check", "connections")  # Expected entity is observed
     UPDATE_SEEN = PropertyKey("check", "update-seen")  # Update is seen
     REVIEW = PropertyKey("check", "review")          # IXIT etc. review
     FUNCTIONAL = PropertyKey("other", "functional")
