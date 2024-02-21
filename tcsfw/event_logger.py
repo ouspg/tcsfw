@@ -44,7 +44,7 @@ class LoggingEvent:
         if self.property:
             r.add(self.property[0])
         ev = self.event
-        if isinstance(ev, PropertyEvent):
+        if isinstance(ev, PropertyEvent) or isinstance(ev, PropertyAddressEvent):
             r.add(ev.key_value[0])
         return r
 
@@ -197,9 +197,9 @@ class EventLogger(EventInterface, ModelListener):
         for lo in self.logs:
             if lo.entity != entity:
                 continue
-            if lo.property is None or lo.property[0] not in keys:
-                continue
-            r[lo.property[0]] = lo.event.evidence.source
+            ps = lo.get_properties().intersection(keys)
+            for p in ps:
+                r[p] = lo.event.evidence.source
         return r
 
     def get_all_property_sources(self) -> Dict[PropertyKey, Dict[EvidenceSource, List[Entity]]]:
