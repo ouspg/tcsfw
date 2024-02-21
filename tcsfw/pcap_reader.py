@@ -35,7 +35,7 @@ class PCAPReader(BaseFileCheckTool):
             self.tool.name = name
         # current frame
         self.source: Optional[EvidenceSource] = None
-        self.interface: [EventInterface] = None
+        self.interface: Optional[EventInterface] = None
         self.frame_number = 0
         self.timestamp = datetime.datetime.fromtimestamp(0)
         self.ip_reassembler = IPReassembler()
