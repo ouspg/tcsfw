@@ -44,21 +44,11 @@ class EvidenceLoader(SubLoader):
         self.subs.append(sl)
         return sl
 
-    def plan_tool(self, label: str, tool_name: str, location: RequirementSelector, 
-                  *key: Tuple[str, ...]) -> 'ToolPlanLoader':
-        """Plan use of a tool using the property keys it is supposed to set"""
-        sl = ToolPlanLoader(label, tool_name)
-        sl.location = location
-        for k in key:
-            pk = PropertyKey.create(k).verdict(Verdict.PASS, explanation=tool_name)
-            sl.properties[pk[0]] = pk[1]
-        self.subs.append(sl)
-        return sl
-
     @classmethod
     def group(cls, group_label: str, *tools: 'ToolPlanLoader'):
         """Create a group of tools"""
         for t in tools:
+            # t.load_label = group_label  # label in source filtering
             t.groups.append(group_label)
 
 
@@ -83,12 +73,12 @@ class FabricationLoader(SubLoader):
 
 
 class ToolPlanLoader(SubLoader):
-    def __init__(self, source_label: str, tool_name: str):
-        super().__init__(tool_name)
-        self.source_label = source_label
+    def __init__(self, group: Tuple[str, str]):
+        super().__init__(group[1])    # group[0] is e.g. 'basic-tools', 'advanced-tools', 'custom-tools'
+        self.source_label = group[1]  # group[1] is fancy names for them (just captialize?)
         self.location = Locations.SYSTEM
         self.properties: Dict[PropertyKey, Any] = {}
-        self.groups = ["planning", source_label]
+        self.groups = ["planning", group[0]]
 
     def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
         for g in self.groups:
