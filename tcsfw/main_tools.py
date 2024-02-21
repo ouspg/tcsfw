@@ -49,7 +49,7 @@ class EvidenceLoader(SubLoader):
         sl = ToolPLanLoader(label, tool_name)
         sl.location = location
         for k in key:
-            pk = PropertyKey.create(k).verdict(Verdict.PASS, explanation="Tool plan")
+            pk = PropertyKey.create(k).verdict(Verdict.PASS, explanation=tool_name)
             sl.properties[pk[0]] = pk[1]
         self.subs.append(sl)
         return sl
