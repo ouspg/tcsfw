@@ -44,9 +44,10 @@ class EvidenceLoader(SubLoader):
         self.subs.append(sl)
         return sl
 
-    def plan_tool(self, label: str, tool_name: str, location: RequirementSelector, *key: Tuple[str, ...]) -> 'ToolLoader':
+    def plan_tool(self, label: str, tool_name: str, location: RequirementSelector, 
+                  *key: Tuple[str, ...]) -> 'ToolPlanLoader':
         """Plan use of a tool using the property keys it is supposed to set"""
-        sl = ToolPLanLoader(label, tool_name)
+        sl = ToolPlanLoader(label, tool_name)
         sl.location = location
         for k in key:
             pk = PropertyKey.create(k).verdict(Verdict.PASS, explanation=tool_name)
@@ -81,7 +82,7 @@ class FabricationLoader(SubLoader):
             registry.connection(f)
 
 
-class ToolPLanLoader(SubLoader):
+class ToolPlanLoader(SubLoader):
     def __init__(self, source_label: str, tool_name: str):
         super().__init__(tool_name)
         self.source_label = source_label
