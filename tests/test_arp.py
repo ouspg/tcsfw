@@ -1,6 +1,6 @@
 from tcsfw.address import Protocol
 from tcsfw.inspector import Inspector
-from tcsfw.main import ARP, SystemBuilder
+from tcsfw.main import ARP, SystemBackend
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
 from tcsfw.traffic import EthernetFlow, IPFlow
@@ -8,7 +8,7 @@ from tcsfw.verdict import Status, Verdict
 
 
 def test_serve_arp():
-    sb = SystemBuilder()
+    sb = SystemBackend()
     dev1 = sb.device().hw("1:0:0:0:0:1")
     dev1.serve(ARP)
     dev2 = sb.device().hw("1:0:0:0:0:2")

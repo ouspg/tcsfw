@@ -1,16 +1,16 @@
 from tcsfw.address import IPAddress
-from tcsfw.main import SystemBuilder, UDP, HTTP
+from tcsfw.main import SystemBackend, UDP, HTTP
 from tcsfw.verdict import Status, Verdict
 
 
 def test_just_host():
-    sb = SystemBuilder()
+    sb = SystemBackend()
     dev = sb.device()
     assert dev.entity.status == Status.EXPECTED
 
 
 def test_hosts():
-    sb = SystemBuilder()
+    sb = SystemBackend()
     dev1 = sb.device()
     dev2 = sb.device()
     dev3 = sb.device()

@@ -11,14 +11,14 @@ from tcsfw.client_api import APIRequest
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main import DHCP, DNS, Builder
+from tcsfw.main import DHCP, DNS, SystemBackend
 from tcsfw.model import Host
 from tcsfw.registry import Registry
 from tcsfw.inspector import Inspector
 from tcsfw.result import Report
 from tcsfw.visualizer import VisualizerAPI
 
-class SystemBackend(Builder):
+class SystemBackendRunner(SystemBackend):
     """Backend for system builder"""
     def __init__(self, name: str):
         super().__init__(name)

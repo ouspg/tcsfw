@@ -40,9 +40,92 @@ from tcsfw.verdict import Status, Verdict
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
 
-class SystemBuilder(SystemInterface):
+class SystemBuilder:
     """System model builder"""
-    def __init__(self, name: str):
+    def network(self, mask: str) -> Self:
+        raise NotImplementedError()
+
+    def device(self, name="") -> 'HostBuilder':
+        """IoT device"""
+        raise NotImplementedError()
+
+    def backend(self, name="") -> 'HostBuilder':
+        """Backend service"""
+        raise NotImplementedError()
+
+    def mobile(self, name="") -> 'HostBuilder':
+        """Mobile device"""
+        raise NotImplementedError()
+
+    def browser(self, name="") -> 'HostBuilder':
+        """Browser"""
+        raise NotImplementedError()
+
+    def any(self, name="", node_type: HostType = None) -> 'HostBuilder':
+        """Any host"""
+        raise NotImplementedError()
+
+    def infra(self, name="") -> 'HostBuilder':
+        """Part of the testing infrastructure, not part of the system itself"""
+        raise NotImplementedError()
+
+    def multicast(self, address: str, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
+        """IP multicast target"""
+        raise NotImplementedError()
+
+    def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
+        """IP broadcast target"""
+        raise NotImplementedError()
+
+    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBuilder':
+        """Declare pieces of security-relevant data"""
+        raise NotImplementedError()
+
+    def online_resource(self, key: str, url: str) -> Self:
+        """Document online resource"""
+        raise NotImplementedError()
+
+    def visualize(self) -> 'VisualizerBuilder':
+        raise NotImplementedError()
+
+    def load(self) -> 'EvidenceLoader':
+        raise NotImplementedError()
+
+    def claims(self, base_label="explain") -> 'ClaimSetBuilder':
+        raise NotImplementedError()
+
+
+# Host types
+BROWSER = HostType.BROWSER
+
+# Connection types
+ADMINISTRATIVE = ConnectionType.ADMINISTRATIVE
+ENCRYPTED = ConnectionType.ENCRYPTED
+PLAINTEXT = ConnectionType.UNKNOWN
+
+
+# External activity
+BANNED = ExternalActivity.BANNED
+PASSIVE = ExternalActivity.PASSIVE
+OPEN = ExternalActivity.OPEN
+UNLIMITED = ExternalActivity.UNLIMITED
+
+
+class Builder:
+    """Factory for creating builders"""
+    @classmethod
+    def new(cls, name="Unnamed system") -> SystemBuilder:
+        """Create a new system builder"""
+        from tcsfw.builder_backend import SystemBackendRunner  # avoid circular import
+        return SystemBackendRunner(name)
+
+##
+## FIXME: Backend files temporary located below to avoid circual imports
+##
+
+class SystemBackend(SystemInterface, SystemBuilder):
+    """System model builder"""
+    def __init__(self, name="Unnamed system"):
         super().__init__(name)
         self.hosts_by_name: Dict[str, 'HostBuilder'] = {}
         self.entity_by_address: Dict[AnyAddress, 'NodeBuilder'] = {}
@@ -174,37 +257,12 @@ class SystemBuilder(SystemInterface):
         #             prop_v[0].set(s.properties, prop_v[1])
 
 
-# Host types
-BROWSER = HostType.BROWSER
-
-# Connection types
-ADMINISTRATIVE = ConnectionType.ADMINISTRATIVE
-ENCRYPTED = ConnectionType.ENCRYPTED
-PLAINTEXT = ConnectionType.UNKNOWN
-
-
-# External activity
-BANNED = ExternalActivity.BANNED
-PASSIVE = ExternalActivity.PASSIVE
-OPEN = ExternalActivity.OPEN
-UNLIMITED = ExternalActivity.UNLIMITED
-
-
-class Builder(SystemBuilder):
-    """Factory for creating builders"""
-    @classmethod
-    def new(cls, name="Unnamed system") -> 'SystemBuilder':
-        """Create a new system builder"""
-        from tcsfw.builder_backend import SystemBackend  # avoid circular import
-        return SystemBackend(name)
-
-
 ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
 ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroup']
 
 
 class NodeBuilder(NodeInterface):
-    def __init__(self, entity: Addressable, system: SystemBuilder):
+    def __init__(self, entity: Addressable, system: SystemBackend):
         super().__init__(entity, system)
         self.parent: Optional[NodeBuilder] = None
         self.system = system
@@ -346,7 +404,7 @@ class ServiceGroup:
 
 
 class HostBuilder(HostInterface, NodeBuilder):
-    def __init__(self, entity: Host, system: SystemBuilder):
+    def __init__(self, entity: Host, system: SystemBackend):
         super().__init__(entity, system)
         self.entity = entity
         system.system.children.append(entity)
@@ -411,7 +469,7 @@ class HostBuilder(HostInterface, NodeBuilder):
 
 
 class SensitiveDataBuilder:
-    def __init__(self, parent: SystemBuilder, data: List[SensitiveData]):
+    def __init__(self, parent: SystemBackend, data: List[SensitiveData]):
         self.parent = parent
         self.data = data
         # all sensitive data lives at least in system
@@ -592,7 +650,7 @@ class ProtocolConfigurer:
         s.entity.protocol = self.protocol
         return s
 
-    def as_multicast_(self, address: str, system: SystemBuilder) -> ServiceBuilder:
+    def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBuilder:
         """The protocol as multicast"""
         raise NotImplementedError(f"{self.service_name} cannot be broad/multicast")
 
@@ -768,7 +826,7 @@ class UDP(ProtocolConfigurer):
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE
 
-    def as_multicast_(self, address: str, system: SystemBuilder) -> 'ServiceBuilder':
+    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBuilder':
         b = system.get_host_(address, description="Multicast")
         # Explicitly configured multicast nodes, at least are not administrative
         # b.entity.host_type = HostType.ADMINISTRATIVE
@@ -782,7 +840,7 @@ class BLEAdvertisement(ProtocolConfigurer):
     def __init__(self, event_type: int):
         super().__init__(Protocol.BLE, port=event_type, name="BLE Ad", protocol=Protocol.BLE)
 
-    def as_multicast_(self, address: str, system: SystemBuilder) -> 'ServiceBuilder':
+    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBuilder':
         b = system.get_host_(name="BLE Ads", description="Bluetooth LE Advertisements")
         b.new_address_(Addresses.BLE_Ad)
         b.entity.external_activity = ExternalActivity.PASSIVE
@@ -832,10 +890,10 @@ class ClaimBuilder:
         self._verdict = Verdict.PASS
         return self
 
-    def at(self, *locations: Union[SystemBuilder, NodeBuilder, ConnectionBuilder]) -> 'Self':
+    def at(self, *locations: Union[SystemBackend, NodeBuilder, ConnectionBuilder]) -> 'Self':
         """Set claimed location(s)"""
         for lo in locations:
-            if isinstance(lo, SystemBuilder):
+            if isinstance(lo, SystemBackend):
                 loc = lo.system
             elif isinstance(lo, NodeBuilder):
                 loc = lo.entity
@@ -894,7 +952,7 @@ class ClaimBuilder:
 
 class ClaimSetBuilder(BuilderInterface):
     """Builder for set of claims"""
-    def __init__(self, builder: SystemBuilder):
+    def __init__(self, builder: SystemBackend):
         self.builder = builder
         self.claim_builders: List[ClaimBuilder] = []
         self.tool_plans: List[ToolPlanLoader] = []
