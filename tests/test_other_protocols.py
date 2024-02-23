@@ -1,6 +1,7 @@
 from tcsfw.address import HWAddress, Protocol, HWAddresses
+from tcsfw.builder_backend import SystemBackend
 from tcsfw.inspector import Inspector
-from tcsfw.main import SystemBackend, ICMP, UDP, ARP, EAPOL
+from tcsfw.main import ICMP, UDP, ARP, EAPOL
 from tcsfw.traffic import IPFlow, EthernetFlow, NO_EVIDENCE
 from tcsfw.verdict import Status, Verdict
 

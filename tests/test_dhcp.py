@@ -1,8 +1,9 @@
 import pathlib
 from tcsfw.address import HWAddress, IPAddress
+from tcsfw.builder_backend import SystemBackend
 from tcsfw.event_logger import EventLogger
 from tcsfw.inspector import Inspector
-from tcsfw.main import UNLIMITED, SystemBackend, DHCP, UDP
+from tcsfw.main import UNLIMITED, DHCP, UDP
 from tcsfw.matcher import SystemMatcher
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.traffic import IPFlow

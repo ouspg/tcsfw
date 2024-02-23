@@ -1,5 +1,6 @@
 from tcsfw.address import IPAddress
-from tcsfw.main import SystemBackend, UDP, HTTP
+from tcsfw.builder_backend import SystemBackend
+from tcsfw.main import UDP, HTTP
 from tcsfw.verdict import Status, Verdict
 
 

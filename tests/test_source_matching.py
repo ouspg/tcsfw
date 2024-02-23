@@ -1,4 +1,5 @@
-from tcsfw.main import HTTP, SystemBackend, UDP
+from tcsfw.builder_backend import SystemBackend
+from tcsfw.main import HTTP, UDP
 from tcsfw.matcher import SystemMatcher
 from tcsfw.traffic import IPFlow, Evidence
 

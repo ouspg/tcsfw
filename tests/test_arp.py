@@ -1,10 +1,10 @@
 from tcsfw.address import Protocol
+from tcsfw.builder_backend import SystemBackend
 from tcsfw.inspector import Inspector
-from tcsfw.main import ARP, SystemBackend
-from tcsfw.matcher import SystemMatcher
+from tcsfw.main import ARP
 from tcsfw.model import ExternalActivity
-from tcsfw.traffic import EthernetFlow, IPFlow
-from tcsfw.verdict import Status, Verdict
+from tcsfw.traffic import EthernetFlow
+from tcsfw.verdict import Status
 
 
 def test_serve_arp():

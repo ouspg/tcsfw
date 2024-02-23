@@ -1,5 +1,6 @@
 from tcsfw.address import EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
-from tcsfw.main import SystemBackend, UDP, SSH
+from tcsfw.builder_backend import SystemBackend
+from tcsfw.main import UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
 from tcsfw.traffic import IPFlow
