@@ -271,6 +271,102 @@ class VisualizerBuilder:
         raise NotImplementedError()
 
 
+class ProtocolConfigurer:
+    """Protocol configurer base class"""
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+class ARP(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "ARP")
+
+
+class DHCP(ProtocolConfigurer):
+    def __init__(self, port=67):
+        ProtocolConfigurer.__init__(self, "DHCP")
+        self.port = port
+
+
+class DNS(ProtocolConfigurer):
+    def __init__(self, port=53, captive=False):
+        ProtocolConfigurer.__init__(self, "DNS")
+        self.port = port
+        self.captive = captive
+
+class EAPOL(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "EAPOL")
+
+
+class HTTP(ProtocolConfigurer):
+    def __init__(self, port=80, auth: Optional[bool] = None):
+        ProtocolConfigurer.__init__(self, "HTTP")
+        self.port = port
+        self.auth = auth
+        self.redirect_only = False
+
+    def redirect(self) -> Self:
+        """This is only HTTP redirect to TLS"""
+        self.redirect_only = True
+        return self
+
+
+class ICMP(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "ICMP")
+
+
+class IP(ProtocolConfigurer):
+    def __init__(self, name="IP", administration=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.administration = administration
+
+
+class TLS(ProtocolConfigurer):
+    def __init__(self, port=443, auth: Optional[bool] = None):
+        ProtocolConfigurer.__init__(self, "TLS")
+        self.port = port
+        self.auth = auth
+
+
+class NTP(ProtocolConfigurer):
+    def __init__(self, port=123):
+        ProtocolConfigurer.__init__(self, "NTP")
+        self.port = port
+
+
+class SSH(ProtocolConfigurer):
+    def __init__(self, port=22):
+        ProtocolConfigurer.__init__(self, "SSH")
+        self.port = port
+
+
+class TCP(ProtocolConfigurer):
+    def __init__(self, port: int, name="TCP", administrative=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.port = port
+        self.name = name
+        self.administrative = administrative
+
+
+class UDP(ProtocolConfigurer):
+    def __init__(self, port: int, name="UDP", administrative=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.port = port
+        self.name = name
+        self.administrative = administrative
+
+
+class BLEAdvertisement(ProtocolConfigurer):
+    def __init__(self, event_type: int):
+        ProtocolConfigurer.__init__(self, "BLE Ad")
+        self.event_type = event_type
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -742,102 +838,6 @@ class VisualizerBackend(VisualizerBuilder):
                 ent = b.entity.get_parent_host()
             self.visualizer.handles[h] = ent
         return self
-
-
-class ProtocolConfigurer:
-    """Protocol configurer"""
-    def __init__(self, name: str):
-        self.name = name
-
-    def __repr__(self) -> str:
-        return self.name
-
-
-class ARP(ProtocolConfigurer):
-    def __init__(self):
-        ProtocolConfigurer.__init__(self, "ARP")
-
-
-class DHCP(ProtocolConfigurer):
-    def __init__(self, port=67):
-        ProtocolConfigurer.__init__(self, "DHCP")
-        self.port = port
-
-
-class DNS(ProtocolConfigurer):
-    def __init__(self, port=53, captive=False):
-        ProtocolConfigurer.__init__(self, "DNS")
-        self.port = port
-        self.captive = captive
-
-class EAPOL(ProtocolConfigurer):
-    def __init__(self):
-        ProtocolConfigurer.__init__(self, "EAPOL")
-
-
-class HTTP(ProtocolConfigurer):
-    def __init__(self, port=80, auth: Optional[bool] = None):
-        ProtocolConfigurer.__init__(self, "HTTP")
-        self.port = port
-        self.auth = auth
-        self.redirect_only = False
-
-    def redirect(self) -> Self:
-        """This is only HTTP redirect to TLS"""
-        self.redirect_only = True
-        return self
-
-
-class ICMP(ProtocolConfigurer):
-    def __init__(self):
-        ProtocolConfigurer.__init__(self, "ICMP")
-
-
-class IP(ProtocolConfigurer):
-    def __init__(self, name="IP", administration=False):
-        ProtocolConfigurer.__init__(self, name)
-        self.administration = administration
-
-
-class TLS(ProtocolConfigurer):
-    def __init__(self, port=443, auth: Optional[bool] = None):
-        ProtocolConfigurer.__init__(self, "TLS")
-        self.port = port
-        self.auth = auth
-
-
-class NTP(ProtocolConfigurer):
-    def __init__(self, port=123):
-        ProtocolConfigurer.__init__(self, "NTP")
-        self.port = port
-
-
-class SSH(ProtocolConfigurer):
-    def __init__(self, port=22):
-        ProtocolConfigurer.__init__(self, "SSH")
-        self.port = port
-
-
-class TCP(ProtocolConfigurer):
-    def __init__(self, port: int, name="TCP", administrative=False):
-        ProtocolConfigurer.__init__(self, name)
-        self.port = port
-        self.name = name
-        self.administrative = administrative
-
-
-class UDP(ProtocolConfigurer):
-    def __init__(self, port: int, name="UDP", administrative=False):
-        ProtocolConfigurer.__init__(self, name)
-        self.port = port
-        self.name = name
-        self.administrative = administrative
-
-
-class BLEAdvertisement(ProtocolConfigurer):
-    def __init__(self, event_type: int):
-        ProtocolConfigurer.__init__(self, "BLE Ad")
-        self.event_type = event_type
 
 
 class ProtocolBackend:
