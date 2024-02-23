@@ -112,11 +112,12 @@ UNLIMITED = ExternalActivity.UNLIMITED
 
 
 ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
-ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroup']
+ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 
 
 class NodeBuilder:
     def __init__(self, system: SystemBuilder):
+        # NOTE: This is not called from subclasses, necessarily
         self.system = system
 
     def name(self, name: str) -> Self:
@@ -142,6 +143,30 @@ class NodeBuilder:
         raise NotImplementedError()
 
     def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBuilder':
+        raise NotImplementedError()
+
+
+class ServiceBuilder(NodeBuilder):
+    """Service builder"""
+    def __init__(self, system: SystemBuilder):
+        super().__init__(system)
+
+    def type(self, value: ConnectionType) -> Self:
+        """Configure connection type"""
+        raise NotImplementedError()
+
+    def authenticated(self, flag: bool) -> Self:
+        """Is this service authenticated?"""
+        raise NotImplementedError()
+
+    def __truediv__(self, protocol: ProtocolType) -> 'ServiceGroupBuilder':
+        """Pick or add the configured protocol to host"""
+        raise NotImplementedError()
+
+
+class ServiceGroupBuilder:
+    """One or more services grouped"""
+    def __truediv__(self, other: ServiceOrGroup | ProtocolType) -> Self:
         raise NotImplementedError()
 
 
@@ -215,11 +240,11 @@ class SystemBackend(SystemBuilder):
         b.entity.match_priority = 5
         return b
 
-    def multicast(self, address: str, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
+    def multicast(self, address: str, protocol: 'ProtocolConfigurer') -> 'ServiceBackend':
         conf = ProtocolConfigurer.as_configurer(protocol)
         return conf.as_multicast_(address, self)
 
-    def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
+    def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBackend':
         conf = ProtocolConfigurer.as_configurer(protocol)
         add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
         return self.multicast(add, conf)
@@ -282,10 +307,10 @@ class SystemBackend(SystemBuilder):
         #             prop_v[0].set(s.properties, prop_v[1])
 
 
-class NodeBackend(NodeBuilder):
+class NodeBackend:
     def __init__(self, entity: Addressable, system: SystemBackend):
-        NodeBuilder.__init__(self, system)
         self.system = system
+        self.entity = entity
         self.parent: Optional[NodeBackend] = None
         self.sw: Dict[str, SoftwareBuilder] = {}
         system.system.originals.add(entity)
@@ -329,7 +354,7 @@ class NodeBackend(NodeBuilder):
         return NodeVisualBuilder(p)
 
     def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBuilder':
-        if isinstance(target, ServiceGroup):
+        if isinstance(target, ServiceGroupBackend):
             c = None
             for t in target.services:
                 c = t.connection_(self)
@@ -359,31 +384,30 @@ class NodeBackend(NodeBuilder):
         return self.entity.__repr__()
 
 
-class ServiceBuilder(NodeBackend):
+class ServiceBackend(NodeBackend,ServiceBuilder):
     def __init__(self, host: 'HostBuilder', service: Service):
-        super().__init__(service, host.system)
-        self.configurer: Optional[ProtocolConfigurer] = None
+        NodeBackend.__init__(self, service, host.system)
         self.entity = service
+        self.configurer: Optional[ProtocolConfigurer] = None
         self.entity.match_priority = 10
         self.entity.external_activity = host.entity.external_activity
         self.parent = host
-        self.source_fixer: Optional[Callable[['HostBuilder'], 'ServiceBuilder']] = None
+        self.source_fixer: Optional[Callable[['HostBuilder'], 'ServiceBackend']] = None
 
-    def type(self, value: ConnectionType) -> 'ServiceBuilder':
-        """Configure connection type"""
+    def type(self, value: ConnectionType) -> 'ServiceBackend':
         # FIXME: We should block defining plaintext connection as admin?
         self.entity.con_type = value
         return self
 
     def authenticated(self, flag: bool) -> Self:
-        """Is this service authenticated?"""
         self.entity.authentication = flag
         return self
 
-    def __truediv__(self, protocol: ProtocolType) -> 'ServiceGroup':
-        """Pick or add the configured protocol to host"""
+    def __truediv__(self, protocol: ProtocolType) -> 'ServiceGroupBackend':
         s = self.parent / protocol
-        return ServiceGroup([self, s])
+        return ServiceGroupBackend([self, s])
+
+    ### Backend methods
 
     def connection_(self, source: 'NodeBackend') -> 'ConnectionBuilder':
         s = source
@@ -404,21 +428,23 @@ class ServiceBuilder(NodeBackend):
         return ConnectionBuilder(c, (s, self))
 
 
-class ServiceGroup:
-    def __init__(self, services: List[ServiceBuilder]):
+class ServiceGroupBackend(ServiceGroupBuilder):
+    def __init__(self, services: List[ServiceBackend]):
         assert len(services) > 0, "Empty list of services"
         self.services = services
 
-    def __truediv__(self, other: ServiceOrGroup | ProtocolType) -> 'ServiceGroup':
+    def __truediv__(self, other: ServiceOrGroup | ProtocolType) -> 'ServiceGroupBackend':
         g = self.services.copy()
-        if isinstance(other, ServiceGroup):
+        if isinstance(other, ServiceGroupBackend):
             g.extend(other.services)
-        elif isinstance(other, ServiceBuilder):
+        elif isinstance(other, ServiceBackend):
             g.append(other)
         else:
             conf = ProtocolConfigurer.as_configurer(other)
             g.append(conf.get_service_(self.services[0].parent))
-        return ServiceGroup(g)
+        return ServiceGroupBackend(g)
+
+    ### Backend methods
 
     def __repr__(self):
         return " / ".join([f"{s.entity.name}" for s in self.services])
@@ -433,7 +459,7 @@ class HostBuilder(NodeBackend):
         system.hosts_by_name[entity.name] = self
         if DNSName.looks_like(entity.name):
             self.name(entity.name)
-        self.service_builders: Dict[Tuple[Protocol, int], ServiceBuilder] = {}
+        self.service_builders: Dict[Tuple[Protocol, int], ServiceBackend] = {}
 
     def hw(self, address: str) -> 'HostBuilder':
         """Add HW address"""
@@ -451,7 +477,7 @@ class HostBuilder(NodeBackend):
             self / p
         return self
 
-    def __lshift__(self, multicast: ServiceBuilder) -> 'ConnectionBuilder':
+    def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBuilder':
         """Receive broadcast or multicast"""
         mc = multicast.entity
         assert mc.is_multicast(), "Can only receive multicast"
@@ -472,7 +498,7 @@ class HostBuilder(NodeBackend):
                 usage.sub_components.append(DataReference(usage, d))
         return self
 
-    def __truediv__(self, protocol: ProtocolType) -> ServiceBuilder:
+    def __truediv__(self, protocol: ProtocolType) -> ServiceBackend:
         """Pick or add the configured protocol"""
         conf = ProtocolConfigurer.as_configurer(protocol)
         return conf.get_service_(self)
@@ -504,7 +530,7 @@ class SensitiveDataBuilder:
             h.use_data(self)
         return self
 
-    def authorize(self, *service: ServiceBuilder) -> Self:
+    def authorize(self, *service: ServiceBackend) -> Self:
         """This data is used for service authentication"""
         for s in service:
             s.parent.use_data(self)
@@ -517,7 +543,7 @@ class SensitiveDataBuilder:
 
 
 class ConnectionBuilder:
-    def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBuilder]):
+    def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBackend]):
         self.connection = connection
         self.ends = ends
         self.ends[0].system.system.originals.add(connection)
@@ -542,7 +568,7 @@ class SoftwareBuilder(SoftwareInterface):
     def get_software(self, name: Optional[str] = None) -> Software:
         return self.sw
 
-    def updates_from(self, source: Union[ConnectionBuilder, ServiceBuilder, HostBuilder]) -> Self:
+    def updates_from(self, source: Union[ConnectionBuilder, ServiceBackend, HostBuilder]) -> Self:
         host = self.parent.entity
 
         cs = []
@@ -642,7 +668,7 @@ class ProtocolConfigurer:
     def __repr__(self):
         return f"{self.service_name}"
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBuilder:
+    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
         """Create or get service builder"""
         old = parent.service_builders.get((self.transport, self.service_port if self.port_to_name else -1))
         if old:
@@ -659,8 +685,8 @@ class ProtocolConfigurer:
             parent.use_data(SensitiveDataBuilder(parent.system, self.critical_parameter))  # critical protocol parameters
         return b
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
-        s = ServiceBuilder(parent,
+    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+        s = ServiceBackend(parent,
                            parent.new_service_(self.service_name, self.service_port if self.port_to_name else -1))
         s.configurer = self
         s.entity.authentication = self.authentication
@@ -671,7 +697,7 @@ class ProtocolConfigurer:
         s.entity.protocol = self.protocol
         return s
 
-    def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBuilder:
+    def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBackend:
         """The protocol as multicast"""
         raise NotImplementedError(f"{self.service_name} cannot be broad/multicast")
 
@@ -692,7 +718,7 @@ class ARP(ProtocolConfigurer):
         # ARP make requests and replies
         self.external_activity = ExternalActivity.UNLIMITED
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBuilder:
+    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
         host_s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
         bc_node = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
@@ -723,8 +749,8 @@ class DHCP(ProtocolConfigurer):
         # DHCP requests go to broadcast, thus the reply looks like request
         self.external_activity = ExternalActivity.UNLIMITED
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
-        host_s = ServiceBuilder(parent, DHCPService(parent.entity))
+    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+        host_s = ServiceBackend(parent, DHCPService(parent.entity))
         host_s.entity.external_activity = self.external_activity
 
         def create_source(host: HostBuilder):
@@ -746,10 +772,10 @@ class DNS(ProtocolConfigurer):
         self.external_activity = ExternalActivity.OPEN
         self.captive_portal = captive
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
+    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
         dns_s = DNSService(parent.entity)
         dns_s.captive_portal = self.captive_portal
-        s = ServiceBuilder(parent, dns_s)
+        s = ServiceBackend(parent, dns_s)
         s.entity.external_activity = self.external_activity
         return s
 
@@ -775,7 +801,7 @@ class HTTP(ProtocolConfigurer):
         self.redirect_only = True
         return self
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBuilder:
+    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
         s = super().get_service_(parent)
         if self.redirect_only:
             # persistent property
@@ -789,7 +815,7 @@ class ICMP(ProtocolConfigurer):
         self.external_activity = ExternalActivity.OPEN
         self.port_to_name = False
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBuilder:
+    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
         s = super()._create_service(parent)
         s.entity.name = "ICMP"  # a bit of hack...
         s.entity.host_type = HostType.ADMINISTRATIVE
@@ -847,7 +873,7 @@ class UDP(ProtocolConfigurer):
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE
 
-    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBuilder':
+    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBackend':
         b = system.get_host_(address, description="Multicast")
         # Explicitly configured multicast nodes, at least are not administrative
         # b.entity.host_type = HostType.ADMINISTRATIVE
@@ -861,7 +887,7 @@ class BLEAdvertisement(ProtocolConfigurer):
     def __init__(self, event_type: int):
         super().__init__(Protocol.BLE, port=event_type, name="BLE Ad", protocol=Protocol.BLE)
 
-    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBuilder':
+    def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBackend':
         b = system.get_host_(name="BLE Ads", description="Bluetooth LE Advertisements")
         b.new_address_(Addresses.BLE_Ad)
         b.entity.external_activity = ExternalActivity.PASSIVE
