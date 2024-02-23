@@ -142,7 +142,7 @@ class NodeBuilder:
         """Create visual for the host"""
         raise NotImplementedError()
 
-    def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBuilder':
+    def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBackend':
         raise NotImplementedError()
 
 
@@ -186,7 +186,7 @@ class HostBuilder(NodeBuilder):
         """Serve the configured protocol or protocols"""
         raise NotImplementedError()
 
-    def __lshift__(self, multicast: ServiceBuilder) -> 'ConnectionBuilder':
+    def __lshift__(self, multicast: ServiceBuilder) -> 'ConnectionBackend':
         """Receive broadcast or multicast"""
         raise NotImplementedError()
 
@@ -221,6 +221,12 @@ class SensitiveDataBuilder:
 
     def authorize(self, *service: ServiceBuilder) -> Self:
         """This data is used for service authentication"""
+        raise NotImplementedError()
+
+
+class ConnectionBuilder:
+    def logical_only(self) -> Self:
+        """Only a logical link"""
         raise NotImplementedError()
 
 
@@ -407,7 +413,7 @@ class NodeBackend:
             p = p.parent
         return NodeVisualBuilder(p)
 
-    def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBuilder':
+    def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBackend':
         if isinstance(target, ServiceGroupBackend):
             c = None
             for t in target.services:
@@ -463,7 +469,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
 
     ### Backend methods
 
-    def connection_(self, source: 'NodeBackend') -> 'ConnectionBuilder':
+    def connection_(self, source: 'NodeBackend') -> 'ConnectionBackend':
         s = source
         if self.source_fixer:
             assert isinstance(s, HostBackend)
@@ -471,7 +477,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
         for c in s.entity.get_parent_host().connections:
             if c.source == s.entity and c.target == self.entity:
                 # referring existing connection
-                return ConnectionBuilder(c, (s, self))
+                return ConnectionBackend(c, (s, self))
         c = Connection(s.entity, self.entity)
         c.status = Status.EXPECTED
         c.con_type = self.entity.con_type
@@ -479,7 +485,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
             e.status = Status.EXPECTED
         s.entity.get_parent_host().connections.append(c)
         self.entity.get_parent_host().connections.append(c)
-        return ConnectionBuilder(c, (s, self))
+        return ConnectionBackend(c, (s, self))
 
 
 class ServiceGroupBackend(ServiceGroupBuilder):
@@ -528,7 +534,7 @@ class HostBackend(NodeBackend,HostBuilder):
             self / p
         return self
 
-    def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBuilder':
+    def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBackend':
         mc = multicast.entity
         assert mc.is_multicast(), "Can only receive multicast"
         # no service created, just connection from this to the multicast node
@@ -585,14 +591,13 @@ class SensitiveDataBackend(SensitiveDataBuilder):
         return self
 
 
-class ConnectionBuilder:
+class ConnectionBackend(ConnectionBuilder):
     def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBackend]):
         self.connection = connection
         self.ends = ends
         self.ends[0].system.system.originals.add(connection)
 
     def logical_only(self) -> Self:
-        """Only a logical link"""
         self.connection.con_type = ConnectionType.LOGICAL
         return self
 
@@ -611,7 +616,7 @@ class SoftwareBuilder(SoftwareInterface):
     def get_software(self, name: Optional[str] = None) -> Software:
         return self.sw
 
-    def updates_from(self, source: Union[ConnectionBuilder, ServiceBackend, HostBackend]) -> Self:
+    def updates_from(self, source: Union[ConnectionBackend, ServiceBackend, HostBackend]) -> Self:
         host = self.parent.entity
 
         cs = []
@@ -980,7 +985,7 @@ class ClaimBuilder:
         self._verdict = Verdict.PASS
         return self
 
-    def at(self, *locations: Union[SystemBackend, NodeBackend, ConnectionBuilder]) -> 'Self':
+    def at(self, *locations: Union[SystemBackend, NodeBackend, ConnectionBackend]) -> 'Self':
         """Set claimed location(s)"""
         for lo in locations:
             if isinstance(lo, SystemBackend):
