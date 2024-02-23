@@ -9,7 +9,7 @@ def test_source_matching():
     dev1 = sb.device().hw("1:0:0:0:0:1")
     m = SystemMatcher(sb.system)
 
-    source2 = sb.load().fabricate().hw(dev1, "1:0:0:0:1:1")
+    source2 = sb.load().traffic().hw(dev1, "1:0:0:0:1:1")
     e2 = Evidence(source2.get_source())
 
     c1 = m.connection(

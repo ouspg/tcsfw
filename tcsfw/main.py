@@ -406,13 +406,13 @@ class ClaimSetBuilder:
 
 class EvidenceBuilder:
     """Base class for data loaders"""
-    def fabricate(self, label: str) -> 'FabricationBuilder':
+    def traffic(self, label: str) -> 'TrafficDataBuilder':
         """Fabricate evidence for testing or visualization"""
         raise NotImplementedError()
 
 
-class FabricationBuilder:
-    """Fabricate evidence for testing or visualization"""
+class TrafficDataBuilder:
+    """Fabricate traffic data for testing or visualization"""
     def connection(self, flow: Flow) -> Self:
         """Add a connection"""
         raise NotImplementedError()

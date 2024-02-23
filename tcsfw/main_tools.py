@@ -4,7 +4,7 @@ from tcsfw.address import AnyAddress, HWAddress, IPAddress
 from tcsfw.batch_import import LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.event_interface import PropertyEvent
-from tcsfw.main import EvidenceBuilder, FabricationBuilder, NodeBuilder, SystemBuilder
+from tcsfw.main import EvidenceBuilder, TrafficDataBuilder, NodeBuilder, SystemBuilder
 from tcsfw.requirement import SelectorContext
 from tcsfw.selector import Locations
 from tcsfw.model import EvidenceNetworkSource, ExternalActivity, HostType
@@ -70,7 +70,7 @@ class EvidenceLoader(EvidenceBuilder):
         self.builder = builder
         self.subs: List[SubLoader] = []
 
-    def fabricate(self, label="Fab data") -> 'FabricationLoader':
+    def traffic(self, label="Fab data") -> 'FabricationLoader':
         """Fabricate evidence for testing or visualization"""
         sl = FabricationLoader(label)
         self.subs.append(sl)
@@ -84,7 +84,7 @@ class EvidenceLoader(EvidenceBuilder):
             t.groups.append(group_label)
 
 
-class FabricationLoader(SubLoader,FabricationBuilder):
+class FabricationLoader(SubLoader,TrafficDataBuilder):
     """Fabricate evidence for testing or visualization"""
     def __init__(self, source_label: str):
         super().__init__(source_label)
