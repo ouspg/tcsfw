@@ -6,7 +6,7 @@ import json
 import logging
 import pathlib
 import sys
-from typing import Callable, Dict, List, Optional, Self, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
 
 from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress,
                            HWAddress, HWAddresses, IPAddress, IPAddresses,
@@ -293,6 +293,7 @@ class SystemBackend(SystemBuilder):
         self.claimSet = ClaimSetBuilder(self)
         self.visualizer = Visualizer()
         self.loaders: List['EvidenceLoader'] = []
+        self.protocols: Dict[Any, 'ProtocolBackend'] = {}
 
     def network(self, mask: str) -> Self:
         self.network_masks.append(ipaddress.ip_network(mask))
@@ -342,13 +343,13 @@ class SystemBackend(SystemBuilder):
         return b
 
     def multicast(self, address: str, protocol: 'ProtocolConfigurer') -> 'ServiceBackend':
-        conf = ProtocolConfigurer.as_configurer(protocol)
+        conf = self.get_protocol_backend(protocol)
         return conf.as_multicast_(address, self)
 
     def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBackend':
-        conf = ProtocolConfigurer.as_configurer(protocol)
+        conf = self.get_protocol_backend(protocol)
         add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
-        return self.multicast(add, conf)
+        return self.multicast(add, protocol)
 
     def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBackend':
         d = [SensitiveData(n, personal=personal, password=password) for n in names]
@@ -381,6 +382,18 @@ class SystemBackend(SystemBuilder):
             h.match_priority = 10
             hb = HostBackend(h, self)
         return hb
+
+    def get_protocol_backend(self, protocol: 'ProtocolConfigurer' | ProtocolType) -> 'ProtocolBackend':
+        """Get protocol backend, create if required"""
+        be = self.protocols.get(protocol)
+        if be is None:
+            if isinstance(protocol, ProtocolConfigurer):
+                p = protocol
+            else:
+                p = protocol()
+            assert isinstance(p, ProtocolConfigurer), f"Not protocol type: {p.__class__.__name__}"
+            be = self.protocols[p] = ProtocolBackend.new(p)
+        return be
 
     def _free_host_name(self, name_base: str) -> str:
         n = self.system.free_child_name(name_base)
@@ -541,7 +554,8 @@ class ServiceGroupBackend(ServiceGroupBuilder):
         elif isinstance(other, ServiceBackend):
             g.append(other)
         else:
-            conf = ProtocolConfigurer.as_configurer(other)
+            system = self.services[0].system
+            conf = system.get_protocol_backend(other)
             g.append(conf.get_service_(self.services[0].parent))
         return ServiceGroupBackend(g)
 
@@ -594,7 +608,7 @@ class HostBackend(NodeBackend,HostBuilder):
         return self
 
     def __truediv__(self, protocol: ProtocolType) -> ServiceBackend:
-        conf = ProtocolConfigurer.as_configurer(protocol)
+        conf = self.system.get_protocol_backend(protocol)
         return conf.get_service_(self)
 
     def ignore_name_requests(self, *name: str) -> Self:
@@ -732,8 +746,112 @@ class VisualizerBackend(VisualizerBuilder):
 
 class ProtocolConfigurer:
     """Protocol configurer"""
-    def __init__(self, transport: Optional[Protocol] = None, protocol: Protocol = Protocol.ANY, name="", port=-1,
-                 group: List['ProtocolConfigurer'] = None):
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+class ARP(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "ARP")
+
+
+class DHCP(ProtocolConfigurer):
+    def __init__(self, port=67):
+        ProtocolConfigurer.__init__(self, "DHCP")
+        self.port = port
+
+
+class DNS(ProtocolConfigurer):
+    def __init__(self, port=53, captive=False):
+        ProtocolConfigurer.__init__(self, "DNS")
+        self.port = port
+        self.captive = captive
+
+class EAPOL(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "EAPOL")
+
+
+class HTTP(ProtocolConfigurer):
+    def __init__(self, port=80, auth: Optional[bool] = None):
+        ProtocolConfigurer.__init__(self, "HTTP")
+        self.port = port
+        self.auth = auth
+        self.redirect_only = False
+
+    def redirect(self) -> Self:
+        """This is only HTTP redirect to TLS"""
+        self.redirect_only = True
+        return self
+
+
+class ICMP(ProtocolConfigurer):
+    def __init__(self):
+        ProtocolConfigurer.__init__(self, "ICMP")
+
+
+class IP(ProtocolConfigurer):
+    def __init__(self, name="IP", administration=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.administration = administration
+
+
+class TLS(ProtocolConfigurer):
+    def __init__(self, port=443, auth: Optional[bool] = None):
+        ProtocolConfigurer.__init__(self, "TLS")
+        self.port = port
+        self.auth = auth
+
+
+class NTP(ProtocolConfigurer):
+    def __init__(self, port=123):
+        ProtocolConfigurer.__init__(self, "NTP")
+        self.port = port
+
+
+class SSH(ProtocolConfigurer):
+    def __init__(self, port=22):
+        ProtocolConfigurer.__init__(self, "SSH")
+        self.port = port
+
+
+class TCP(ProtocolConfigurer):
+    def __init__(self, port: int, name="TCP", administrative=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.port = port
+        self.name = name
+        self.administrative = administrative
+
+
+class UDP(ProtocolConfigurer):
+    def __init__(self, port: int, name="UDP", administrative=False):
+        ProtocolConfigurer.__init__(self, name)
+        self.port = port
+        self.name = name
+        self.administrative = administrative
+
+
+class BLEAdvertisement(ProtocolConfigurer):
+    def __init__(self, event_type: int):
+        ProtocolConfigurer.__init__(self, "BLE Ad")
+        self.event_type = event_type
+
+
+class ProtocolBackend:
+    """Protocol configurer backend"""
+    @classmethod
+    def new(cls, configurer: ProtocolConfigurer) -> 'ProtocolBackend':
+        pt = configurer.__class__
+        pt_cre = ProtocolConfigurers.Constructors.get(pt)
+        if pt_cre is None:
+            raise NotImplemented(f"No backend mapped for {pt}")
+        be = pt_cre(configurer)
+        return be
+
+    def __init__(self, transport: Optional[Protocol] = None, protocol: Protocol = Protocol.ANY, name="", port=-1):
         self.transport = transport
         self.protocol = protocol
         self.service_name = name
@@ -745,18 +863,9 @@ class ProtocolConfigurer:
         self.external_activity: Optional[ExternalActivity.BANNED] = None
         self.critical_parameter: List[SensitiveData] = []
 
-    def name(self, value: str) -> Self:
-        """Name the service"""
-        self.service_name = value
-        return self
-
-    def set_type(self, value: ConnectionType) -> Self:
-        """Claim encrypted service"""
-        self.con_type = value
-        return self
-
-    def __repr__(self):
-        return f"{self.service_name}"
+    def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBackend:
+        """The protocol as multicast"""
+        raise NotImplementedError(f"{self.service_name} cannot be broad/multicast")
 
     def get_service_(self, parent: HostBackend) -> ServiceBackend:
         """Create or get service builder"""
@@ -787,28 +896,22 @@ class ProtocolConfigurer:
         s.entity.protocol = self.protocol
         return s
 
-    def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBackend:
-        """The protocol as multicast"""
-        raise NotImplementedError(f"{self.service_name} cannot be broad/multicast")
-
-    @classmethod
-    def as_configurer(cls, protocol: ProtocolType):
-        if isinstance(protocol, ProtocolConfigurer):
-            return protocol
-        i = protocol()
-        assert isinstance(i, ProtocolConfigurer), f"Not protocol type: {protocol.__name__}"
-        return i
+    def __repr__(self):
+        return f"{self.service_name}"
 
 
-class ARP(ProtocolConfigurer):
-    def __init__(self):
+class ARPBackend(ProtocolBackend):
+    def __init__(self, configurer: ARP, broadcast_endpoint=False):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
+        self.broadcast_endpoint = broadcast_endpoint
         # ARP make requests and replies
         self.external_activity = ExternalActivity.UNLIMITED
 
     def get_service_(self, parent: HostBackend) -> ServiceBackend:
+        if self.broadcast_endpoint:
+            return super().get_service_(parent)
         host_s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
         bc_node = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
@@ -822,7 +925,8 @@ class ARP(ProtocolConfigurer):
             bc_node.new_address_(HWAddresses.BROADCAST)
             bc_node.entity.external_activity = ExternalActivity.OPEN   # anyone can make broadcasts (it does not reply)
             bc_node.entity.host_type = HostType.ADMINISTRATIVE
-            bc_s = bc_node / ProtocolConfigurer(transport=Protocol.ARP, name="ARP")
+            # ARP service at the broadcast node, but avoid looping back to ARPBackend
+            bc_s = ARPBackend(ARP(), broadcast_endpoint=True).get_service_(bc_node)
             bc_s.entity.host_type = HostType.ADMINISTRATIVE
             bc_s.entity.con_type = ConnectionType.ADMINISTRATIVE
             bc_s.entity.external_activity = bc_node.entity.external_activity
@@ -833,9 +937,9 @@ class ARP(ProtocolConfigurer):
         return bc_s  # NOTE: the broadcast
 
 
-class DHCP(ProtocolConfigurer):
-    def __init__(self, port=67):
-        super().__init__(Protocol.UDP, port=port, name="DHCP")
+class DHCPBackend(ProtocolBackend):
+    def __init__(self, configurer: DHCP):
+        super().__init__(Protocol.UDP, port=configurer.port, name="DHCP")
         # DHCP requests go to broadcast, thus the reply looks like request
         self.external_activity = ExternalActivity.UNLIMITED
 
@@ -856,11 +960,11 @@ class DHCP(ProtocolConfigurer):
         return host_s
 
 
-class DNS(ProtocolConfigurer):
-    def __init__(self, port=53, captive=False):
-        super().__init__(Protocol.UDP, port=port, name="DNS")
+class DNSBackend(ProtocolBackend):
+    def __init__(self, configurer: DNS):
+        super().__init__(Protocol.UDP, port=configurer.port, name="DNS")
         self.external_activity = ExternalActivity.OPEN
-        self.captive_portal = captive
+        self.captive_portal = configurer.captive
 
     def _create_service(self, parent: HostBackend) -> ServiceBackend:
         dns_s = DNSService(parent.entity)
@@ -870,26 +974,20 @@ class DNS(ProtocolConfigurer):
         return s
 
 
-class EAPOL(ProtocolConfigurer):
-    def __init__(self):
-        super().__init__(Protocol.ETHERNET, port=0x888e, name="EAPOL")
+class EAPOLBackend(ProtocolBackend):
+    def __init__(self, configurer: EAPOL):
+        super().__init__(Protocol.ETHERNET, port=0x888e, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
         self.external_activity = ExternalActivity.OPEN
         self.port_to_name = False
 
 
-class HTTP(ProtocolConfigurer):
-    def __init__(self, port=80, auth: Optional[bool] = None):
-        super().__init__(Protocol.TCP, port=port, protocol=Protocol.HTTP, name="HTTP")
-        if auth is not None:
-            self.authentication = auth
+class HTTPBackend(ProtocolBackend):
+    def __init__(self, configurer: HTTP):
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.HTTP, name=configurer.name)
+        self.authentication = configurer.auth
         self.redirect_only = False
-
-    def redirect(self) -> Self:
-        """This is only HTTP redirect to TLS"""
-        self.redirect_only = True
-        return self
 
     def get_service_(self, parent: HostBackend) -> ServiceBackend:
         s = super().get_service_(parent)
@@ -899,9 +997,9 @@ class HTTP(ProtocolConfigurer):
         return s
 
 
-class ICMP(ProtocolConfigurer):
-    def __init__(self):
-        super().__init__(Protocol.IP, port=1, name="ICMP")
+class ICMPBackend(ProtocolBackend):
+    def __init__(self, configurer: ICMP):
+        super().__init__(Protocol.IP, port=1, name=configurer.name)
         self.external_activity = ExternalActivity.OPEN
         self.port_to_name = False
 
@@ -915,51 +1013,50 @@ class ICMP(ProtocolConfigurer):
         return s
 
 
-class IP(ProtocolConfigurer):
-    def __init__(self, administration=False):
-        super().__init__(Protocol.IP, name="IP")
-        if administration:
+class IPBackend(ProtocolBackend):
+    def __init__(self, configurer: IP):
+        super().__init__(Protocol.IP, name=configurer.name)
+        if configurer.administration:
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE
 
 
-class TLS(ProtocolConfigurer):
-    def __init__(self, port=443, auth: Optional[bool] = None):
-        super().__init__(Protocol.TCP, port=port, protocol=Protocol.TLS, name="TLS")
-        if auth is not None:
-            self.authentication = auth
+class TLSBackend(ProtocolBackend):
+    def __init__(self, configurer: TLS):
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.TLS, name=configurer.name)
+        self.authentication = configurer.auth
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("TLS-creds"))
 
 
-class NTP(ProtocolConfigurer):
-    def __init__(self, port=123):
-        super().__init__(Protocol.UDP, port=port, name="NTP")
+class NTPBackend(ProtocolBackend):
+    def __init__(self, configurer: NTP):
+        super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
         self.external_activity = ExternalActivity.OPEN
 
 
-class SSH(ProtocolConfigurer):
-    def __init__(self, port=22):
-        super().__init__(Protocol.TCP, port=port, protocol=Protocol.SSH, name="SSH")
+class SSHBackend(ProtocolBackend):
+    def __init__(self, configurer: SSH):
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.SSH, name=configurer.name)
         self.authentication = True
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("SSH-creds"))
 
 
-class TCP(ProtocolConfigurer):
-    def __init__(self, port: int, name="TCP", administrative=False):
-        super().__init__(Protocol.TCP, port=port, name=name)
-        if administrative:
+class TCPBackend(ProtocolBackend):
+    def __init__(self, configurer: TCP):
+        super().__init__(Protocol.TCP, port=configurer.port, name=configurer.name)
+        if configurer.administrative:
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE
 
 
-class UDP(ProtocolConfigurer):
-    def __init__(self, port: int, name="UDP", administrative=False):
-        super().__init__(Protocol.UDP, port=port, name=name)
-        if administrative:
+class UDPBackend(ProtocolBackend):
+    def __init__(self, configurer: UDP):
+        super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
+        if configurer.administrative:
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE
 
@@ -973,15 +1070,35 @@ class UDP(ProtocolConfigurer):
         return self.get_service_(b)
 
 
-class BLEAdvertisement(ProtocolConfigurer):
-    def __init__(self, event_type: int):
-        super().__init__(Protocol.BLE, port=event_type, name="BLE Ad", protocol=Protocol.BLE)
+class BLEAdvertisementBackend(ProtocolBackend):
+    def __init__(self, configurer: BLEAdvertisement):
+        super().__init__(Protocol.BLE, port=configurer.event_type, name=configurer.name, protocol=Protocol.BLE)
 
     def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBackend':
         b = system.get_host_(name="BLE Ads", description="Bluetooth LE Advertisements")
         b.new_address_(Addresses.BLE_Ad)
         b.entity.external_activity = ExternalActivity.PASSIVE
         return self.get_service_(b)
+
+
+class ProtocolConfigurers:
+    """Protocol configurers and backends"""
+    Constructors = {
+        ARP: ARPBackend,
+        DHCP: DHCPBackend,
+        DNS: DNSBackend,
+        EAPOL: EAPOLBackend,
+        HTTP: HTTPBackend,
+        ICMP: ICMPBackend,
+        IP: IPBackend,
+        TLS: TLSBackend,
+        NTP: NTPBackend,
+        SSH: SSHBackend,
+        TCP: TCPBackend,
+        UDP: UDPBackend,
+        BLEAdvertisement: BLEAdvertisementBackend,
+    }
+
 
 
 class ClaimBuilder:
