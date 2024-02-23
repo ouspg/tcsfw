@@ -1,4 +1,4 @@
-from tcsfw.model import HostType
+from tcsfw.basics import HostType
 from tcsfw.selector import Locations
 from tcsfw.main import TLS, HTTP, SSH, SystemBuilder
 

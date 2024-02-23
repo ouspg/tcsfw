@@ -3,7 +3,7 @@ from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, SSH
 from tcsfw.matcher import SystemMatcher
-from tcsfw.model import ExternalActivity
+from tcsfw.basics import ExternalActivity
 from tcsfw.traffic import IPFlow
 from tcsfw.verdict import Status
 

@@ -1,5 +1,6 @@
 from typing import Any, List, Dict, Tuple, Self, Optional
 from tcsfw.address import AnyAddress, HWAddress, IPAddress
+from tcsfw.basics import ExternalActivity, HostType
 
 from tcsfw.batch_import import LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
@@ -7,7 +8,7 @@ from tcsfw.event_interface import PropertyEvent
 from tcsfw.main import EvidenceBuilder, TrafficDataBuilder, NodeBuilder, SystemBuilder
 from tcsfw.requirement import SelectorContext
 from tcsfw.selector import Locations
-from tcsfw.model import EvidenceNetworkSource, ExternalActivity, HostType
+from tcsfw.model import EvidenceNetworkSource
 from tcsfw.property import PropertyKey
 from tcsfw.registry import Registry
 from tcsfw.traffic import Evidence, EvidenceSource, Flow, Tool

@@ -2,7 +2,7 @@ from tcsfw.address import Protocol
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.inspector import Inspector
 from tcsfw.main import ARP
-from tcsfw.model import ExternalActivity
+from tcsfw.basics import ExternalActivity
 from tcsfw.traffic import EthernetFlow
 from tcsfw.verdict import Status
 

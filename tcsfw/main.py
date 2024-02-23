@@ -8,10 +8,9 @@ import pathlib
 import sys
 
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
-from tcsfw.model import (ConnectionType, ExternalActivity, HostType)
 from tcsfw.selector import RequirementSelector
 from tcsfw.traffic import Flow
-from tcsfw.basics import Verdict
+from tcsfw.basics import ConnectionType, HostType, Verdict, ExternalActivity
 
 
 class SystemBuilder:
