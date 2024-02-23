@@ -10,7 +10,7 @@ from tcsfw.model import IoTSystem, HostType, NodeComponent
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.tools import ComponentCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.verdict import Verdict
+from tcsfw.basics import Verdict
 
 
 class AndroidManifestScan(ComponentCheckTool):

@@ -1,7 +1,8 @@
 from tcsfw.address import IPAddress
+from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, HTTP
-from tcsfw.verdict import Status, Verdict
+from tcsfw.verdict import Status
 
 
 def test_just_host():

@@ -1,10 +1,11 @@
 from tcsfw.address import EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
+from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import ExternalActivity
 from tcsfw.traffic import IPFlow
-from tcsfw.verdict import Status, Verdict
+from tcsfw.verdict import Status
 
 
 def simple_setup_1(external=False) -> SystemBackend:

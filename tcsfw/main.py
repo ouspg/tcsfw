@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
 from tcsfw.model import (ConnectionType, ExternalActivity, HostType)
 from tcsfw.selector import RequirementSelector
 from tcsfw.traffic import Flow
-from tcsfw.verdict import Verdict
+from tcsfw.basics import Verdict
 
 
 class SystemBuilder:

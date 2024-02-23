@@ -5,6 +5,7 @@ import logging
 import pathlib
 import sys
 from tcsfw.address import DNSName, HWAddresses, IPAddress, IPAddresses
+from tcsfw.basics import Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim import Claim
 from tcsfw.claim_coverage import RequirementClaimMapper

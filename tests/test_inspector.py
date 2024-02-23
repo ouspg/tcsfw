@@ -1,10 +1,11 @@
+from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 import test_model
 from tcsfw.address import EndpointAddress, Protocol, IPAddress
 from tcsfw.inspector import Inspector
 from tcsfw.main import DHCP, ICMP, UDP, TCP, UNLIMITED
 from tcsfw.traffic import IPFlow, Evidence, EvidenceSource, ServiceScan, HostScan
-from tcsfw.verdict import Status, Verdict
+from tcsfw.verdict import Status
 
 
 def simple_setup_3(tcp=False) -> SystemBackend:

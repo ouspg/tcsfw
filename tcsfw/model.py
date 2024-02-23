@@ -7,10 +7,11 @@ from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Sel
 from urllib.parse import urlparse
 
 from tcsfw.address import AnyAddress, Addresses, EndpointAddress, Protocol, IPAddress, HWAddress, DNSName
+from tcsfw.basics import Verdict
 from tcsfw.entity import Entity
 from tcsfw.property import PropertyKey
 from tcsfw.traffic import Flow, EvidenceSource
-from tcsfw.verdict import Status, Verdict
+from tcsfw.verdict import Status
 
 
 class HostType(enum.Enum):
