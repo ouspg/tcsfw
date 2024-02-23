@@ -84,7 +84,7 @@ class SystemBuilder:
         """Document online resource"""
         raise NotImplementedError()
 
-    def visualize(self) -> 'VisualizerBuilder':
+    def visualize(self) -> 'VisualizerBackend':
         raise NotImplementedError()
 
     def load(self) -> 'EvidenceLoader':
@@ -137,7 +137,7 @@ class NodeBuilder:
     def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         raise NotImplementedError()
 
-    def visual(self) -> 'NodeVisualBuilder':
+    def visual(self) -> 'NodeVisualBackend':
         """Create visual for the host"""
         raise NotImplementedError()
 
@@ -251,6 +251,26 @@ class SoftwareBuilder:
         raise NotImplementedError()
 
 
+class NodeVisualBuilder:
+    """Visual builder for a network node"""
+    def hide(self) -> Self:
+        raise NotImplementedError()
+
+    def image(self, url: str, scale=100) -> Self:
+        raise NotImplementedError()
+
+
+class VisualizerBuilder:
+    """Visual builder"""
+    def place(self, *places: str) -> Self:
+        """Place handles into image"""
+        raise NotImplementedError()
+
+    def where(self, handles: Dict[str, Union[NodeBuilder, NodeVisualBuilder]]) -> Self:
+        """Name handles in the image"""
+        raise NotImplementedError()
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -338,8 +358,8 @@ class SystemBackend(SystemBuilder):
         self.system.online_resources[key] = url
         return self
 
-    def visualize(self) -> 'VisualizerBuilder':
-        return VisualizerBuilder(self.visualizer)
+    def visualize(self) -> 'VisualizerBackend':
+        return VisualizerBackend(self.visualizer)
 
     def load(self) -> 'EvidenceLoader':
         el = EvidenceLoader(self)
@@ -428,11 +448,11 @@ class NodeBackend:
             self.sw[name] = sb
         return sb
 
-    def visual(self) -> 'NodeVisualBuilder':
+    def visual(self) -> 'NodeVisualBackend':
         p = self
         while p.parent:
             p = p.parent
-        return NodeVisualBuilder(p)
+        return NodeVisualBackend(p)
 
     def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBackend':
         if isinstance(target, ServiceGroupBackend):
@@ -673,8 +693,7 @@ class SoftwareBackend(SoftwareBuilder):
         return self.sw
 
 
-class NodeVisualBuilder:
-    """Visual builder for an node"""
+class NodeVisualBackend(NodeVisualBuilder):
     def __init__(self, entity: NodeBackend):
         self.entity = entity
         self.image_url: Optional[str] = None
@@ -690,7 +709,7 @@ class NodeVisualBuilder:
         return self
 
 
-class VisualizerBuilder:
+class VisualizerBackend(VisualizerBuilder):
     """Visual builder"""
     def __init__(self, visualizer: Visualizer):
         self.visualizer = visualizer
@@ -699,9 +718,9 @@ class VisualizerBuilder:
         self.visualizer.placement = places
         return self
 
-    def where(self, handles: Dict[str, Union[NodeBackend, NodeVisualBuilder]]) -> Self:
+    def where(self, handles: Dict[str, Union[NodeBackend, NodeVisualBackend]]) -> Self:
         for h, b in handles.items():
-            if isinstance(b, NodeVisualBuilder):
+            if isinstance(b, NodeVisualBackend):
                 ent = b.entity.entity.get_parent_host()
                 if b.image_url:
                     self.visualizer.images[ent] = b.image_url, b.image_scale
