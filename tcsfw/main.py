@@ -77,7 +77,7 @@ class SystemBuilder:
         """IP broadcast target"""
         raise NotImplementedError()
 
-    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBuilder':
+    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBackend':
         """Declare pieces of security-relevant data"""
         raise NotImplementedError()
 
@@ -194,7 +194,7 @@ class HostBuilder(NodeBuilder):
         """Configure cookies in a browser"""
         raise NotImplementedError()
 
-    def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
+    def use_data(self, *data: 'SensitiveDataBackend') -> Self:
         """This host uses some sensitive data"""
         raise NotImplementedError()
 
@@ -208,6 +208,19 @@ class HostBuilder(NodeBuilder):
 
     def set_property(self, *key: str):
         """Set a model properties"""
+        raise NotImplementedError()
+
+
+class SensitiveDataBuilder:
+    def __init__(self, parent: SystemBuilder):
+        self.parent = parent
+
+    def used_by(self, *host: HostBuilder) -> Self:
+        """This data used/stored in a host"""
+        raise NotImplementedError()
+
+    def authorize(self, *service: ServiceBuilder) -> Self:
+        """This data is used for service authentication"""
         raise NotImplementedError()
 
 
@@ -290,9 +303,9 @@ class SystemBackend(SystemBuilder):
         add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
         return self.multicast(add, conf)
 
-    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBuilder':
+    def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBackend':
         d = [SensitiveData(n, personal=personal, password=password) for n in names]
-        return SensitiveDataBuilder(self, d)
+        return SensitiveDataBackend(self, d)
 
     def online_resource(self, key: str, url: str) -> Self:
         self.system.online_resources[key] = url
@@ -526,7 +539,7 @@ class HostBackend(NodeBackend,HostBuilder):
     def cookies(self) -> 'CookieBuilder':
         return CookieBuilder(self)
 
-    def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
+    def use_data(self, *data: 'SensitiveDataBackend') -> Self:
         usage = DataStorages.get_storages(self.entity, add=True)
         for db in data:
             for d in db.data:
@@ -547,7 +560,7 @@ class HostBackend(NodeBackend,HostBuilder):
         return self
 
 
-class SensitiveDataBuilder:
+class SensitiveDataBackend(SensitiveDataBuilder):
     def __init__(self, parent: SystemBackend, data: List[SensitiveData]):
         self.parent = parent
         self.data = data
@@ -557,13 +570,11 @@ class SensitiveDataBuilder:
             usage.sub_components.append(DataReference(usage, d))
 
     def used_by(self, *host: HostBackend) -> Self:
-        """This data used/stored in a host"""
         for h in host:
             h.use_data(self)
         return self
 
     def authorize(self, *service: ServiceBackend) -> Self:
-        """This data is used for service authentication"""
         for s in service:
             s.parent.use_data(self)
             for d in self.data:
@@ -714,7 +725,7 @@ class ProtocolConfigurer:
             # E.g. DHCP service fills this oneself
             b.entity.addresses.add(EndpointAddress(Addresses.ANY, self.transport, self.service_port))
         if self.critical_parameter:
-            parent.use_data(SensitiveDataBuilder(parent.system, self.critical_parameter))  # critical protocol parameters
+            parent.use_data(SensitiveDataBackend(parent.system, self.critical_parameter))  # critical protocol parameters
         return b
 
     def _create_service(self, parent: HostBackend) -> ServiceBackend:
