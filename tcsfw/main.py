@@ -24,8 +24,7 @@ from tcsfw.events import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.inspector import Inspector
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main_basic import (BuilderInterface, HostInterface, NodeInterface,
-                              SoftwareInterface, SubLoader)
+from tcsfw.main_basic import (BuilderInterface, SubLoader)
 from tcsfw.main_tools import EvidenceLoader, ToolPlanLoader
 from tcsfw.model import (Addressable, Connection, ConnectionType,
                          ExternalActivity, Host, HostType, IoTSystem, SensitiveData,
@@ -135,7 +134,7 @@ class NodeBuilder:
     def external_activity(self, value: ExternalActivity) -> Self:
         raise NotImplementedError()
 
-    def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
+    def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         raise NotImplementedError()
 
     def visual(self) -> 'NodeVisualBuilder':
@@ -171,6 +170,7 @@ class ServiceGroupBuilder:
 
 
 class HostBuilder(NodeBuilder):
+    """Host builder"""
     def __init__(self, system: SystemBuilder):
         NodeBuilder.__init__(self, system)
 
@@ -212,6 +212,7 @@ class HostBuilder(NodeBuilder):
 
 
 class SensitiveDataBuilder:
+    """Sensitive data builder"""
     def __init__(self, parent: SystemBuilder):
         self.parent = parent
 
@@ -225,8 +226,28 @@ class SensitiveDataBuilder:
 
 
 class ConnectionBuilder:
+    """Connection builder"""
     def logical_only(self) -> Self:
         """Only a logical link"""
+        raise NotImplementedError()
+
+
+class SoftwareBuilder:
+    """Software builder"""
+    def updates_from(self, source: Union[ConnectionBuilder, ServiceBuilder, HostBuilder]) -> Self:
+        """Update mechanism"""
+        raise NotImplementedError()
+
+    def first_release(self, date: str) -> Self:
+        """First release as YYYY-MM-DD"""
+        raise NotImplementedError()
+
+    def supported_until(self, date: str) -> Self:
+        """Support end time YYYY-MM-DD"""
+        raise NotImplementedError()
+
+    def update_frequency(self, days: float) -> Self:
+        """Target update frequency, days"""
         raise NotImplementedError()
 
 
@@ -372,7 +393,7 @@ class NodeBackend:
         self.system = system
         self.entity = entity
         self.parent: Optional[NodeBackend] = None
-        self.sw: Dict[str, SoftwareBuilder] = {}
+        self.sw: Dict[str, SoftwareBackend] = {}
         system.system.originals.add(entity)
 
     def name(self, name: str) -> Self:
@@ -398,12 +419,12 @@ class NodeBackend:
         self.entity.set_external_activity(value)
         return self
 
-    def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
+    def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         if name is None:
             name = Software.default_name(self.entity)
         sb = self.sw.get(name)
         if sb is None:
-            sb = SoftwareBuilder(self, name)
+            sb = SoftwareBackend(self, name)
             self.sw[name] = sb
         return sb
 
@@ -605,16 +626,13 @@ class ConnectionBackend(ConnectionBuilder):
         return self.connection.__repr__()
 
 
-class SoftwareBuilder(SoftwareInterface):
+class SoftwareBackend(SoftwareBuilder):
     def __init__(self, parent: NodeBackend, software_name: str):
         self.sw: Software = Software.get_software(parent.entity, software_name)
         if self.sw is None:
             self.sw = Software(parent.entity, software_name)
             parent.entity.add_component(self.sw)
         self.parent = parent
-
-    def get_software(self, name: Optional[str] = None) -> Software:
-        return self.sw
 
     def updates_from(self, source: Union[ConnectionBackend, ServiceBackend, HostBackend]) -> Self:
         host = self.parent.entity
@@ -648,6 +666,11 @@ class SoftwareBuilder(SoftwareInterface):
         """Target update frequency, days"""
         self.sw.info.interval_days = days
         return self
+
+    ### Backend methods
+
+    def get_software(self, name: Optional[str] = None) -> Software:
+        return self.sw
 
 
 class NodeVisualBuilder:
