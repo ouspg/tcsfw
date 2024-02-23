@@ -170,6 +170,47 @@ class ServiceGroupBuilder:
         raise NotImplementedError()
 
 
+class HostBuilder(NodeBuilder):
+    def __init__(self, system: SystemBuilder):
+        NodeBuilder.__init__(self, system)
+
+    def hw(self, address: str) -> Self:
+        """Add HW address"""
+        raise NotImplementedError()
+
+    def ip(self, address: str) -> Self:
+        """Add IP address"""
+        raise NotImplementedError()
+
+    def serve(self, *protocols: ProtocolType) -> Self:
+        """Serve the configured protocol or protocols"""
+        raise NotImplementedError()
+
+    def __lshift__(self, multicast: ServiceBuilder) -> 'ConnectionBuilder':
+        """Receive broadcast or multicast"""
+        raise NotImplementedError()
+
+    def cookies(self) -> 'CookieBuilder':
+        """Configure cookies in a browser"""
+        raise NotImplementedError()
+
+    def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
+        """This host uses some sensitive data"""
+        raise NotImplementedError()
+
+    def __truediv__(self, protocol: ProtocolType) -> ServiceBuilder:
+        """Pick or add the configured protocol"""
+        raise NotImplementedError()
+
+    def ignore_name_requests(self, *name: str) -> Self:
+        """Ignore DNS name requests for these names"""
+        raise NotImplementedError()
+
+    def set_property(self, *key: str):
+        """Set a model properties"""
+        raise NotImplementedError()
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -186,7 +227,7 @@ class SystemBackend(SystemBuilder):
     """System model builder"""
     def __init__(self, name="Unnamed system"):
         self.system = IoTSystem(name)
-        self.hosts_by_name: Dict[str, 'HostBuilder'] = {}
+        self.hosts_by_name: Dict[str, 'HostBackend'] = {}
         self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
         self.network_masks = []
         self.claimSet = ClaimSetBuilder(self)
@@ -198,32 +239,32 @@ class SystemBackend(SystemBuilder):
         self.system.ip_networks = self.network_masks
         return self
 
-    def device(self, name="") -> 'HostBuilder':
+    def device(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Device")
         b = self.get_host_(name, "Internet Of Things device")
         b.entity.host_type = HostType.DEVICE
         return b
 
-    def backend(self, name="") -> 'HostBuilder':
+    def backend(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Backend")
         b = self.get_host_(name, "Backend service over Internet")
         b.entity.host_type = HostType.REMOTE
         return b
 
-    def mobile(self, name="") -> 'HostBuilder':
+    def mobile(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Mobile")
         b = self.get_host_(name, "Mobile application")
         b.entity.host_type = HostType.MOBILE
         b.entity.external_activity = ExternalActivity.UNLIMITED  # who know what apps etc.
         return b
 
-    def browser(self, name="") -> 'HostBuilder':
+    def browser(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Browser")
         b = self.get_host_(name, "Browser")
         b.entity.host_type = HostType.BROWSER
         return b
 
-    def any(self, name="", node_type: HostType = None) -> 'HostBuilder':
+    def any(self, name="", node_type: HostType = None) -> 'HostBackend':
         name = name or self._free_host_name("Host")
         b = self.get_host_(name, "Any host")
         b.entity.any_host = True
@@ -232,7 +273,7 @@ class SystemBackend(SystemBuilder):
         b.entity.external_activity = ExternalActivity.UNLIMITED
         return b
 
-    def infra(self, name="") -> 'HostBuilder':
+    def infra(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Infra")
         b = self.get_host_(name, "Part of the testing infrastructure")
         b.entity.host_type = HostType.ADMINISTRATIVE
@@ -271,14 +312,14 @@ class SystemBackend(SystemBuilder):
 
     ### Backend methods
 
-    def get_host_(self, name: str, description: str) -> 'HostBuilder':
+    def get_host_(self, name: str, description: str) -> 'HostBackend':
         """Get or create a host"""
         hb = self.hosts_by_name.get(name)
         if hb is None:
             h = Host(self.system, name)
             h.description = description
             h.match_priority = 10
-            hb = HostBuilder(h, self)
+            hb = HostBackend(h, self)
         return hb
 
     def _free_host_name(self, name_base: str) -> str:
@@ -385,14 +426,14 @@ class NodeBackend:
 
 
 class ServiceBackend(NodeBackend,ServiceBuilder):
-    def __init__(self, host: 'HostBuilder', service: Service):
+    def __init__(self, host: 'HostBackend', service: Service):
         NodeBackend.__init__(self, service, host.system)
         self.entity = service
         self.configurer: Optional[ProtocolConfigurer] = None
         self.entity.match_priority = 10
         self.entity.external_activity = host.entity.external_activity
         self.parent = host
-        self.source_fixer: Optional[Callable[['HostBuilder'], 'ServiceBackend']] = None
+        self.source_fixer: Optional[Callable[['HostBackend'], 'ServiceBackend']] = None
 
     def type(self, value: ConnectionType) -> 'ServiceBackend':
         # FIXME: We should block defining plaintext connection as admin?
@@ -412,7 +453,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
     def connection_(self, source: 'NodeBackend') -> 'ConnectionBuilder':
         s = source
         if self.source_fixer:
-            assert isinstance(s, HostBuilder)
+            assert isinstance(s, HostBackend)
             s = self.source_fixer(s)
         for c in s.entity.get_parent_host().connections:
             if c.source == s.entity and c.target == self.entity:
@@ -450,7 +491,7 @@ class ServiceGroupBackend(ServiceGroupBuilder):
         return " / ".join([f"{s.entity.name}" for s in self.services])
 
 
-class HostBuilder(NodeBackend):
+class HostBackend(NodeBackend,HostBuilder):
     def __init__(self, entity: Host, system: SystemBackend):
         NodeBackend.__init__(self, entity, system)
         self.entity = entity
@@ -461,24 +502,20 @@ class HostBuilder(NodeBackend):
             self.name(entity.name)
         self.service_builders: Dict[Tuple[Protocol, int], ServiceBackend] = {}
 
-    def hw(self, address: str) -> 'HostBuilder':
-        """Add HW address"""
+    def hw(self, address: str) -> 'HostBackend':
         add = self.new_address_(HWAddress.new(address))
         return self
 
-    def ip(self, address: str) -> 'HostBuilder':
-        """Add IP address"""
+    def ip(self, address: str) -> 'HostBackend':
         add = self.new_address_(IPAddress.new(address))
         return self
 
     def serve(self, *protocols: ProtocolType) -> Self:
-        """Serve the configured protocol or protocols"""
         for p in protocols:
             self / p
         return self
 
     def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBuilder':
-        """Receive broadcast or multicast"""
         mc = multicast.entity
         assert mc.is_multicast(), "Can only receive multicast"
         # no service created, just connection from this to the multicast node
@@ -487,11 +524,9 @@ class HostBuilder(NodeBackend):
         return c
 
     def cookies(self) -> 'CookieBuilder':
-        """Configure cookies in a browser"""
         return CookieBuilder(self)
 
     def use_data(self, *data: 'SensitiveDataBuilder') -> Self:
-        """This host uses some sensitive data"""
         usage = DataStorages.get_storages(self.entity, add=True)
         for db in data:
             for d in db.data:
@@ -499,17 +534,14 @@ class HostBuilder(NodeBackend):
         return self
 
     def __truediv__(self, protocol: ProtocolType) -> ServiceBackend:
-        """Pick or add the configured protocol"""
         conf = ProtocolConfigurer.as_configurer(protocol)
         return conf.get_service_(self)
 
     def ignore_name_requests(self, *name: str) -> Self:
-        """Ignore DNS name requests for these names"""
         self.entity.ignore_name_requests.update([DNSName(n) for n in name])
         return self
 
     def set_property(self, *key: str):
-        """Set a model property"""
         p = PropertyKey.create(key).persistent()
         self.entity.set_property(p.verdict())  # inconclusive
         return self
@@ -524,7 +556,7 @@ class SensitiveDataBuilder:
         for d in data:
             usage.sub_components.append(DataReference(usage, d))
 
-    def used_by(self, *host: HostBuilder) -> Self:
+    def used_by(self, *host: HostBackend) -> Self:
         """This data used/stored in a host"""
         for h in host:
             h.use_data(self)
@@ -568,11 +600,11 @@ class SoftwareBuilder(SoftwareInterface):
     def get_software(self, name: Optional[str] = None) -> Software:
         return self.sw
 
-    def updates_from(self, source: Union[ConnectionBuilder, ServiceBackend, HostBuilder]) -> Self:
+    def updates_from(self, source: Union[ConnectionBuilder, ServiceBackend, HostBackend]) -> Self:
         host = self.parent.entity
 
         cs = []
-        if isinstance(source, HostBuilder):
+        if isinstance(source, HostBackend):
             end = source.entity
             for c in host.get_connections():
                 if c.source.get_parent_host() == end or c.target.get_parent_host() == end:
@@ -668,7 +700,7 @@ class ProtocolConfigurer:
     def __repr__(self):
         return f"{self.service_name}"
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
+    def get_service_(self, parent: HostBackend) -> ServiceBackend:
         """Create or get service builder"""
         old = parent.service_builders.get((self.transport, self.service_port if self.port_to_name else -1))
         if old:
@@ -685,7 +717,7 @@ class ProtocolConfigurer:
             parent.use_data(SensitiveDataBuilder(parent.system, self.critical_parameter))  # critical protocol parameters
         return b
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+    def _create_service(self, parent: HostBackend) -> ServiceBackend:
         s = ServiceBackend(parent,
                            parent.new_service_(self.service_name, self.service_port if self.port_to_name else -1))
         s.configurer = self
@@ -718,7 +750,7 @@ class ARP(ProtocolConfigurer):
         # ARP make requests and replies
         self.external_activity = ExternalActivity.UNLIMITED
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
+    def get_service_(self, parent: HostBackend) -> ServiceBackend:
         host_s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
         bc_node = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
@@ -749,11 +781,11 @@ class DHCP(ProtocolConfigurer):
         # DHCP requests go to broadcast, thus the reply looks like request
         self.external_activity = ExternalActivity.UNLIMITED
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+    def _create_service(self, parent: HostBackend) -> ServiceBackend:
         host_s = ServiceBackend(parent, DHCPService(parent.entity))
         host_s.entity.external_activity = self.external_activity
 
-        def create_source(host: HostBuilder):
+        def create_source(host: HostBackend):
             # DHCP client uses specific port 68 for requests
             src = UDP(port=68, name="DHCP")
             src.port_to_name = False
@@ -772,7 +804,7 @@ class DNS(ProtocolConfigurer):
         self.external_activity = ExternalActivity.OPEN
         self.captive_portal = captive
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+    def _create_service(self, parent: HostBackend) -> ServiceBackend:
         dns_s = DNSService(parent.entity)
         dns_s.captive_portal = self.captive_portal
         s = ServiceBackend(parent, dns_s)
@@ -801,7 +833,7 @@ class HTTP(ProtocolConfigurer):
         self.redirect_only = True
         return self
 
-    def get_service_(self, parent: HostBuilder) -> ServiceBackend:
+    def get_service_(self, parent: HostBackend) -> ServiceBackend:
         s = super().get_service_(parent)
         if self.redirect_only:
             # persistent property
@@ -815,7 +847,7 @@ class ICMP(ProtocolConfigurer):
         self.external_activity = ExternalActivity.OPEN
         self.port_to_name = False
 
-    def _create_service(self, parent: HostBuilder) -> ServiceBackend:
+    def _create_service(self, parent: HostBackend) -> ServiceBackend:
         s = super()._create_service(parent)
         s.entity.name = "ICMP"  # a bit of hack...
         s.entity.host_type = HostType.ADMINISTRATIVE
@@ -1045,7 +1077,7 @@ class ClaimSetBuilder(BuilderInterface):
 
 class CookieBuilder(BuilderInterface):
     """Cookies in a browser"""
-    def __init__(self, builder: HostBuilder):
+    def __init__(self, builder: HostBackend):
         self.builder = builder
         self.component = Cookies.cookies_for(builder.entity)
 
