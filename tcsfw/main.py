@@ -8,8 +8,8 @@ import pathlib
 import sys
 
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
+from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
 from tcsfw.selector import RequirementSelector
-from tcsfw.traffic import Flow
 from tcsfw.basics import ConnectionType, HostType, Verdict, ExternalActivity
 
 
@@ -412,7 +412,7 @@ class EvidenceBuilder:
 
 class TrafficDataBuilder:
     """Fabricate traffic data for testing or visualization"""
-    def connection(self, flow: Flow) -> Self:
+    def connection(self, flow: 'FlowBuilder') -> Self:
         """Add a connection"""
         raise NotImplementedError()
 
@@ -429,6 +429,23 @@ class TrafficDataBuilder:
         raise NotImplementedError()
 
 
+class FlowBuilder:
+    """Flow builder"""
+    def __init__(self, protocol: str, source: Tuple[HWAddress, IPAddress, int]):
+        self.protocol = protocol
+        self.source = source
+        self.target = HWAddresses.NULL, IPAddresses.NULL, 0
+
+    def __rshift__(self, target: Tuple[str, str, int]) -> 'FlowBuilder':
+        self.target = HWAddress.new(target[0]), IPAddress.new(target[1]), target[2]
+        return self
+
+    def __lshift__(self, source: Tuple[str, str, int]) -> 'FlowBuilder':
+        self.target = self.source
+        self.source = HWAddress.new(source[0]), IPAddress.new(source[1]), source[2]
+        return self
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -436,6 +453,16 @@ class Builder:
         """Create a new system builder"""
         from tcsfw.builder_backend import SystemBackendRunner  # avoid circular import
         return SystemBackendRunner(name)
+
+    @classmethod
+    def UDP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':
+        """Create a new UDP flow"""
+        return FlowBuilder("UDP", (HWAddress.new(source_hw), IPAddress.new(source_ip), port))
+
+    @classmethod
+    def TCP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':
+        """Create a new TCP flow"""
+        return FlowBuilder("TCP", (HWAddress.new(source_hw), IPAddress.new(source_ip), port))
 
 
 if __name__ == "__main__":

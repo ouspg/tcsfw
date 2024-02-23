@@ -1,17 +1,17 @@
 from typing import Any, List, Dict, Tuple, Self, Optional
-from tcsfw.address import AnyAddress, HWAddress, IPAddress
+from tcsfw.address import AnyAddress, HWAddress, IPAddress, Protocol
 from tcsfw.basics import ExternalActivity, HostType
 
 from tcsfw.batch_import import LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.event_interface import PropertyEvent
-from tcsfw.main import EvidenceBuilder, TrafficDataBuilder, NodeBuilder, SystemBuilder
+from tcsfw.main import EvidenceBuilder, FlowBuilder, TrafficDataBuilder, NodeBuilder, SystemBuilder
 from tcsfw.requirement import SelectorContext
 from tcsfw.selector import Locations
 from tcsfw.model import EvidenceNetworkSource
 from tcsfw.property import PropertyKey
 from tcsfw.registry import Registry
-from tcsfw.traffic import Evidence, EvidenceSource, Flow, Tool
+from tcsfw.traffic import NO_EVIDENCE, Evidence, EvidenceSource, Flow, IPFlow, Tool
 
 class NodeManipulator:
     """Interface to interact with other backend"""
@@ -91,9 +91,11 @@ class FabricationLoader(SubLoader,TrafficDataBuilder):
         super().__init__(source_label)
         self.flows: List[Flow] = []
 
-    def connection(self, flow: Flow) -> Self:
+    def connection(self, flow: FlowBuilder) -> Self:
         """Add a connection"""
-        self.flows.append(flow)
+        # NOTE: Only UDP and TCP are implemented at this point
+        f = IPFlow(NO_EVIDENCE, flow.source, flow.target, Protocol.get_protocol(flow.protocol))
+        self.flows.append(f)
         return self
 
     def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
