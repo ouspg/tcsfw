@@ -251,6 +251,13 @@ class SoftwareBuilder:
         raise NotImplementedError()
 
 
+class CookieBuilder:
+    """Cookies in a browser"""
+    def set(self, cookies: Dict[str, Tuple[str, str, str]]):
+        """Set cookies, name: domain, path, explanation"""
+        raise NotImplementedError()
+
+
 class NodeVisualBuilder:
     """Visual builder for a network node"""
     def hide(self) -> Self:
@@ -752,8 +759,8 @@ class HostBackend(NodeBackend,HostBuilder):
         c.logical_only()
         return c
 
-    def cookies(self) -> 'CookieBuilder':
-        return CookieBuilder(self)
+    def cookies(self) -> 'CookieBackend':
+        return CookieBackend(self)
 
     def use_data(self, *data: 'SensitiveDataBackend') -> Self:
         usage = DataStorages.get_storages(self.entity, add=True)
@@ -860,6 +867,16 @@ class SoftwareBackend(SoftwareBuilder):
 
     def get_software(self, name: Optional[str] = None) -> Software:
         return self.sw
+
+
+class CookieBackend(CookieBuilder):
+    def __init__(self, builder: HostBackend):
+        self.builder = builder
+        self.component = Cookies.cookies_for(builder.entity)
+
+    def set(self, cookies: Dict[str, Tuple[str, str, str]]):
+        for name, p in cookies.items():
+            self.component.cookies[name] = CookieData(p[0], p[1], p[2])
 
 
 class NodeVisualBackend(NodeVisualBuilder):
@@ -1298,17 +1315,6 @@ class ClaimSetBackend(ClaimSetBuilder):
         ls.extend(self.tool_plans)
         return ls
 
-
-class CookieBuilder(BuilderInterface):
-    """Cookies in a browser"""
-    def __init__(self, builder: HostBackend):
-        self.builder = builder
-        self.component = Cookies.cookies_for(builder.entity)
-
-    def set(self, cookies: Dict[str, Tuple[str, str, str]]):
-        """Set cookies, name: domain, path, explanation"""
-        for name, p in cookies.items():
-            self.component.cookies[name] = CookieData(p[0], p[1], p[2])
 
 if __name__ == "__main__":
     Builder.new().run()
