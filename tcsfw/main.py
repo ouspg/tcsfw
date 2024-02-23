@@ -367,6 +367,65 @@ class BLEAdvertisement(ProtocolConfigurer):
         self.event_type = event_type
 
 
+class ClaimBuilder:
+    """Claim builder"""
+    def key(self, *segments: str) -> Self:
+        """Add property key"""
+        raise NotImplementedError()
+
+    def keys(self, *key: Tuple[str, ...]) -> Self:
+        """Add property keys"""
+        raise NotImplementedError()
+
+    def verdict_ignore(self) -> Self:
+        """Override verdict to ignore"""
+        raise NotImplementedError()
+
+    def verdict_pass(self) -> Self:
+        """Override verdict to pass"""
+        raise NotImplementedError()
+
+    def at(self, *locations: Union[SystemBuilder, NodeBuilder, ConnectionBuilder]) -> 'Self':
+        """Set claimed location(s)"""
+        raise NotImplementedError()
+
+    def software(self, *locations: NodeBuilder) -> 'Self':
+        """Claims for software in the locations"""
+        raise NotImplementedError()
+
+    def claims(self, *claims: Union[Claim, Tuple[str, str]]) -> Self:
+        """Add extended claims"""
+        raise NotImplementedError()
+
+    def vulnerabilities(self, *entry: Tuple[str, str]) -> Self:
+        """Explain CVE-entries"""
+        raise NotImplementedError()
+
+
+class ClaimSetBuilder:
+    """Builder for set of claims"""
+    def set_base_label(self, base_label: str) -> Self:
+        """Set label for the claims"""
+        raise NotImplementedError()
+
+    def claim(self, explanation: str, verdict=Verdict.PASS) -> ClaimBuilder:
+        """Self-made claims"""
+        raise NotImplementedError()
+
+    def reviewed(self, explanation="", verdict=Verdict.PASS) -> ClaimBuilder:
+        """Make reviewed claims"""
+        raise NotImplementedError()
+
+    def ignore(self, explanation="") -> ClaimBuilder:
+        """Ignore claims or requirements"""
+        raise NotImplementedError()
+
+    def plan_tool(self, tool_name: str, group: Tuple[str, str], location: RequirementSelector,
+                  *key: Tuple[str, ...]):
+        """Plan use of a tool using the property keys it is supposed to set"""
+        raise NotImplementedError()
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -386,7 +445,7 @@ class SystemBackend(SystemBuilder):
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
         self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
         self.network_masks = []
-        self.claimSet = ClaimSetBuilder(self)
+        self.claimSet = ClaimSetBackend(self)
         self.visualizer = Visualizer()
         self.loaders: List['EvidenceLoader'] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
@@ -463,7 +522,7 @@ class SystemBackend(SystemBuilder):
         self.loaders.append(el)
         return el
 
-    def claims(self, base_label="explain") -> 'ClaimSetBuilder':
+    def claims(self, base_label="explain") -> 'ClaimSetBackend':
         self.claimSet.base_label = base_label
         return self.claimSet
 
@@ -1100,10 +1159,9 @@ class ProtocolConfigurers:
     }
 
 
-
-class ClaimBuilder:
+class ClaimBackend(ClaimBuilder):
     """Claim builder"""
-    def __init__(self, builder: 'ClaimSetBuilder', explanation: str, verdict: Verdict, label: str,
+    def __init__(self, builder: 'ClaimSetBackend', explanation: str, verdict: Verdict, label: str,
                  authority=ClaimAuthority.MODEL):
         self.builder = builder
         self.authority = authority
@@ -1117,7 +1175,6 @@ class ClaimBuilder:
         builder.claim_builders.append(self)
 
     def key(self, *segments: str) -> Self:
-        """Add key to touch"""
         key = PropertyKey.create(segments)
         if key.is_protected():
             key = key.prefix_key(Properties.PREFIX_MANUAL)
@@ -1125,7 +1182,6 @@ class ClaimBuilder:
         return self
 
     def keys(self, *key: Tuple[str, ...]) -> Self:
-        """Add keys to touch"""
         for seg in key:
             assert isinstance(seg, tuple), f"Bad key {seg}"
             k = PropertyKey.create(seg)
@@ -1135,17 +1191,14 @@ class ClaimBuilder:
         return self
 
     def verdict_ignore(self) -> Self:
-        """Override verdict to ignore"""
         self._verdict = Verdict.IGNORE
         return self
 
     def verdict_pass(self) -> Self:
-        """Override verdict to pass"""
         self._verdict = Verdict.PASS
         return self
 
     def at(self, *locations: Union[SystemBackend, NodeBackend, ConnectionBackend]) -> 'Self':
-        """Set claimed location(s)"""
         for lo in locations:
             if isinstance(lo, SystemBackend):
                 loc = lo.system
@@ -1157,14 +1210,12 @@ class ClaimBuilder:
         return self
 
     def software(self, *locations: NodeBackend) -> 'Self':
-        """Claims for software in the locations"""
         for lo in locations:
             for sw in Software.list_software(lo.entity):
                 self._locations.append(sw)
         return self
 
     def claims(self, *claims: Union[Claim, Tuple[str, str]]) -> Self:
-        """Add extended claims"""
         # bug? - requirements may be placed in extra tuple?
         cl = []
         for c in claims:
@@ -1176,10 +1227,11 @@ class ClaimBuilder:
         return self
 
     def vulnerabilities(self, *entry: Tuple[str, str]) -> Self:
-        """Explain CVE-entries"""
         for com, cve in entry:
             self._keys.append(PropertyKey("vulnz", com, cve.lower()))
         return self
+
+    ## Backend methods
 
     def finish_loaders(self) -> SubLoader:
         """Finish by returning the loader to use"""
@@ -1204,30 +1256,30 @@ class ClaimBuilder:
         return ClaimLoader()
 
 
-class ClaimSetBuilder(BuilderInterface):
+class ClaimSetBackend(ClaimSetBuilder):
     """Builder for set of claims"""
     def __init__(self, builder: SystemBackend):
         self.builder = builder
-        self.claim_builders: List[ClaimBuilder] = []
+        self.claim_builders: List[ClaimBackend] = []
         self.tool_plans: List[ToolPlanLoader] = []
         self.base_label = "explain"
         self.sources: Dict[str, EvidenceSource] = {}
 
-    def claim(self, explanation: str, verdict=Verdict.PASS) -> ClaimBuilder:
-        """Self-made claims"""
-        return ClaimBuilder(self, explanation, verdict, self.base_label)
+    def set_base_label(self, base_label: str) -> Self:
+        self.base_label = base_label
+        return self
 
-    def reviewed(self, explanation="", verdict=Verdict.PASS) -> ClaimBuilder:
-        """Make reviewed claims"""
-        return ClaimBuilder(self, explanation, verdict, self.base_label, ClaimAuthority.MANUAL)
+    def claim(self, explanation: str, verdict=Verdict.PASS) -> ClaimBackend:
+        return ClaimBackend(self, explanation, verdict, self.base_label)
 
-    def ignore(self, explanation="") -> ClaimBuilder:
-        """Ignore claims or requirements"""
-        return ClaimBuilder(self, explanation, Verdict.IGNORE, self.base_label)
+    def reviewed(self, explanation="", verdict=Verdict.PASS) -> ClaimBackend:
+        return ClaimBackend(self, explanation, verdict, self.base_label, ClaimAuthority.MANUAL)
+
+    def ignore(self, explanation="") -> ClaimBackend:
+        return ClaimBackend(self, explanation, Verdict.IGNORE, self.base_label)
 
     def plan_tool(self, tool_name: str, group: Tuple[str, str], location: RequirementSelector, 
                   *key: Tuple[str, ...]) -> ToolPlanLoader:
-        """Plan use of a tool using the property keys it is supposed to set"""
         sl = ToolPlanLoader(group)
         sl.location = location
         for k in key:
@@ -1237,10 +1289,7 @@ class ClaimSetBuilder(BuilderInterface):
         self.tool_plans.append(sl)
         return sl
 
-    def set_base_label(self, base_label: str) -> Self:
-        """Set label for the claims"""
-        self.base_label = base_label
-        return self
+    ## Backend methods
 
     def finish_loaders(self) -> List[SubLoader]:
         """Finish"""
