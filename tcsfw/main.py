@@ -8,9 +8,9 @@ import pathlib
 import sys
 
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
-from tcsfw.main_tools import EvidenceLoader, ToolPlanLoader
 from tcsfw.model import (ConnectionType, ExternalActivity, HostType)
 from tcsfw.selector import RequirementSelector
+from tcsfw.traffic import Flow
 from tcsfw.verdict import Verdict
 
 
@@ -62,7 +62,7 @@ class SystemBuilder:
     def visualize(self) -> 'VisualizerBuilder':
         raise NotImplementedError()
 
-    def load(self) -> 'EvidenceLoader':
+    def load(self) -> 'EvidenceBuilder':
         raise NotImplementedError()
 
     def claims(self, base_label="explain") -> 'ClaimSetBuilder':
@@ -401,6 +401,32 @@ class ClaimSetBuilder:
     def plan_tool(self, tool_name: str, group: Tuple[str, str], location: RequirementSelector,
                   *key: Tuple[str, ...]):
         """Plan use of a tool using the property keys it is supposed to set"""
+        raise NotImplementedError()
+
+
+class EvidenceBuilder:
+    """Base class for data loaders"""
+    def fabricate(self, label: str) -> 'FabricationBuilder':
+        """Fabricate evidence for testing or visualization"""
+        raise NotImplementedError()
+
+
+class FabricationBuilder:
+    """Fabricate evidence for testing or visualization"""
+    def connection(self, flow: Flow) -> Self:
+        """Add a connection"""
+        raise NotImplementedError()
+
+    def hw(self, entity: NodeBuilder, *hw_address: str) -> Self:
+        """Set HW address(es) for a network node"""
+        raise NotImplementedError()
+
+    def ip(self, entity: NodeBuilder, *ip_address: str) -> Self:
+        """Set IP address(es) for a network node"""
+        raise NotImplementedError()
+
+    def external_activity(self, entity: NodeBuilder, activity: ExternalActivity) -> Self:
+        """Set external activity for a network node"""
         raise NotImplementedError()
 
 

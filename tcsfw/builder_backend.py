@@ -16,7 +16,8 @@ from tcsfw.event_interface import PropertyEvent
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
 from tcsfw.main import *
-from tcsfw.main_basic import SubLoader
+from tcsfw.main import NodeBuilder
+from tcsfw.main_tools import EvidenceLoader, NodeManipulator, SubLoader, ToolPlanLoader
 from tcsfw.model import *
 from tcsfw.property import Properties
 from tcsfw.registry import Registry
@@ -37,7 +38,7 @@ class SystemBackend(SystemBuilder):
         self.network_masks = []
         self.claimSet = ClaimSetBackend(self)
         self.visualizer = Visualizer()
-        self.loaders: List['EvidenceLoader'] = []
+        self.loaders: List[EvidenceLoader] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
 
     def network(self, mask: str) -> Self:
@@ -166,7 +167,7 @@ class SystemBackend(SystemBuilder):
         #             prop_v[0].set(s.properties, prop_v[1])
 
 
-class NodeBackend:
+class NodeBackend(NodeManipulator):
     def __init__(self, entity: Addressable, system: SystemBackend):
         self.system = system
         self.entity = entity
@@ -222,6 +223,9 @@ class NodeBackend:
             return target.connection_(self)
 
     ### Backend methods
+
+    def get_node(self) -> NodeBuilder:
+        return self.entity
 
     def new_address_(self, address: AnyAddress) -> AnyAddress:
         """Add new address to the entity"""
