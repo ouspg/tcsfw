@@ -25,10 +25,10 @@ from tcsfw.http_server import HTTPServerRunner
 from tcsfw.inspector import Inspector
 from tcsfw.latex_output import LaTeXGenerator
 from tcsfw.main_basic import (BuilderInterface, HostInterface, NodeInterface,
-                              SoftwareInterface, SubLoader, SystemInterface)
+                              SoftwareInterface, SubLoader)
 from tcsfw.main_tools import EvidenceLoader, ToolPlanLoader
 from tcsfw.model import (Addressable, Connection, ConnectionType,
-                         ExternalActivity, Host, HostType, SensitiveData,
+                         ExternalActivity, Host, HostType, IoTSystem, SensitiveData,
                          Service)
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.registry import Registry
@@ -111,6 +111,40 @@ OPEN = ExternalActivity.OPEN
 UNLIMITED = ExternalActivity.UNLIMITED
 
 
+ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
+ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroup']
+
+
+class NodeBuilder:
+    def __init__(self, system: SystemBuilder):
+        self.system = system
+
+    def name(self, name: str) -> Self:
+        """Define entity name, names with dot (.) are assumed to be DNS domain names"""
+        raise NotImplementedError()
+
+    def dns(self, name: str) -> Self:
+        """Define DNS name"""
+        raise NotImplementedError()
+
+    def describe(self, text: str) -> Self:
+        """Describe the system by a few sentences."""
+        raise NotImplementedError()
+
+    def external_activity(self, value: ExternalActivity) -> Self:
+        raise NotImplementedError()
+
+    def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
+        raise NotImplementedError()
+
+    def visual(self) -> 'NodeVisualBuilder':
+        """Create visual for the host"""
+        raise NotImplementedError()
+
+    def __rshift__(self, target: ServiceOrGroup) -> 'ConnectionBuilder':
+        raise NotImplementedError()
+
+
 class Builder:
     """Factory for creating builders"""
     @classmethod
@@ -123,39 +157,35 @@ class Builder:
 ## FIXME: Backend files temporary located below to avoid circual imports
 ##
 
-class SystemBackend(SystemInterface, SystemBuilder):
+class SystemBackend(SystemBuilder):
     """System model builder"""
     def __init__(self, name="Unnamed system"):
-        super().__init__(name)
+        self.system = IoTSystem(name)
         self.hosts_by_name: Dict[str, 'HostBuilder'] = {}
-        self.entity_by_address: Dict[AnyAddress, 'NodeBuilder'] = {}
+        self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
         self.network_masks = []
         self.claimSet = ClaimSetBuilder(self)
         self.visualizer = Visualizer()
         self.loaders: List['EvidenceLoader'] = []
 
     def network(self, mask: str) -> Self:
-        """IP network mask"""
         self.network_masks.append(ipaddress.ip_network(mask))
         self.system.ip_networks = self.network_masks
         return self
 
     def device(self, name="") -> 'HostBuilder':
-        """IoT device"""
         name = name or self._free_host_name("Device")
         b = self.get_host_(name, "Internet Of Things device")
         b.entity.host_type = HostType.DEVICE
         return b
 
     def backend(self, name="") -> 'HostBuilder':
-        """Backend service"""
         name = name or self._free_host_name("Backend")
         b = self.get_host_(name, "Backend service over Internet")
         b.entity.host_type = HostType.REMOTE
         return b
 
     def mobile(self, name="") -> 'HostBuilder':
-        """Mobile device"""
         name = name or self._free_host_name("Mobile")
         b = self.get_host_(name, "Mobile application")
         b.entity.host_type = HostType.MOBILE
@@ -163,14 +193,12 @@ class SystemBackend(SystemInterface, SystemBuilder):
         return b
 
     def browser(self, name="") -> 'HostBuilder':
-        """Browser"""
         name = name or self._free_host_name("Browser")
         b = self.get_host_(name, "Browser")
         b.entity.host_type = HostType.BROWSER
         return b
 
     def any(self, name="", node_type: HostType = None) -> 'HostBuilder':
-        """Any host"""
         name = name or self._free_host_name("Host")
         b = self.get_host_(name, "Any host")
         b.entity.any_host = True
@@ -180,7 +208,6 @@ class SystemBackend(SystemInterface, SystemBuilder):
         return b
 
     def infra(self, name="") -> 'HostBuilder':
-        """Part of the testing infrastructure, not part of the system itself"""
         name = name or self._free_host_name("Infra")
         b = self.get_host_(name, "Part of the testing infrastructure")
         b.entity.host_type = HostType.ADMINISTRATIVE
@@ -189,23 +216,19 @@ class SystemBackend(SystemInterface, SystemBuilder):
         return b
 
     def multicast(self, address: str, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
-        """IP multicast target"""
         conf = ProtocolConfigurer.as_configurer(protocol)
         return conf.as_multicast_(address, self)
 
     def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBuilder':
-        """IP broadcast target"""
         conf = ProtocolConfigurer.as_configurer(protocol)
         add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
         return self.multicast(add, conf)
 
     def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBuilder':
-        """Declare pieces of security-relevant data"""
         d = [SensitiveData(n, personal=personal, password=password) for n in names]
         return SensitiveDataBuilder(self, d)
 
     def online_resource(self, key: str, url: str) -> Self:
-        """Document online resource"""
         self.system.online_resources[key] = url
         return self
 
@@ -220,6 +243,8 @@ class SystemBackend(SystemInterface, SystemBuilder):
     def claims(self, base_label="explain") -> 'ClaimSetBuilder':
         self.claimSet.base_label = base_label
         return self.claimSet
+
+    ### Backend methods
 
     def get_host_(self, name: str, description: str) -> 'HostBuilder':
         """Get or create a host"""
@@ -257,39 +282,21 @@ class SystemBackend(SystemInterface, SystemBuilder):
         #             prop_v[0].set(s.properties, prop_v[1])
 
 
-ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
-ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroup']
-
-
-class NodeBuilder(NodeInterface):
+class NodeBackend(NodeBuilder):
     def __init__(self, entity: Addressable, system: SystemBackend):
-        super().__init__(entity, system)
-        self.parent: Optional[NodeBuilder] = None
+        NodeBuilder.__init__(self, system)
         self.system = system
+        self.parent: Optional[NodeBackend] = None
         self.sw: Dict[str, SoftwareBuilder] = {}
         system.system.originals.add(entity)
 
-    def new_address_(self, address: AnyAddress) -> AnyAddress:
-        old = self.system.entity_by_address.get(address)
-        if old:
-            raise Exception(f"Duplicate address {address}, reserved by: {old.entity.name}")
-        self.entity.addresses.add(address)
-        self.system.entity_by_address[address] = self
-        return address
-
-    def new_service_(self, name: str, port=-1):
-        """Create new service here"""
-        return Service(Service.make_name(name, port), self.entity)
-
     def name(self, name: str) -> Self:
-        """Define entity name, names with dot (.) are assumed to be DNS domain names"""
         self.entity.name = name
         if DNSName.looks_like(name):
             self.dns(name)
         return self
 
     def dns(self, name: str) -> Self:
-        """Define DNS name"""
         dn = DNSName(name)
         if dn in self.system.entity_by_address:
             raise Exception(f"Using name many times: {dn}")
@@ -306,9 +313,6 @@ class NodeBuilder(NodeInterface):
         self.entity.set_external_activity(value)
         return self
 
-    def get_software(self) -> Software:
-        return self.software().sw
-
     def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
         if name is None:
             name = Software.default_name(self.entity)
@@ -319,7 +323,6 @@ class NodeBuilder(NodeInterface):
         return sb
 
     def visual(self) -> 'NodeVisualBuilder':
-        """Create visual for the host"""
         p = self
         while p.parent:
             p = p.parent
@@ -334,11 +337,29 @@ class NodeBuilder(NodeInterface):
         else:
             return target.connection_(self)
 
+    ### Backend methods
+
+    def new_address_(self, address: AnyAddress) -> AnyAddress:
+        """Add new address to the entity"""
+        old = self.system.entity_by_address.get(address)
+        if old:
+            raise Exception(f"Duplicate address {address}, reserved by: {old.entity.name}")
+        self.entity.addresses.add(address)
+        self.system.entity_by_address[address] = self
+        return address
+
+    def new_service_(self, name: str, port=-1):
+        """Create new service here"""
+        return Service(Service.make_name(name, port), self.entity)
+
+    def get_software(self) -> Software:
+        return self.software().sw
+
     def __repr__(self):
         return self.entity.__repr__()
 
 
-class ServiceBuilder(NodeBuilder):
+class ServiceBuilder(NodeBackend):
     def __init__(self, host: 'HostBuilder', service: Service):
         super().__init__(service, host.system)
         self.configurer: Optional[ProtocolConfigurer] = None
@@ -364,7 +385,7 @@ class ServiceBuilder(NodeBuilder):
         s = self.parent / protocol
         return ServiceGroup([self, s])
 
-    def connection_(self, source: 'NodeBuilder') -> 'ConnectionBuilder':
+    def connection_(self, source: 'NodeBackend') -> 'ConnectionBuilder':
         s = source
         if self.source_fixer:
             assert isinstance(s, HostBuilder)
@@ -403,9 +424,9 @@ class ServiceGroup:
         return " / ".join([f"{s.entity.name}" for s in self.services])
 
 
-class HostBuilder(HostInterface, NodeBuilder):
+class HostBuilder(NodeBackend):
     def __init__(self, entity: Host, system: SystemBackend):
-        super().__init__(entity, system)
+        NodeBackend.__init__(self, entity, system)
         self.entity = entity
         system.system.children.append(entity)
         entity.status = Status.EXPECTED
@@ -496,7 +517,7 @@ class SensitiveDataBuilder:
 
 
 class ConnectionBuilder:
-    def __init__(self, connection: Connection, ends: Tuple[NodeBuilder, ServiceBuilder]):
+    def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBuilder]):
         self.connection = connection
         self.ends = ends
         self.ends[0].system.system.originals.add(connection)
@@ -511,7 +532,7 @@ class ConnectionBuilder:
 
 
 class SoftwareBuilder(SoftwareInterface):
-    def __init__(self, parent: NodeBuilder, software_name: str):
+    def __init__(self, parent: NodeBackend, software_name: str):
         self.sw: Software = Software.get_software(parent.entity, software_name)
         if self.sw is None:
             self.sw = Software(parent.entity, software_name)
@@ -557,7 +578,7 @@ class SoftwareBuilder(SoftwareInterface):
 
 class NodeVisualBuilder:
     """Visual builder for an node"""
-    def __init__(self, entity: NodeBuilder):
+    def __init__(self, entity: NodeBackend):
         self.entity = entity
         self.image_url: Optional[str] = None
         self.image_scale: int = 100
@@ -581,7 +602,7 @@ class VisualizerBuilder:
         self.visualizer.placement = places
         return self
 
-    def where(self, handles: Dict[str, Union[NodeBuilder, NodeVisualBuilder]]) -> Self:
+    def where(self, handles: Dict[str, Union[NodeBackend, NodeVisualBuilder]]) -> Self:
         for h, b in handles.items():
             if isinstance(b, NodeVisualBuilder):
                 ent = b.entity.entity.get_parent_host()
@@ -890,19 +911,19 @@ class ClaimBuilder:
         self._verdict = Verdict.PASS
         return self
 
-    def at(self, *locations: Union[SystemBackend, NodeBuilder, ConnectionBuilder]) -> 'Self':
+    def at(self, *locations: Union[SystemBackend, NodeBackend, ConnectionBuilder]) -> 'Self':
         """Set claimed location(s)"""
         for lo in locations:
             if isinstance(lo, SystemBackend):
                 loc = lo.system
-            elif isinstance(lo, NodeBuilder):
+            elif isinstance(lo, NodeBackend):
                 loc = lo.entity
             else:
                 loc = lo.connection
             self._locations.append(loc)
         return self
 
-    def software(self, *locations: NodeBuilder) -> 'Self':
+    def software(self, *locations: NodeBackend) -> 'Self':
         """Claims for software in the locations"""
         for lo in locations:
             for sw in Software.list_software(lo.entity):
