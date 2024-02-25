@@ -1,8 +1,7 @@
-import tcsfw
 from tcsfw.main import Builder, TLS
 from tcsfw.traffic import IPFlow
 
-system = Builder.new("IoT A")
+system = Builder.new("Basic A")
 device = system.device()
 backend = system.backend().serve(TLS(auth=True))
 app = system.mobile()
