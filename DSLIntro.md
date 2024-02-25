@@ -13,9 +13,9 @@ The model is in file `samples/basic-a/system.py`.
 from tcsfw.main import Builder, TLS
 from tcsfw.traffic import IPFlow
 
-system = Builder.new("IoT A")
+system = Builder.new("Basic A")
 device = system.device()
-backend = system.backend().serve(TLS(auth=True))
+backend = system.backend().serve()
 app = system.mobile()
 
 device >> backend / TLS

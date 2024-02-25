@@ -3,7 +3,7 @@ from tcsfw.traffic import IPFlow
 
 system = Builder.new("Basic A")
 device = system.device()
-backend = system.backend().serve(TLS(auth=True))
+backend = system.backend().serve(TLS)
 app = system.mobile()
 
 device >> backend / TLS
