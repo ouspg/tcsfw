@@ -13,7 +13,7 @@ from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.requirement import Specification, Requirement
 from tcsfw.traffic import EvidenceSource
-from tcsfw.verdict import Verdict
+from tcsfw.basics import Verdict
 
 
 class CoverageReport:
@@ -198,7 +198,7 @@ class CoverageReport:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "-"
             return "."
-        if status.verdict == Verdict.PASS:
+        if stGatewayatus.verdict == Verdict.PASS:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "X"
             return "x"
