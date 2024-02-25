@@ -1,16 +1,11 @@
-import argparse
-import io
-import ipaddress
-import itertools
-import json
-import logging
-import pathlib
-import sys
-
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
 from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
 from tcsfw.selector import RequirementSelector
 from tcsfw.basics import ConnectionType, HostType, Verdict, ExternalActivity
+
+
+ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
+ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 
 
 class SystemBuilder:
@@ -66,26 +61,6 @@ class SystemBuilder:
 
     def claims(self, base_label="explain") -> 'ClaimSetBuilder':
         raise NotImplementedError()
-
-
-# Host types
-BROWSER = HostType.BROWSER
-
-# Connection types
-ADMINISTRATIVE = ConnectionType.ADMINISTRATIVE
-ENCRYPTED = ConnectionType.ENCRYPTED
-PLAINTEXT = ConnectionType.UNKNOWN
-
-
-# External activity
-BANNED = ExternalActivity.BANNED
-PASSIVE = ExternalActivity.PASSIVE
-OPEN = ExternalActivity.OPEN
-UNLIMITED = ExternalActivity.UNLIMITED
-
-
-ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
-ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 
 
 class NodeBuilder:
