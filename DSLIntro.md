@@ -45,3 +45,9 @@ system.visualize().place(
 The letters "A", "B", and "C" stand for the application, backend, and device.
 Thei positions are determined in the `place` method.
 
+## DSL reference
+
+The interface code for the DSL is in Python module `tcsfw.main`.
+DSLs can use definitions from `tcsfw.basics`, as well.
+The source code in these files provides for the authorative reference code.
+
