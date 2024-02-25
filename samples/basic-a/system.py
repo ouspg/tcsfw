@@ -9,7 +9,7 @@ app = system.mobile()
 device >> backend / TLS
 app >> backend / TLS
 
-# Visualization
+# Graphical view
 system.visualize().place(
     "D   A",
     "  B  ",
