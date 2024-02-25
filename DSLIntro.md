@@ -11,7 +11,6 @@ The model is in file `samples/basic-a/system.py`.
 
 ```python
 from tcsfw.main import Builder, TLS
-from tcsfw.traffic import IPFlow
 
 system = Builder.new("Basic A")
 device = system.device()

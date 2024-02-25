@@ -1,5 +1,4 @@
 from tcsfw.main import Builder, TLS
-from tcsfw.traffic import IPFlow
 
 system = Builder.new("Basic A")
 device = system.device()
