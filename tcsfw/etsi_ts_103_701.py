@@ -37,7 +37,7 @@ DEVICE = Select.host().type_of(HostType.DEVICE)
 DEVICE_UNEXPECTED = Select.host(unexpected=True).type_of(HostType.DEVICE)
 
 class IXIT:
-    AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Select.SERVICE.authenticated())
+    AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Select.service().authenticated())
     UserInfo = IXIT_Section("UserInfo", 2, Select.SYSTEM)
     VulnTypes = IXIT_Section("VulnTypes", 3)
     Conf = IXIT_Section("Conf", 4)
@@ -49,7 +49,7 @@ class IXIT:
     SecParam = IXIT_Section("SecParam", 10, Select.DATA)  # FIXME: Not that great
     ComMech = IXIT_Section("ComMech", 11, Select.CONNECTION)
     NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Select.SOFTWARE)
-    SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Select.SERVICE.authenticated())
+    SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Select.service().authenticated())
     SecMgmt = IXIT_Section("SecMgmt", 14)
     Intf = IXIT_Section("Intf", 15, DEVICE_UNEXPECTED)
     CodeMin = IXIT_Section("CodeMin", 16)
@@ -64,8 +64,8 @@ class IXIT:
     DelFunc = IXIT_Section("DelFunc", 25, Select.SYSTEM)
     UserDec = IXIT_Section("UserDec", 26, Select.SYSTEM)
     UserIntf = IXIT_Section("UserIntf", 27, Select.SYSTEM)
-    ExtAPI = IXIT_Section("ExtAPI", 28, DEVICE / ServiceSelector(with_unexpected=True))
-    InpVal = IXIT_Section("InpVal", 29, DEVICE / Select.SERVICE)
+    ExtAPI = IXIT_Section("ExtAPI", 28, DEVICE / Select.service(unexpected=True))
+    InpVal = IXIT_Section("InpVal", 29, DEVICE / Select.service())
 
     # Not from ETSI
     Generic = IXIT_Section("System*", 0, RequirementSelector())
@@ -77,7 +77,7 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 
 # Special locators
 # Services which use passwords, which are not defined by the user (not detectable)
-AuthMech_NotUserDefined = DEVICE / Select.SERVICE.authenticated()
+AuthMech_NotUserDefined = DEVICE / Select.service().authenticated()
 # All authentication mechanism, including unexpected
 AuthMech_All = DEVICE / ServiceSelector(with_unexpected=True).authenticated()
 # All update connections, including unexpected

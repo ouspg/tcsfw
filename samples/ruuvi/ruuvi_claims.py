@@ -98,13 +98,13 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
     claims.plan_tool("Isolate network/power*", group, Select.SYSTEM + Select.host(),
                      ("action", "isolate"))
     claims.plan_tool("Code analysis*", group, Select.SOFTWARE, ("check", "code-review"))
-    claims.plan_tool("Fuzzer*", group, Select.SERVICE, ("check", "fuzz"))
+    claims.plan_tool("Fuzzer*", group, Select.service(), ("check", "fuzz"))
 
     group = "custom-tools", "Custom tools"
     claims.plan_tool("Basic function test*", group,
                      Select.SYSTEM + Select.host().type_of(HostType.DEVICE),
                      ("check", "basic-function"))
-    claims.plan_tool("Auth audit*", group, Select.SERVICE.authenticated(),
+    claims.plan_tool("Auth audit*", group, Select.service().authenticated(),
                      ("check", "auth", "best-practice"), ("check", "auth", "no-vulnz"), 
                      ("check", "auth", "brute-force"),
                      ("check", "auth"), ("check", "auth", "grant"))
@@ -113,7 +113,7 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      ("check", "secure-storage"))
     claims.plan_tool("Check that parameter updated*", group,
                      Select.DATA.parameters(),("check", "param-changed"))
-    claims.plan_tool("Password validator*", group, Select.SERVICE.authenticated(),
+    claims.plan_tool("Password validator*", group, Select.service().authenticated(),
                      ("check", "password-validity"))
     claims.plan_tool("Update cracker*", group, Select.CONNECTION + Select.SOFTWARE,
                      ("check", "mod-update"))

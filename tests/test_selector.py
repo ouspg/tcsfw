@@ -36,17 +36,17 @@ def test_select():
     r = list(Select.host().select(h[0], ctx))
     assert len(r) == 1
 
-    s = list(Select.SERVICE.select(h[0], ctx))
+    s = list(Select.service().select(h[0], ctx))
     assert len(s) == 0
-    s = list(Select.SERVICE.select(h[2], ctx))
+    s = list(Select.service().select(h[2], ctx))
     assert len(s) == 0
-    s = list(Select.SERVICE.select(h[1], ctx))
+    s = list(Select.service().select(h[1], ctx))
     assert len(s) == 1
 
     c = list(Select.CONNECTION.select(sb.system, ctx))
     assert len(c) == 1
 
-    c = list((Select.SERVICE + Select.host()).select(h[1], ctx))
+    c = list((Select.service() + Select.host()).select(h[1], ctx))
     assert len(c) == 2
 
 
