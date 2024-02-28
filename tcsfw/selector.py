@@ -301,6 +301,21 @@ class AlternativeSelectors(RequirementSelector):
 
 class Select:
     """Factory for selectors"""
+    @classmethod
+    def host(self, unexpected=False) -> HostSelector:
+        """Select hosts"""
+        return HostSelector(unexpected)
+
+    @classmethod
+    def service(self, unexpected=False) -> ServiceSelector:
+        """Select services"""
+        return ServiceSelector(unexpected)
+
+    @classmethod
+    def connection(self, unexpected=False) -> ConnectionSelector:
+        """Select connections"""
+        return ConnectionSelector(unexpected)
+
     SYSTEM = SystemSelector()
     HOST = HostSelector()
     SERVICE = ServiceSelector()
