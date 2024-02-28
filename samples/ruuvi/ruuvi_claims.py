@@ -95,14 +95,14 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      ("check", "traffic", "tls"))
 
     group = "advanced-tools", "Advanced tools"
-    claims.plan_tool("Isolate network/power*", group, Select.SYSTEM + Select.HOST,
+    claims.plan_tool("Isolate network/power*", group, Select.SYSTEM + Select.host(),
                      ("action", "isolate"))
     claims.plan_tool("Code analysis*", group, Select.SOFTWARE, ("check", "code-review"))
     claims.plan_tool("Fuzzer*", group, Select.SERVICE, ("check", "fuzz"))
 
     group = "custom-tools", "Custom tools"
     claims.plan_tool("Basic function test*", group,
-                     Select.SYSTEM + Select.HOST.type_of(HostType.DEVICE),
+                     Select.SYSTEM + Select.host().type_of(HostType.DEVICE),
                      ("check", "basic-function"))
     claims.plan_tool("Auth audit*", group, Select.SERVICE.authenticated(),
                      ("check", "auth", "best-practice"), ("check", "auth", "no-vulnz"), 

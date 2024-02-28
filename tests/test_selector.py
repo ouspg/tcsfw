@@ -24,16 +24,16 @@ def test_iterate():
 def test_select():
     sb = simple_setup_1()
     ctx = SelectorContext()
-    h = list(Select.HOST.select(sb.system, ctx))
+    h = list(Select.host().select(sb.system, ctx))
     assert len(h) == 3
 
-    h = list(Select.HOST.type_of(HostType.MOBILE).select(sb.system, ctx))
+    h = list(Select.host().type_of(HostType.MOBILE).select(sb.system, ctx))
     assert len(h) == 0
 
-    h = list(Select.HOST.type_of(HostType.DEVICE).select(sb.system, ctx))
+    h = list(Select.host().type_of(HostType.DEVICE).select(sb.system, ctx))
     assert len(h) == 3
 
-    r = list(Select.HOST.select(h[0], ctx))
+    r = list(Select.host().select(h[0], ctx))
     assert len(r) == 1
 
     s = list(Select.SERVICE.select(h[0], ctx))
@@ -46,7 +46,7 @@ def test_select():
     c = list(Select.CONNECTION.select(sb.system, ctx))
     assert len(c) == 1
 
-    c = list((Select.SERVICE + Select.HOST).select(h[1], ctx))
+    c = list((Select.SERVICE + Select.host()).select(h[1], ctx))
     assert len(c) == 2
 
 

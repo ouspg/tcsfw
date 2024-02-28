@@ -33,8 +33,8 @@ class IXIT_Section:
         return f"{self.name}-{self.number}"
 
 
-DEVICE = Select.HOST.type_of(HostType.DEVICE)
-DEVICE_UNEXPECTED = HostSelector(with_unexpected=True).type_of(HostType.DEVICE)
+DEVICE = Select.host().type_of(HostType.DEVICE)
+DEVICE_UNEXPECTED = Select.host(unexpected=True).type_of(HostType.DEVICE)
 
 class IXIT:
     AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Select.SERVICE.authenticated())
@@ -85,7 +85,7 @@ UpdMech_All = ConnectionSelector(with_unexpected=True).endpoint(DEVICE)
 # All communication mechanisms, including unexpected
 ComMech_All = ConnectionSelector(with_unexpected=True)
 # Unexpected communication mechanisms after secure boot failure
-SecBoot_Unexpected = Select.HOST.type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
+SecBoot_Unexpected = Select.host().type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
 # A physical interface (same as Intf now))
 Intf_Physical = DEVICE_UNEXPECTED
 # All hosts which can have ExtAPI
