@@ -316,7 +316,13 @@ class Select:
         """Select connections"""
         return ConnectionSelector(unexpected)
 
+    @classmethod
+    def system(cls) -> SystemSelector:
+        """Select the system"""
+        return cls.SYSTEM  # singleton now
+
     SYSTEM = SystemSelector()
+
     SOFTWARE = SoftwareSelector()
     DATA = DataSelector()
 

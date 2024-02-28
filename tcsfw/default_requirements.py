@@ -67,7 +67,7 @@ class DefaultSpecification(Specification):
         # [x] Privacy policy is defined
         self.privacy_policy = self._req(
             "privacy-policy",
-            Select.SYSTEM ^ AvailabilityClaim("privacy-policy").name("Privacy policy is available"))
+            Select.system() ^ AvailabilityClaim("privacy-policy").name("Privacy policy is available"))
         # Updates
         # [x] Updates are secure and automatic
         self.updates = self._req(
@@ -85,7 +85,7 @@ class DefaultSpecification(Specification):
         # [ ] Security policy is defined
         self.security_policy = self._req(
             "security-policy",
-            Select.SYSTEM ^ AvailabilityClaim("security-policy").name("Security policy is available"))
+            Select.system() ^ AvailabilityClaim("security-policy").name("Security policy is available"))
         # [x] Release history is available
         self.release_info = self._req(
             "release-info",

@@ -111,7 +111,7 @@ class ToolPlanLoader(SubLoader):
     def __init__(self, group: Tuple[str, str]):
         super().__init__(group[1])    # group[0] is e.g. 'basic-tools', 'advanced-tools', 'custom-tools'
         self.source_label = group[1]  # group[1] is fancy names for them (just captialize?)
-        self.location = Select.SYSTEM
+        self.location = Select.system()
         self.properties: Dict[PropertyKey, Any] = {}
         self.groups = ["planning", group[0]]
 

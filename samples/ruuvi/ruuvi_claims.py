@@ -95,14 +95,14 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      ("check", "traffic", "tls"))
 
     group = "advanced-tools", "Advanced tools"
-    claims.plan_tool("Isolate network/power*", group, Select.SYSTEM + Select.host(),
+    claims.plan_tool("Isolate network/power*", group, Select.system() + Select.host(),
                      ("action", "isolate"))
     claims.plan_tool("Code analysis*", group, Select.SOFTWARE, ("check", "code-review"))
     claims.plan_tool("Fuzzer*", group, Select.service(), ("check", "fuzz"))
 
     group = "custom-tools", "Custom tools"
     claims.plan_tool("Basic function test*", group,
-                     Select.SYSTEM + Select.host().type_of(HostType.DEVICE),
+                     Select.system() + Select.host().type_of(HostType.DEVICE),
                      ("check", "basic-function"))
     claims.plan_tool("Auth audit*", group, Select.service().authenticated(),
                      ("check", "auth", "best-practice"), ("check", "auth", "no-vulnz"), 
@@ -117,4 +117,4 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      ("check", "password-validity"))
     claims.plan_tool("Update cracker*", group, Select.connection() + Select.SOFTWARE,
                      ("check", "mod-update"))
-    claims.plan_tool("Telemetry audit*", group, Select.SYSTEM, ("check", "telemetry"))
+    claims.plan_tool("Telemetry audit*", group, Select.system(), ("check", "telemetry"))
