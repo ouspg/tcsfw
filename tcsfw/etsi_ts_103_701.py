@@ -17,7 +17,7 @@ from tcsfw.model import IoTSystem, Host, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Specification, Requirement, SelectorContext, SpecificationSelectorContext, \
     EntitySelector
-from tcsfw.selector import ConnectionSelector, HostSelector, Locations, ServiceSelector, UpdateConnectionSelector, RequirementSelector
+from tcsfw.selector import ConnectionSelector, HostSelector, Select, ServiceSelector, UpdateConnectionSelector, RequirementSelector
 
 
 class IXIT_Section:
@@ -33,39 +33,39 @@ class IXIT_Section:
         return f"{self.name}-{self.number}"
 
 
-DEVICE = Locations.HOST.type_of(HostType.DEVICE)
+DEVICE = Select.HOST.type_of(HostType.DEVICE)
 DEVICE_UNEXPECTED = HostSelector(with_unexpected=True).type_of(HostType.DEVICE)
 
 class IXIT:
-    AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Locations.SERVICE.authenticated())
-    UserInfo = IXIT_Section("UserInfo", 2, Locations.SYSTEM)
+    AuthMech = IXIT_Section("AuthMech", 1, DEVICE / Select.SERVICE.authenticated())
+    UserInfo = IXIT_Section("UserInfo", 2, Select.SYSTEM)
     VulnTypes = IXIT_Section("VulnTypes", 3)
     Conf = IXIT_Section("Conf", 4)
     VulnMon = IXIT_Section("VulMon", 5)
-    SoftComp = IXIT_Section("SoftComp", 6, DEVICE / Locations.SOFTWARE)
+    SoftComp = IXIT_Section("SoftComp", 6, DEVICE / Select.SOFTWARE)
     UpdMech = IXIT_Section("UpdMech", 7, UpdateConnectionSelector())
     UpdProc = IXIT_Section("UpdProc", 8)
     ReplSup = IXIT_Section("ReplSup", 9, DEVICE)
-    SecParam = IXIT_Section("SecParam", 10, Locations.DATA)  # FIXME: Not that great
-    ComMech = IXIT_Section("ComMech", 11, Locations.CONNECTION)
-    NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Locations.SOFTWARE)
-    SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Locations.SERVICE.authenticated())
+    SecParam = IXIT_Section("SecParam", 10, Select.DATA)  # FIXME: Not that great
+    ComMech = IXIT_Section("ComMech", 11, Select.CONNECTION)
+    NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Select.SOFTWARE)
+    SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Select.SERVICE.authenticated())
     SecMgmt = IXIT_Section("SecMgmt", 14)
     Intf = IXIT_Section("Intf", 15, DEVICE_UNEXPECTED)
     CodeMin = IXIT_Section("CodeMin", 16)
     PrivlCtrl = IXIT_Section("PrivlCtrl", 17)
     AccCtrl = IXIT_Section("AccCtrl", 18)
     SecDev = IXIT_Section("SecDev", 19)
-    SecBoot = IXIT_Section("SecBoot", 20, DEVICE / Locations.SOFTWARE)
-    PersData = IXIT_Section("PersData", 21, Locations.DATA.personal())
+    SecBoot = IXIT_Section("SecBoot", 20, DEVICE / Select.SOFTWARE)
+    PersData = IXIT_Section("PersData", 21, Select.DATA.personal())
     ExtSens = IXIT_Section("ExtSens", 22, DEVICE.with_property(Properties.SENSORS))
-    ResMech = IXIT_Section("ResMech", 23, Locations.SYSTEM)
-    TelData = IXIT_Section("TelData", 24, Locations.SYSTEM)
-    DelFunc = IXIT_Section("DelFunc", 25, Locations.SYSTEM)
-    UserDec = IXIT_Section("UserDec", 26, Locations.SYSTEM)
-    UserIntf = IXIT_Section("UserIntf", 27, Locations.SYSTEM)
+    ResMech = IXIT_Section("ResMech", 23, Select.SYSTEM)
+    TelData = IXIT_Section("TelData", 24, Select.SYSTEM)
+    DelFunc = IXIT_Section("DelFunc", 25, Select.SYSTEM)
+    UserDec = IXIT_Section("UserDec", 26, Select.SYSTEM)
+    UserIntf = IXIT_Section("UserIntf", 27, Select.SYSTEM)
     ExtAPI = IXIT_Section("ExtAPI", 28, DEVICE / ServiceSelector(with_unexpected=True))
-    InpVal = IXIT_Section("InpVal", 29, DEVICE / Locations.SERVICE)
+    InpVal = IXIT_Section("InpVal", 29, DEVICE / Select.SERVICE)
 
     # Not from ETSI
     Generic = IXIT_Section("System*", 0, RequirementSelector())
@@ -77,7 +77,7 @@ def check(key: str | PropertyKey, description: str) -> PropertyClaim:
 
 # Special locators
 # Services which use passwords, which are not defined by the user (not detectable)
-AuthMech_NotUserDefined = DEVICE / Locations.SERVICE.authenticated()
+AuthMech_NotUserDefined = DEVICE / Select.SERVICE.authenticated()
 # All authentication mechanism, including unexpected
 AuthMech_All = DEVICE / ServiceSelector(with_unexpected=True).authenticated()
 # All update connections, including unexpected
@@ -85,14 +85,14 @@ UpdMech_All = ConnectionSelector(with_unexpected=True).endpoint(DEVICE)
 # All communication mechanisms, including unexpected
 ComMech_All = ConnectionSelector(with_unexpected=True)
 # Unexpected communication mechanisms after secure boot failure
-SecBoot_Unexpected = Locations.HOST.type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
+SecBoot_Unexpected = Select.HOST.type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
 # A physical interface (same as Intf now))
 Intf_Physical = DEVICE_UNEXPECTED
 # All hosts which can have ExtAPI
 ExtAPI_Hosts_All = DEVICE
 
 # Personal data (items)
-UserInfo_Personal = Locations.DATA.personal()
+UserInfo_Personal = Select.DATA.personal()
 
 # Claims
 UI = UserInterfaceClaim() % "UI"

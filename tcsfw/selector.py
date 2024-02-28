@@ -299,7 +299,8 @@ class AlternativeSelectors(RequirementSelector):
             yield from s.select(entity, context)
 
 
-class Locations:
+class Select:
+    """Factory for selectors"""
     SYSTEM = SystemSelector()
     HOST = HostSelector()
     SERVICE = ServiceSelector()
