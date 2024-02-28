@@ -62,7 +62,7 @@ class DefaultSpecification(Specification):
         # [ ] Private data is defined
         self.private_data = self._req(
             "private-data",
-            Select.DATA ^ Claims.name("Private data is defined", Claims.SENSITIVE_DATA))
+            Select.data() ^ Claims.name("Private data is defined", Claims.SENSITIVE_DATA))
 
         # [x] Privacy policy is defined
         self.privacy_policy = self._req(
@@ -72,15 +72,15 @@ class DefaultSpecification(Specification):
         # [x] Updates are secure and automatic
         self.updates = self._req(
             "updates",
-            Select.SOFTWARE ^ UpdateClaim("Automated software updates"))
+            Select.software() ^ UpdateClaim("Automated software updates"))
         # [x] SBOM is defined
         self.sbom = self._req(
             "sbom",
-            Select.SOFTWARE ^ BOMClaim(description="SBOM is defined"))
+            Select.software() ^ BOMClaim(description="SBOM is defined"))
         # [x] No vulnerabilities are known
         self.no_known_vulnerabilities = self._req(
             "no-known-vuln",
-            Select.SOFTWARE ^ NoVulnerabilitiesClaim(description="No vulnerabilities are known"))
+            Select.software() ^ NoVulnerabilitiesClaim(description="No vulnerabilities are known"))
         # Vulnerability process
         # [ ] Security policy is defined
         self.security_policy = self._req(
@@ -89,12 +89,12 @@ class DefaultSpecification(Specification):
         # [x] Release history is available
         self.release_info = self._req(
             "release-info",
-            Select.SOFTWARE ^ ReleaseClaim("Release history is available"))
+            Select.software() ^ ReleaseClaim("Release history is available"))
         # Mobile applications
         # [ ] Permissions are appropriate
         self.permissions = self._req(
             "permissions",
-            Select.host().type_of(HostType.MOBILE) / Select.SOFTWARE ^
+            Select.host().type_of(HostType.MOBILE) / Select.software() ^
             PermissionClaim().name("Permissions are appropriate"))
 
 

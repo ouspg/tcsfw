@@ -53,17 +53,17 @@ def test_select():
 def test_select_data():
     sb = simple_setup_1()
     ctx = SelectorContext()
-    h = list(Select.DATA.select(sb.system, ctx))
+    h = list(Select.data().select(sb.system, ctx))
     assert len(h) == 0
 
     data = sb.data(["A data", "B data"], personal=True)
     data.used_by(sb.device("Device 1"))
 
-    h = list(Select.DATA.select(sb.system, ctx))
+    h = list(Select.data().select(sb.system, ctx))
     assert len(h) == 2
 
-    h = list(Select.DATA.parameters().select(sb.system, ctx))
+    h = list(Select.data().parameters().select(sb.system, ctx))
     assert len(h) == 0
 
-    h = list(Select.DATA.personal().select(sb.system, ctx))
+    h = list(Select.data().personal().select(sb.system, ctx))
     assert len(h) == 2

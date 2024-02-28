@@ -42,13 +42,13 @@ class IXIT:
     VulnTypes = IXIT_Section("VulnTypes", 3)
     Conf = IXIT_Section("Conf", 4)
     VulnMon = IXIT_Section("VulMon", 5)
-    SoftComp = IXIT_Section("SoftComp", 6, DEVICE / Select.SOFTWARE)
+    SoftComp = IXIT_Section("SoftComp", 6, DEVICE / Select.software())
     UpdMech = IXIT_Section("UpdMech", 7, UpdateConnectionSelector())
     UpdProc = IXIT_Section("UpdProc", 8)
     ReplSup = IXIT_Section("ReplSup", 9, DEVICE)
-    SecParam = IXIT_Section("SecParam", 10, Select.DATA)  # FIXME: Not that great
+    SecParam = IXIT_Section("SecParam", 10, Select.data())  # FIXME: Not that great
     ComMech = IXIT_Section("ComMech", 11, Select.connection())
-    NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Select.SOFTWARE)
+    NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Select.software())
     SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Select.service().authenticated())
     SecMgmt = IXIT_Section("SecMgmt", 14)
     Intf = IXIT_Section("Intf", 15, DEVICE_UNEXPECTED)
@@ -56,8 +56,8 @@ class IXIT:
     PrivlCtrl = IXIT_Section("PrivlCtrl", 17)
     AccCtrl = IXIT_Section("AccCtrl", 18)
     SecDev = IXIT_Section("SecDev", 19)
-    SecBoot = IXIT_Section("SecBoot", 20, DEVICE / Select.SOFTWARE)
-    PersData = IXIT_Section("PersData", 21, Select.DATA.personal())
+    SecBoot = IXIT_Section("SecBoot", 20, DEVICE / Select.software())
+    PersData = IXIT_Section("PersData", 21, Select.data().personal())
     ExtSens = IXIT_Section("ExtSens", 22, DEVICE.with_property(Properties.SENSORS))
     ResMech = IXIT_Section("ResMech", 23, Select.system())
     TelData = IXIT_Section("TelData", 24, Select.system())
@@ -92,7 +92,7 @@ Intf_Physical = DEVICE_UNEXPECTED
 ExtAPI_Hosts_All = DEVICE
 
 # Personal data (items)
-UserInfo_Personal = Select.DATA.personal()
+UserInfo_Personal = Select.data().personal()
 
 # Claims
 UI = UserInterfaceClaim() % "UI"

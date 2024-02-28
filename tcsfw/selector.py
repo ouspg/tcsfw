@@ -319,12 +319,17 @@ class Select:
     @classmethod
     def system(cls) -> SystemSelector:
         """Select the system"""
-        return cls.SYSTEM  # singleton now
+        return cls.SYSTEM_SINGLE  # singleton now
 
-    SYSTEM = SystemSelector()
+    @classmethod
+    def software(cls) -> SoftwareSelector:
+        """Select software"""
+        return cls.SOFTWARE_SINGLE # singleton now
 
-    SOFTWARE = SoftwareSelector()
-    DATA = DataSelector()
+    @classmethod
+    def data(cls) -> DataSelector:
+        """Select data"""
+        return DataSelector()
 
-
-
+    SYSTEM_SINGLE = SystemSelector()
+    SOFTWARE_SINGLE = SoftwareSelector()

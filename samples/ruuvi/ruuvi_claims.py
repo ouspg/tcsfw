@@ -97,7 +97,7 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
     group = "advanced-tools", "Advanced tools"
     claims.plan_tool("Isolate network/power*", group, Select.system() + Select.host(),
                      ("action", "isolate"))
-    claims.plan_tool("Code analysis*", group, Select.SOFTWARE, ("check", "code-review"))
+    claims.plan_tool("Code analysis*", group, Select.software(), ("check", "code-review"))
     claims.plan_tool("Fuzzer*", group, Select.service(), ("check", "fuzz"))
 
     group = "custom-tools", "Custom tools"
@@ -108,13 +108,13 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      ("check", "auth", "best-practice"), ("check", "auth", "no-vulnz"), 
                      ("check", "auth", "brute-force"),
                      ("check", "auth"), ("check", "auth", "grant"))
-    claims.plan_tool("Modify device SW*", group, Select.SOFTWARE,("check", "modify-sw"))
-    claims.plan_tool("Secure storage analysis*", group, Select.DATA.parameters(),
+    claims.plan_tool("Modify device SW*", group, Select.software(),("check", "modify-sw"))
+    claims.plan_tool("Secure storage analysis*", group, Select.data().parameters(),
                      ("check", "secure-storage"))
     claims.plan_tool("Check that parameter updated*", group,
-                     Select.DATA.parameters(),("check", "param-changed"))
+                     Select.data().parameters(),("check", "param-changed"))
     claims.plan_tool("Password validator*", group, Select.service().authenticated(),
                      ("check", "password-validity"))
-    claims.plan_tool("Update cracker*", group, Select.connection() + Select.SOFTWARE,
+    claims.plan_tool("Update cracker*", group, Select.connection() + Select.software(),
                      ("check", "mod-update"))
     claims.plan_tool("Telemetry audit*", group, Select.system(), ("check", "telemetry"))
