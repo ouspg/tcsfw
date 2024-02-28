@@ -43,7 +43,7 @@ def test_select():
     s = list(Select.service().select(h[1], ctx))
     assert len(s) == 1
 
-    c = list(Select.CONNECTION.select(sb.system, ctx))
+    c = list(Select.connection().select(sb.system, ctx))
     assert len(c) == 1
 
     c = list((Select.service() + Select.host()).select(h[1], ctx))

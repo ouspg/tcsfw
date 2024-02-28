@@ -47,7 +47,7 @@ class IXIT:
     UpdProc = IXIT_Section("UpdProc", 8)
     ReplSup = IXIT_Section("ReplSup", 9, DEVICE)
     SecParam = IXIT_Section("SecParam", 10, Select.DATA)  # FIXME: Not that great
-    ComMech = IXIT_Section("ComMech", 11, Select.CONNECTION)
+    ComMech = IXIT_Section("ComMech", 11, Select.connection())
     NetSecImpl = IXIT_Section("NetSecImpl", 12, DEVICE / Select.SOFTWARE)
     SoftServ = IXIT_Section("SoftServ", 13, DEVICE / Select.service().authenticated())
     SecMgmt = IXIT_Section("SecMgmt", 14)
@@ -81,11 +81,11 @@ AuthMech_NotUserDefined = DEVICE / Select.service().authenticated()
 # All authentication mechanism, including unexpected
 AuthMech_All = DEVICE / ServiceSelector(with_unexpected=True).authenticated()
 # All update connections, including unexpected
-UpdMech_All = ConnectionSelector(with_unexpected=True).endpoint(DEVICE)
+UpdMech_All = Select.connection(unexpected=True).endpoint(DEVICE)
 # All communication mechanisms, including unexpected
-ComMech_All = ConnectionSelector(with_unexpected=True)
+ComMech_All = Select.connection(unexpected=True)
 # Unexpected communication mechanisms after secure boot failure
-SecBoot_Unexpected = Select.host().type_of(HostType.DEVICE) / ConnectionSelector(with_unexpected=True)
+SecBoot_Unexpected = Select.host().type_of(HostType.DEVICE) / Select.connection(unexpected=True)
 # A physical interface (same as Intf now))
 Intf_Physical = DEVICE_UNEXPECTED
 # All hosts which can have ExtAPI

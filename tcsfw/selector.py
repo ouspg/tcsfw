@@ -317,10 +317,6 @@ class Select:
         return ConnectionSelector(unexpected)
 
     SYSTEM = SystemSelector()
-    HOST = HostSelector()
-    SERVICE = ServiceSelector()
-    CONNECTION = ConnectionSelector()
-
     SOFTWARE = SoftwareSelector()
     DATA = DataSelector()
 

@@ -91,7 +91,7 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
     # Tool planning
 
     group = "basic-tools", "Basic tools"
-    claims.plan_tool("TLS conn. audit*", group, Select.CONNECTION.protocol("tls"),
+    claims.plan_tool("TLS conn. audit*", group, Select.connection().protocol("tls"),
                      ("check", "traffic", "tls"))
 
     group = "advanced-tools", "Advanced tools"
@@ -115,6 +115,6 @@ def make_claims(system: SystemBuilder, gateway, tags, user, mobile, backend_1, b
                      Select.DATA.parameters(),("check", "param-changed"))
     claims.plan_tool("Password validator*", group, Select.service().authenticated(),
                      ("check", "password-validity"))
-    claims.plan_tool("Update cracker*", group, Select.CONNECTION + Select.SOFTWARE,
+    claims.plan_tool("Update cracker*", group, Select.connection() + Select.SOFTWARE,
                      ("check", "mod-update"))
     claims.plan_tool("Telemetry audit*", group, Select.SYSTEM, ("check", "telemetry"))
