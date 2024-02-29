@@ -2,7 +2,7 @@ from typing import List, Optional, Tuple, Self, Dict, Set, Callable, Iterable, U
 
 from tcsfw.address import Protocol
 from tcsfw.basics import HostType, Verdict
-from tcsfw.claim import Claim
+from tcsfw.claim import AbstractClaim
 from tcsfw.components import DataReference, DataStorages, Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
 from tcsfw.events import ReleaseInfo
@@ -17,7 +17,7 @@ class ClaimContext:
     """The context where a claim is resolved"""
     def __init__(self):
         # Properties read by the claims, with their values (converted to bool, when possible)
-        self.properties: Dict[Tuple[Entity, Claim], Dict[PropertyKey, Any]] = {}
+        self.properties: Dict[Tuple[Entity, AbstractClaim], Dict[PropertyKey, Any]] = {}
 
     def check(self, claim: 'RequirementClaim', entity: Entity) -> Optional[ClaimStatus]:
         """Resolve claim results"""
@@ -36,13 +36,13 @@ class ClaimContext:
             cs = base_cs
         return cs
 
-    def get_property_value(self, entity: Entity, claim: Claim, key: PropertyKey) -> Optional:
+    def get_property_value(self, entity: Entity, claim: AbstractClaim, key: PropertyKey) -> Optional:
         """Get and test property value"""
         v = key.get(entity.properties)
         self.properties.setdefault((entity, claim), {})[key] = v  # may be null
         return v
 
-    def get_property_verdict(self, entity: Entity, claim: Claim, key: PropertyKey,
+    def get_property_verdict(self, entity: Entity, claim: AbstractClaim, key: PropertyKey,
                              properties: Dict[PropertyKey, Any]) -> Optional[Verdict]:
         """Get verdict by property"""
         v = entity.properties.get(key)
@@ -59,7 +59,7 @@ class ClaimContext:
         self.properties.setdefault((entity, claim), {})[key] = ver == Verdict.PASS
         return ver
 
-    def mark_coverage(self, entity: Entity, claim: Claim, key: PropertyKey, value: Any):
+    def mark_coverage(self, entity: Entity, claim: AbstractClaim, key: PropertyKey, value: Any):
         """Just mark property asked, without it being in entity"""
         kv = self.properties.setdefault((entity, claim), {})
         if key not in kv:
@@ -109,7 +109,7 @@ class RequirementClaim(ExplainableClaim):
         return []
 
     @classmethod
-    def get_all_claims(cls, claim: Claim) -> Set['RequirementClaim']:
+    def get_all_claims(cls, claim: AbstractClaim) -> Set['RequirementClaim']:
         """Get all stacked entity claims"""
         s = set()
         if not isinstance(claim, RequirementClaim):
@@ -759,5 +759,5 @@ class Claims:
 
 
 PropertyLocation = Tuple[Entity, PropertyKey]
-ClaimLocation = Tuple[Claim, Entity]
+ClaimLocation = Tuple[AbstractClaim, Entity]
 IdentifierLocation = Tuple[Tuple[str, str], Entity]

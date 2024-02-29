@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Set, List, Tuple
 
-from tcsfw.claim import Claim
+from tcsfw.claim import AbstractClaim
 from tcsfw.claim_set import RequirementClaim, ClaimContext
 from tcsfw.entity import Entity, ClaimStatus, ClaimAuthority
 from tcsfw.model import IoTSystem
@@ -28,7 +28,7 @@ class ClaimMapping:
     def __init__(self, specification: Specification):
         self.specification = specification
         self.results: Dict[Entity, Dict[Requirement, RequirementStatus]] = {}
-        self.aliases: Dict[Tuple[Requirement, Entity, Claim], str] = {}
+        self.aliases: Dict[Tuple[Requirement, Entity, AbstractClaim], str] = {}
 
     def get_section(self, entity: Entity, requirement: Requirement) -> str:
         """Get section for an entity and requirement"""

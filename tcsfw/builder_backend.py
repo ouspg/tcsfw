@@ -7,7 +7,7 @@ import sys
 from tcsfw.address import DNSName, HWAddresses, IPAddress, IPAddresses
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
-from tcsfw.claim import Claim
+from tcsfw.claim import AbstractClaim
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest
 from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, Software
@@ -820,11 +820,11 @@ class ClaimBackend(ClaimBuilder):
                 self._locations.append(sw)
         return self
 
-    def claims(self, *claims: Union[Claim, Tuple[str, str]]) -> Self:
+    def claims(self, *claims: Union[AbstractClaim, Tuple[str, str]]) -> Self:
         # bug? - requirements may be placed in extra tuple?
         cl = []
         for c in claims:
-            if isinstance(c, tuple) and isinstance(c[0], Claim):
+            if isinstance(c, tuple) and isinstance(c[0], AbstractClaim):
                 cl.extend(c)
             else:
                 cl.append(c)

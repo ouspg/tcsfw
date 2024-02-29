@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Iterable, Tuple, Set
 from tcsfw.basics import HostType
 
-from tcsfw.claim import Claim
+from tcsfw.claim import AbstractClaim
 from tcsfw.claim_set import RequirementClaim, AuthenticationClaim, NoUnexpectedServices, \
     AvailabilityClaim, Claims, UserInterfaceClaim, ContentClaim, \
     MITMClaim, ProtocolClaim, FuzzingClaim, PropertyClaim, \
@@ -489,8 +489,8 @@ class EtsiTs103701(Specification):
         self.requirement_map[identifier] = r
         return r
 
-    def create_aliases(self, selected: Iterable[Tuple[Requirement, Entity, Claim]]) \
-            -> Dict[Tuple[Requirement, Entity, Claim], str]:
+    def create_aliases(self, selected: Iterable[Tuple[Requirement, Entity, AbstractClaim]]) \
+            -> Dict[Tuple[Requirement, Entity, AbstractClaim], str]:
         """ Create aliases by test targets"""
         bases: Dict[str, Set[Entity]] = {}
         for req, ent, claim in selected:

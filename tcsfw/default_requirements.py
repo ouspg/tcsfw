@@ -1,14 +1,9 @@
-from tcsfw.claim import Claim
 from tcsfw.claim_set import Claims, EncryptionClaim, UpdateClaim, ReleaseClaim, BOMClaim, \
     AuthenticationClaim, AvailabilityClaim, PermissionClaim, \
     NoVulnerabilitiesClaim, ProtocolClaim
 from tcsfw.basics import HostType
 from tcsfw.requirement import Specification
 from tcsfw.selector import ConnectionSelector, HostSelector, Select, ServiceSelector
-
-
-def req(text: str, extends: Claim):
-    return text, None, [extends]
 
 
 class DefaultSpecification(Specification):

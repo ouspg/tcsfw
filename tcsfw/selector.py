@@ -2,9 +2,8 @@ from typing import List, TypeVar, Generic, Iterator
 
 from tcsfw.address import Protocol
 from tcsfw.basics import HostType
-from tcsfw.claim import Claim
 from tcsfw.components import DataStorages, Software, DataReference
-from tcsfw.entity import Entity
+from tcsfw.entity import Entity, ExplainableClaim
 from tcsfw.model import Addressable, Host, IoTSystem, NetworkNode, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
@@ -23,9 +22,9 @@ class RequirementSelector(EntitySelector):
     def __add__(self, other: 'RequirementSelector') -> 'RequirementSelector':
         return AlternativeSelectors([self, other])
 
-    def __xor__(self, other: Claim) -> Requirement:
+    def __xor__(self, other: ExplainableClaim) -> Requirement:
         """Add the claim"""
-        assert isinstance(other, Claim), f"Expected claim, got: {other}"
+        assert isinstance(other, ExplainableClaim), f"Expected claim, got: {other}"
         return Requirement(("", ""), other.description, self, other)
 
 
