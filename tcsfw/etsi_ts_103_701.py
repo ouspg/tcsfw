@@ -9,7 +9,7 @@ from tcsfw.basics import HostType
 
 from tcsfw.claim import AbstractClaim
 from tcsfw.claim_set import RequirementClaim, AuthenticationClaim, NoUnexpectedServices, \
-    AvailabilityClaim, Claims, UserInterfaceClaim, ContentClaim, \
+    AvailabilityClaim, Claim, UserInterfaceClaim, ContentClaim, \
     MITMClaim, ProtocolClaim, FuzzingClaim, PropertyClaim, \
     PhysicalManipulationClaim, NamedClaim
 from tcsfw.entity import Entity
@@ -99,12 +99,12 @@ UI = UserInterfaceClaim() % "UI"
 PHYSICAL_MANIPULATION = PhysicalManipulationClaim() % "Physical manipulation"
 CONTENT = ContentClaim() % "Document content review"
 
-DEFINED_HOSTS_ONLY = NamedClaim("Defined hosts only", Claims.EXPECTED)
+DEFINED_HOSTS_ONLY = NamedClaim("Defined hosts only", Claim.EXPECTED)
 HOST_DEFINED_SERVICES = NoUnexpectedServices() % "Defined services only"
-CONNECTIONS_DEFINED_ONLY = NamedClaim("Defined connections only", Claims.EXPECTED)
-DEFINED_AUTH_ONLY = Claims.name("Defined authentication mechanisms only", Claims.EXPECTED)
-SERVICE_BEST_PRACTICES = (Claims.WEB_BEST_PRACTICE + ProtocolClaim()
-                          + Claims.HTTP_REDIRECT) % "Protocol checks"
+CONNECTIONS_DEFINED_ONLY = NamedClaim("Defined connections only", Claim.EXPECTED)
+DEFINED_AUTH_ONLY = Claim.name("Defined authentication mechanisms only", Claim.EXPECTED)
+SERVICE_BEST_PRACTICES = (Claim.WEB_BEST_PRACTICE + ProtocolClaim()
+                          + Claim.HTTP_REDIRECT) % "Protocol checks"
 CONNECTION = ProtocolClaim(encrypted=True) % "Defined connection mechanism"
 CONN_BEST_PRACTICES = (ProtocolClaim(tail="best-practices", encrypted=True) + MITMClaim()) % "Cryptographic best practices"
 CONN_NO_VULNERABILITIES = ProtocolClaim(tail="no-vulnz", encrypted=True) % "No known vulnerabilities"
@@ -129,7 +129,7 @@ ISOLATE = PropertyClaim.custom(
     "Disconnect network/power", key=("action", "isolate"))
 TELEMETRY_CHECK = check("telemetry", "Telemetry data check")
 
-VALIDATE_INPUT = (FuzzingClaim() * Claims.WEB_BEST_PRACTICE) % "Input validation"
+VALIDATE_INPUT = (FuzzingClaim() * Claim.WEB_BEST_PRACTICE) % "Input validation"
 
 # 5.3.2.2 are hard to decipher, settling that a) plan custom tools, b) run standard and custom tools
 UPDATE_MISUSE_DESIGN = check("mod-update", "Update mech.  misuse attacks devised")

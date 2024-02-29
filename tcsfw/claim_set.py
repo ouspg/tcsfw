@@ -735,8 +735,8 @@ class PhysicalManipulationClaim(PropertyClaim):
         self.default_to = Verdict.INCON
 
 
-class Claims:
-    """Basic claims, priority order, use the first appropriate"""
+class Claim:
+    """Claim factory"""
 
     @classmethod
     def name(self, value: str, claim: RequirementClaim) -> RequirementClaim:
