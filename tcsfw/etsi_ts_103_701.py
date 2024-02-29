@@ -17,7 +17,7 @@ from tcsfw.model import IoTSystem, Host, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Specification, Requirement, SelectorContext, SpecificationSelectorContext, \
     EntitySelector
-from tcsfw.selector import ConnectionSelector, HostSelector, Select, ServiceSelector, UpdateConnectionSelector, RequirementSelector
+from tcsfw.selector import Select, ServiceSelector, UpdateConnectionSelector, RequirementSelector
 
 
 class IXIT_Section:
