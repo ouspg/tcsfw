@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Iterable, Tuple, Set
 from tcsfw.basics import HostType
 
 from tcsfw.claim import Claim
-from tcsfw.claim_set import EntityClaim, AuthenticationClaim, NoUnexpectedServices, \
+from tcsfw.claim_set import RequirementClaim, AuthenticationClaim, NoUnexpectedServices, \
     AvailabilityClaim, Claims, UserInterfaceClaim, ContentClaim, \
     MITMClaim, ProtocolClaim, FuzzingClaim, PropertyClaim, \
     PhysicalManipulationClaim, NamedClaim
@@ -447,12 +447,12 @@ class EtsiTs103701(Specification):
         self.requirement_map = new_r
 
     def make(self, identifier: str, ixit: IXIT_Section,
-             select: Optional[RequirementSelector] = None,  claim=EntityClaim(),
+             select: Optional[RequirementSelector] = None,  claim=RequirementClaim(),
              reference="") -> Requirement:
         """Make a requirement"""
         assert identifier not in self.requirement_map, f"Double {identifier}"
         assert isinstance(select, RequirementSelector) or select is None, f"Bad selector for {identifier}"
-        assert isinstance(claim, EntityClaim), f"Bad claim for {identifier}"
+        assert isinstance(claim, RequirementClaim), f"Bad claim for {identifier}"
         # if claim == UI:
         #     ixit = IXIT.UserIntf  # NOTE: Forcing all UI claims into same target
         props = {}
