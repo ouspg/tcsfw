@@ -19,15 +19,15 @@ class DefaultSpecification(Specification):
         self.no_unexpected_nodes = self._req(
             "no-unexp-nodes",
             # NOTE: HostSelector picks also the unexpected nodes, which will have expected=False
-            Select.host(unexpected=True) ^ Claim.name("Network nodes are defined", Claim.EXPECTED))
+            Select.host(unexpected=True) ^ Claim.expected("Network nodes are defined"))
 
         self.no_unexpected_services = self._req(
             "no-unexp-services",
-            Select.service(unexpected=True) ^ Claim.name("Network services are defined", Claim.EXPECTED))
+            Select.service(unexpected=True) ^ Claim.expected("Network services are defined"))
 
         self.no_unexpected_connections = self._req(
             "no-unexp-connections",
-            Select.connection(unexpected=True) ^ Claim.name("Network connections are defined", Claim.EXPECTED))
+            Select.connection(unexpected=True) ^ Claim.expected("Network connections are defined"))
 
         # Interface security
 
@@ -35,66 +35,66 @@ class DefaultSpecification(Specification):
             "protocol-best",
             # NOTE: HTTP redirect should only be viable for HTTP!
             Select.service() ^ Claim.name("Use protocol best practices",
-                                           ProtocolClaim() | Claim.HTTP_REDIRECT))
+                                           Claim.protocol_best_practices() | Claim.http_redirect()))
         # Web security
 
         self.web_best = self._req(
             "web-best",
             # "Web best practises are used",
             Select.service().web() ^ Claim.name("Web best practises are used",
-                                                 Claim.WEB_BEST_PRACTICE | Claim.HTTP_REDIRECT))
+                                                Claim.web_best_practices() | Claim.http_redirect()))
         # Authentication
 
         self.service_authenticate = self._req(
             "service-auth",
             Select.service().direct() ^ Claim.name("Services are authenticated",
-                                                     AuthenticationClaim() | Claim.HTTP_REDIRECT))
+                                                   Claim.authentication() | Claim.http_redirect()))
         # Data protection
 
         self.connection_encrypt = self._req(
             "conn-encrypt",
             Select.connection() ^ Claim.name("Connections are encrypted",
-                                              EncryptionClaim() | Claim.HTTP_REDIRECT))
+                                             Claim.encryption() | Claim.http_redirect()))
 
         self.private_data = self._req(
             "private-data",
-            Select.data() ^ Claim.name("Private data is defined", Claim.SENSITIVE_DATA))
+            Select.data() ^ Claim.name("Private data is defined", Claim.sensitive_data()))
 
 
         self.privacy_policy = self._req(
             "privacy-policy",
-            Select.system() ^ AvailabilityClaim("privacy-policy").name("Privacy policy is available"))
+            Select.system() ^ Claim.available("privacy-policy") % "Privacy policy is available")
 
         # Updates
 
         self.updates = self._req(
             "updates",
-            Select.software() ^ UpdateClaim("Automated software updates"))
+            Select.software() ^ Claim.updateable("Automated software updates"))
 
         self.sbom = self._req(
             "sbom",
-            Select.software() ^ BOMClaim(description="SBOM is defined"))
+            Select.software() ^ Claim.sbom("SBOM is defined"))
 
         self.no_known_vulnerabilities = self._req(
             "no-known-vuln",
-            Select.software() ^ NoVulnerabilitiesClaim(description="No vulnerabilities are known"))
+            Select.software() ^ Claim.no_vulnerabilities("No vulnerabilities are known"))
 
         # Vulnerability process
 
         self.security_policy = self._req(
             "security-policy",
-            Select.system() ^ AvailabilityClaim("security-policy").name("Security policy is available"))
+            Select.system() ^ Claim.available("security-policy") % "Security policy is available")
 
         self.release_info = self._req(
             "release-info",
-            Select.software() ^ ReleaseClaim("Release history is available"))
+            Select.software() ^ Claim.releases("Release history is available"))
 
         # Mobile applications
 
         self.permissions = self._req(
             "permissions",
-            Select.host().type_of(HostType.MOBILE) / Select.software() ^
-            PermissionClaim().name("Permissions are appropriate"))
+            Select.host().type_of(HostType.MOBILE) / Select.software()
+            ^ Claim.permissions("Permissions are appropriate"))
 
 
 DEFAULT = DefaultSpecification()

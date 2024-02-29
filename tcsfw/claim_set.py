@@ -683,8 +683,8 @@ class FuzzingClaim(PropertyClaim):
 
 class PermissionClaim(SoftwareClaim):
     """Claim for permissions, mobile for now"""
-    def __init__(self, no_vulnerabilities=False, description: str = None):
-        super().__init__("permissions are listed")
+    def __init__(self, description="permissions are listed"):
+        super().__init__(description)
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         # only mobile now
@@ -739,6 +739,71 @@ class Claim:
     """Claim factory"""
 
     @classmethod
+    def expected(cls, name="Expected") -> PropertyClaim:
+        """Expected entity"""
+        return PropertyClaim(name, Properties.EXPECTED)
+
+    @classmethod
+    def authentication(cls, name="Authenticated") -> AuthenticationClaim:
+        """Authentication claim"""
+        return AuthenticationClaim(name)
+
+    @classmethod
+    def encryption(cls, name="Encryption used") -> EncryptionClaim:
+        """Encryption claim"""
+        return EncryptionClaim(name)
+
+    @classmethod
+    def protocol_best_practices(cls, name="Protoćol best practices used") -> ProtocolClaim:
+        """Protocol best practice claim"""
+        return ProtocolClaim(name)
+
+    @classmethod
+    def web_best_practices(cls, name="Web best practices") -> PropertyClaim:
+        """Web best practices claim"""
+        return PropertyClaim(name, Properties.WEB_BEST)
+
+    @classmethod
+    def http_redirect(cls, name="HTTP redirection") -> HTTPRedirectClaim:
+        """HTTP redirection claim"""
+        return HTTPRedirectClaim(name)
+
+    @classmethod
+    def updateable(cls, name="Update mechanism") -> UpdateClaim:
+        """Update mechanism claim"""
+        return UpdateClaim(name)
+
+    @classmethod
+    def sbom(cls, name="SBOM is accurate") -> BOMClaim:
+        """SBOM claim"""
+        return BOMClaim(name)
+
+    @classmethod
+    def no_vulnerabilities(cls, name="No known vulnerabilities") -> NoVulnerabilitiesClaim:
+        """No vulnerabilities claim"""
+        return NoVulnerabilitiesClaim(name)
+
+    @classmethod
+    def available(cls, resource_key: str) -> AvailabilityClaim:
+        """Resource availability claim"""
+        return AvailabilityClaim(resource_key)
+
+    @classmethod
+    def sensitive_data(cls, name="Sensitive data defined") -> SensitiveDataClaim:
+        """Sensitive data claim"""
+        return SensitiveDataClaim(name)
+
+    @classmethod
+    def releases(cls, name="Releases are available") -> ReleaseClaim:
+        """Releases claim"""
+        return ReleaseClaim(name)
+
+    @classmethod
+    def permissions(cls, name="Permissions are defined") -> PermissionClaim:
+        """Mobile permission claim"""
+        return PermissionClaim(name)
+
+    @classmethod
     def name(self, value: str, claim: RequirementClaim) -> RequirementClaim:
         """Give claim a name"""
         return NamedClaim(value, claim)
@@ -749,12 +814,9 @@ class Claim:
         return AlternativeClaim(list(claim))
 
     EXPECTED = PropertyClaim("Expected", Properties.EXPECTED) # expected entity confirmed
-    AUTOMATIC_UPDATES = UpdateClaim()                         # automatic software updates
-    COOKIES_LISTED = HostClaim("Cookies are listed")          # Browser cookies listed
     WEB_BEST_PRACTICE = PropertyClaim("Web best practises", Properties.WEB_BEST)
     HTTP_REDIRECT = HTTPRedirectClaim()
     NO_UNEXPECTED_SERVICES = NoUnexpectedServices()           # no unexpected services
-    PERMISSIONS_LISTED = HostClaim("Permissions are listed")  # (Mobile) permissions listed
     SENSITIVE_DATA = SensitiveDataClaim()                     # claims of sensitive data
 
 
