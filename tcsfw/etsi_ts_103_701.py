@@ -486,7 +486,7 @@ class EtsiTs103701(Specification):
         sid = i_split[0]
         r.section_name = f"{sid} {self.section_names[sid]}"
         r.target_name = ixit.name
-        self.requirement_map[identifier] = r
+        self._add(identifier, r)
         return r
 
     def create_aliases(self, selected: Iterable[Tuple[Requirement, Entity, AbstractClaim]]) \

@@ -84,6 +84,12 @@ class Specification:
         self.default_sections = True
         self.custom_sections: List[str] = []
 
+    def _add(self, req_id: str, requirement: Requirement) -> Requirement:
+        """Add new requirement"""
+        requirement.identifier = self.specification_id, req_id
+        self.requirement_map[req_id] = requirement
+        return requirement
+
     def list_requirements(self, cutoff: Optional[int] = None) -> Iterable[Requirement]:
         """List requirements, priority at least the cutoff"""
         co = self.cutoff_priority if cutoff is None else cutoff
@@ -97,12 +103,6 @@ class Specification:
         """Get a sorting key - function for requirements of this specification"""
         key = {r: i for i, r in enumerate(self.requirement_map.values())}
         return lambda r: key.get(r, -1)
-
-    def _req(self, req_id: str, requirement: Requirement) -> Requirement:
-        """Add new requirement"""
-        requirement.identifier = self.specification_id, req_id
-        self.requirement_map[req_id] = requirement
-        return requirement
 
     def get_short_info(self, requirement: Requirement) -> str:
         """Get possible short information texts for requirements"""
