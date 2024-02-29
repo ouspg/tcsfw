@@ -25,6 +25,7 @@ from tcsfw.registry import Registry
 from tcsfw.inspector import Inspector
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
+from tcsfw.specifications import Specifications
 from tcsfw.traffic import Evidence
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
@@ -998,12 +999,12 @@ class SystemBackendRunner(SystemBackend):
             cmd, _, spec_id = out_form.partition(":")
             cmd = cmd[8:]
             report = CoverageReport(registry.logging, cc)
-            spec = report.load_specification(spec_id)
+            spec = Specifications.get_specification(spec_id)
             report.print_summary(sys.stdout, spec, cmd.strip("- "))
         elif out_form and out_form.startswith("latex"):
             cmd, _, spec_id = out_form.partition(":")
             cmd = cmd[5:]
-            spec = CoverageReport.load_specification(spec_id)
+            spec = Specifications.get_specification(spec_id)
             report = LaTeXGenerator(self.system, spec, cc)
             report.generate(sys.stdout, cmd.strip(" -"))
         elif dump_report or out_form:
