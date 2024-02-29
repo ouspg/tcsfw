@@ -813,12 +813,6 @@ class Claim:
         """Enough to met any of the claims"""
         return AlternativeClaim(list(claim))
 
-    EXPECTED = PropertyClaim("Expected", Properties.EXPECTED) # expected entity confirmed
-    WEB_BEST_PRACTICE = PropertyClaim("Web best practises", Properties.WEB_BEST)
-    HTTP_REDIRECT = HTTPRedirectClaim()
-    NO_UNEXPECTED_SERVICES = NoUnexpectedServices()           # no unexpected services
-    SENSITIVE_DATA = SensitiveDataClaim()                     # claims of sensitive data
-
 
 PropertyLocation = Tuple[Entity, PropertyKey]
 ClaimLocation = Tuple[AbstractClaim, Entity]
