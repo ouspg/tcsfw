@@ -27,7 +27,6 @@ Operator `^` separates the selector and claim.
 See classes `Select` and `Claim` for available selectors and claims.
 
 ## More information
-=======
 
 This features is very much under development.
 Please, take a look of modules `tcsfw.default_requirements` and `tcsfw.etsi_ts_103_701` to see the claims and tests used in the research publications.
