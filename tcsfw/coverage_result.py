@@ -187,7 +187,7 @@ class CoverageReport:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "-"
             return "."
-        if status.verdict == Verdict.PASS:
+        if stGatewayatus.verdict == Verdict.PASS:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "X"
             return "x"
