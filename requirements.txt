@@ -1,2 +1,3 @@
 censys
 aiohttp
+sqlalchemy
