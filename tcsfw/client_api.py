@@ -355,8 +355,9 @@ class ClientAPI(ModelListener):
     def get_evidence_filter(self) -> Dict:
         """Get evidence filter"""
         r = {}
+        ev_filter = self.registry.database.get_filter()
         for ev in sorted(self.registry.all_evidence, key=lambda x: x.label):
-            filter_v = self.registry.trail_filter.get(ev.label, False)
+            filter_v = ev_filter.get(ev.label, False)
             sr = r[ev.label] = {
                 "name": ev.name,
                 "selected": filter_v
