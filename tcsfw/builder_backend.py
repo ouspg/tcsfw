@@ -26,6 +26,7 @@ from tcsfw.inspector import Inspector
 from tcsfw.result import Report
 from tcsfw.services import DHCPService, DNSService
 from tcsfw.specifications import Specifications
+from tcsfw.sql_database import SQLDatabase
 from tcsfw.traffic import Evidence
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
@@ -925,6 +926,7 @@ class SystemBackendRunner(SystemBackend):
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
 
+        parser.add_argument("--db", type=str, help="Connect to SQL database")
         parser.add_argument("--http-server", type=int, help="Listen HTTP requests at port")
         parser.add_argument("--test-delay", type=int, help="HTTP request artificial test delay, ms")
         parser.add_argument("--no-auth-ok", action="store_true", help="Skip check for auth token in TCSFW_SERVER_API_KEY")
@@ -954,6 +956,12 @@ class SystemBackendRunner(SystemBackend):
         if log_events:
             # print event log
             registry.logging.event_logger = registry.logger
+
+        db_conn = self.args.db
+        if db_conn:
+            # connect to SQL database
+            registry.logger.info(f"Connecting to database {db_conn}")
+            registry.database = SQLDatabase(db_conn)
 
         for set_ip in self.args.set_ip or []:
             name, _, ips = set_ip.partition("=")
