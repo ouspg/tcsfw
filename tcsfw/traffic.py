@@ -61,7 +61,6 @@ class Event:
     """Event with evidence"""
     def __init__(self, evidence: Evidence):
         self.evidence = evidence
-        self.update_entity_status = True  # update entity etc. status?
 
     def get_value_string(self) -> str:
         """Get value as string"""
