@@ -1,5 +1,5 @@
 import datetime
-from typing import Tuple, Set, Optional, Self, Union, Dict
+from typing import Any, Callable, Tuple, Set, Optional, Self, Union, Dict
 
 from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, AnyAddress, \
     Addresses
@@ -74,6 +74,10 @@ class Event:
     def get_info(self) -> str:
         """Short event information"""
         return self.get_value_string() or self.evidence.source.name
+
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        """Get JSON representation of data"""
+        return {}
 
     def __repr__(self):
         return self.get_value_string()

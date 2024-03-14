@@ -76,6 +76,14 @@ class PropertyEvent(Event, Verdictable):
         # without entity, at least for event log
         return self.key_value[0].get_value_string(self.key_value[1])
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        k, v = self.key_value
+        r = {
+            "entity": id_resolver(self.entity),
+            "key": k.get_name(),
+            "value": f"{v}",  # FIXME: Must be value-specific handling
+        }
+        return r
 
 class PropertyAddressEvent(Event, Verdictable):
     """Property value event by address"""

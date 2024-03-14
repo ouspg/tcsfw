@@ -1,8 +1,10 @@
+import json
 from typing import Any, Optional, Dict
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from tcsfw.event_interface import PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
 from tcsfw.traffic import Event
@@ -16,6 +18,14 @@ class TableEntityID(Base):
     type = Column(String)
 
 
+class TableEvent(Base):
+    __tablename__ = 'event'
+    id = Column(Integer, primary_key=True)
+    type = Column(String)
+    tail_ref = Column(String)
+    data = Column(String) # JSON
+
+
 class SQLDatabase(EntityDatabase):
     """Use SQL database for storage"""
     def __init__(self, db_uri: str):
@@ -27,6 +37,10 @@ class SQLDatabase(EntityDatabase):
         self.id_cache: Dict[Any, int] = {}
         self.free_cache_id = 1
         self.id_by_name: Dict[str, int] = {}
+        self.event_types = {
+            "prop-ent": PropertyEvent,
+        }
+        self.event_names = {c: n for n, c in self.event_types.items()}
         self._fill_cache()
 
     def _fill_cache(self):
@@ -84,4 +98,15 @@ class SQLDatabase(EntityDatabase):
         return self.id_cache.get(id_value)
 
     def put_event(self, event: Event):
-        pass # FIXME: implement this
+        # store event to database
+        # FIXME: Slow, should use bulk insert
+        type_s = self.event_names.get(type(event))
+        if type_s is None:
+            return
+        js = event.get_data_json(self.get_id)
+        ev = event.evidence
+        ses = sessionmaker(bind=self.engine)()
+        ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, data=json.dumps(js))
+        ses.add(ev)
+        ses.commit()
+        ses.close()
