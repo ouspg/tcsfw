@@ -25,7 +25,6 @@ class Evidence:
     """Piece of evidence"""
     def __init__(self, source: EvidenceSource, tail_ref=""):
         self.source = source
-        # self.timestamp # FIXME
         self.tail_ref = tail_ref
 
     def get_reference(self) -> str:
