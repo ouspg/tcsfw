@@ -14,13 +14,16 @@ from tcsfw.traffic import ServiceScan, HostScan, Event, EvidenceSource, Flow
 
 class Registry(EventInterface):
     """Record, store, and recall events as required"""
-    def __init__(self, inspector: Inspector):
+    def __init__(self, inspector: Inspector, db: EntityDatabase = None):
         self.logger = logging.getLogger("registry")
         self.logging = EventLogger(inspector)
         self.system = inspector.system
         self.all_evidence: Set[EvidenceSource] = set()
         self.evidence_filter: Dict[str, bool] = {}  # key is label, not present == False
-        self.database: EntityDatabase = InMemoryDatabase()
+        if db is None:
+            self.database: EntityDatabase = InMemoryDatabase()
+        else:
+            self.database = db
 
     def finish_model_load(self) -> Self:
         """Finish loading model, prepare for operation"""
