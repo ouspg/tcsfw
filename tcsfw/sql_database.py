@@ -12,14 +12,14 @@ from tcsfw.traffic import Event, EvidenceSource
 Base = declarative_base()
 
 class TableEntityID(Base):
-    __tablename__ = 'entity_id'
+    __tablename__ = 'entity_ids'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     type = Column(String)
 
 
 class TableEvidenceSource(Base):
-    __tablename__ = 'evidence_source'
+    __tablename__ = 'sources'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     label = Column(String)
@@ -27,7 +27,7 @@ class TableEvidenceSource(Base):
 
 
 class TableEvent(Base):
-    __tablename__ = 'event'
+    __tablename__ = 'events'
     id = Column(Integer, primary_key=True)
     type = Column(String)
     source_id = Column(Integer)  # TableEvidenceSource
