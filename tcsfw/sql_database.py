@@ -3,7 +3,7 @@ from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from tcsfw.model import IoTSystem, NetworkNode
+from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
 from tcsfw.traffic import Event
 
@@ -54,7 +54,7 @@ class SQLDatabase(EntityDatabase):
         id_i = self.id_cache.get(entity, -1)
         if id_i >= 0:
             return id_i
-        if isinstance(entity, NetworkNode):
+        if isinstance(entity, Addressable):
             ent_name = entity.long_name()  # for now, using long name
             id_i = self.id_by_name.get(ent_name, -1)
             if id_i >= 0:
