@@ -128,6 +128,16 @@ class NetworkNode(Entity):
     def get_children(self) -> Iterable['Entity']:
         return itertools.chain(self.children, self.components)
 
+    def iterate_all(self) -> Iterator['Entity']:
+        """Iterate all entities"""
+        yield self
+        for c in self.children:
+            if c.status != Status.PLACEHOLDER:
+                yield from c.iterate_all()
+        for c in self.components:
+            if c.status != Status.PLACEHOLDER:
+                yield c
+
     def long_name(self):
         """Get longer name, or at least the name"""
         return self.name
@@ -441,6 +451,12 @@ class IoTSystem(NetworkNode):
     def get_children(self) -> Iterable['Entity']:
         cs = self.get_connections()
         return itertools.chain(self.children, self.components, cs)
+
+    def iterate_all(self) -> Iterator[Entity]:
+        yield from super().iterate_all()
+        for c in self.connections.values():
+            if c.status != Status.PLACEHOLDER:
+                yield c
 
     def is_host_reachable(self) -> bool:
         return True

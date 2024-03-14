@@ -962,6 +962,8 @@ class SystemBackendRunner(SystemBackend):
             # connect to SQL database
             registry.logger.info(f"Connecting to database {db_conn}")
             registry.database = SQLDatabase(db_conn)
+        # finish loading after DB connection
+        registry.finish_model_load()
 
         for set_ip in self.args.set_ip or []:
             name, _, ips = set_ip.partition("=")

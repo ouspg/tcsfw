@@ -22,6 +22,11 @@ class Registry(EventInterface):
         self.evidence_filter: Dict[str, bool] = {}  # key is label, not present == False
         self.database: EntityDatabase = InMemoryDatabase()
 
+    def finish_model_load(self) -> Self:
+        """Finish loading model, prepare for operation"""
+        self.database.finish_model_load(self.system)
+        return self
+
     def get_id(self, entity) -> int:
         """Get ID for an entity or whatever, int"""
         return self.database.get_id(entity)

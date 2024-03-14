@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Optional, Dict, List
+from tcsfw.model import IoTSystem
 
 from tcsfw.traffic import Event, EvidenceSource
 
@@ -11,6 +12,10 @@ class EntityDatabase:
         # local ID integers for entities and connections, usable for persistent DB
         self.ids: Dict[Any, int] = {}
         self.reverse_id: List[Any] = []
+
+    def finish_model_load(self, system: IoTSystem):
+        """Finish loading model, prepare for operation"""
+        pass
 
     def reset(self, source_filter: Dict[str, bool] = None):
         """Reset database cursor"""
