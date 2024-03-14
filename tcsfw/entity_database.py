@@ -16,10 +16,6 @@ class EntityDatabase:
         """Reset database cursor"""
         pass
 
-    def get_filter(self) -> Dict[str, bool]:
-        """Get current event filter"""
-        return {}
-
     def next_pending(self) -> Optional[Event]:
         """Fetch next pending event, if any"""
         return None
@@ -48,9 +44,6 @@ class InMemoryDatabase(EntityDatabase):
     def reset(self, source_filter: Dict[str, bool] = None):
         self.cursor = 0
         self.trail_filter = source_filter or {}
-
-    def get_filter(self) -> Dict[str, bool]:
-        return self.trail_filter
 
     def next_pending(self) -> Optional[Event]:
         while self.cursor < len(self.trail):

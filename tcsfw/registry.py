@@ -19,6 +19,7 @@ class Registry(EventInterface):
         self.logging = EventLogger(inspector)
         self.system = inspector.system
         self.all_evidence: Set[EvidenceSource] = set()
+        self.evidence_filter: Dict[str, bool] = {}  # key is label, not present == False
         self.database: EntityDatabase = InMemoryDatabase()
 
     def get_id(self, entity) -> int:
@@ -49,6 +50,7 @@ class Registry(EventInterface):
     def _new_event(self, event: Event):
         """Handle new event"""
         self.database.put_event(event)
+        # Note: evidence filter not updated, it only applies to stored events
         self.all_evidence.add(event.evidence.source)
 
     def reset(self, evidence_filter: Dict[EvidenceSource, bool] = None, enable_all=False) -> Self:
@@ -57,6 +59,7 @@ class Registry(EventInterface):
             s_filter = {e.label: True for e in sorted(self.all_evidence, key=lambda x: x.name)}
         else:
             s_filter = {e.label: v for e, v in (evidence_filter.items() if evidence_filter else [])}
+        self.evidence_filter = s_filter
         self.database.reset(s_filter)
         if evidence_filter is not None:
             self.logger.info("filter: " + " ".join([f"{e.name}={v}" for e, v in evidence_filter.items()]))
