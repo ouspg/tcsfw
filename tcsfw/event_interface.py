@@ -81,8 +81,8 @@ class PropertyEvent(Event, Verdictable):
         r = {
             "entity": id_resolver(self.entity),
             "key": k.get_name(),
-            "value": f"{v}",  # FIXME: Must be value-specific handling
         }
+        k.get_value_json(v, r)
         return r
 
 class PropertyAddressEvent(Event, Verdictable):
