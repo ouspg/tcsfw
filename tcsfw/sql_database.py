@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from tcsfw.event_interface import PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
-from tcsfw.traffic import Event
+from tcsfw.traffic import Event, EvidenceSource
 
 Base = declarative_base()
 
@@ -18,10 +18,19 @@ class TableEntityID(Base):
     type = Column(String)
 
 
+class TableEvidenceSource(Base):
+    __tablename__ = 'evidence_source'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    label = Column(String)
+    base_ref = Column(String)
+
+
 class TableEvent(Base):
     __tablename__ = 'event'
     id = Column(Integer, primary_key=True)
     type = Column(String)
+    source_id = Column(Integer)  # TableEvidenceSource
     tail_ref = Column(String)
     data = Column(String) # JSON
 
@@ -37,6 +46,8 @@ class SQLDatabase(EntityDatabase):
         self.id_cache: Dict[Any, int] = {}
         self.free_cache_id = 1
         self.id_by_name: Dict[str, int] = {}
+        # cache of evidence sources
+        self.source_cache: Dict[EvidenceSource, int] = {}
         self.event_types = {
             "prop-ent": PropertyEvent,
         }
@@ -103,10 +114,17 @@ class SQLDatabase(EntityDatabase):
         type_s = self.event_names.get(type(event))
         if type_s is None:
             return
+        ses = sessionmaker(bind=self.engine)()
+        source = event.evidence.source
+        source_id = self.source_cache.get(source, -1)
+        if source_id < 0:
+            source_id = len(self.source_cache) + 1
+            src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref)
+            ses.add(src)
+            self.source_cache[source] = source_id
         js = event.get_data_json(self.get_id)
         ev = event.evidence
-        ses = sessionmaker(bind=self.engine)()
-        ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, data=json.dumps(js))
+        ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, source_id=source_id, data=json.dumps(js))
         ses.add(ev)
         ses.commit()
         ses.close()
