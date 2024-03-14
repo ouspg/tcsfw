@@ -61,6 +61,7 @@ class SQLDatabase(EntityDatabase):
                 self.id_cache[entity] = id_i
                 return id_i
             id_i = self._cache_entity(entity)
+            self.id_by_name[ent_name] = id_i
             # store in database
             ses = sessionmaker(bind=self.engine)()
             ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name)
