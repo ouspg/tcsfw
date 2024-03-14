@@ -34,7 +34,6 @@ class SQLDatabase(EntityDatabase):
         ses = sessionmaker(bind=self.engine)()
         for ent_id in ses.query(TableEntityID):
             self.id_cache[ent_id.id] = ent_id
-            self.free_cache_id = max(self.free_cache_id, ent_id.id + 1)
             # assuming limited number of entities, read all into memory
             self.id_by_name[ent_id.name] = ent_id.id
         ses.close()
@@ -75,8 +74,10 @@ class SQLDatabase(EntityDatabase):
 
     def _cache_entity(self, entity: Any) -> int:
         id_i = self.free_cache_id
+        while id_i in self.id_cache:
+            id_i += 1
+        self.id_cache[entity] = self.free_cache_id = id_i
         self.free_cache_id += 1
-        self.id_cache[entity] = id_i
         return id_i
 
     def get_entity(self, id_value: int) -> Optional[Any]:
