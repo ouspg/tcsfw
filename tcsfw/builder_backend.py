@@ -974,6 +974,8 @@ class SystemBackendRunner(SystemBackend):
                 self.system.learn_ip_address(h, IPAddress.new(ip))
 
         label_filter = LabelFilter(self.args.def_loads or "")
+
+        # load file batches, if defined
         batch_import = BatchImporter(registry, filter=label_filter)
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
@@ -985,7 +987,7 @@ class SystemBackendRunner(SystemBackend):
                 print(f"{label:<20} {sl_s}")
             return
 
-        # product claims, then explicit loaders (if any)
+        # load product claims, then explicit loaders (if any)
         for sub in self.claimSet.finish_loaders():
             sub.load(registry, cc, filter=label_filter)
         for ln in self.loaders:
