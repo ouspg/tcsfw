@@ -1,9 +1,10 @@
 import json
 from typing import Any, Optional, Dict
+
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
@@ -57,16 +58,15 @@ class SQLDatabase(EntityDatabase):
 
     def _fill_cache(self):
         """Fill entity cache from database"""
-        ses = sessionmaker(bind=self.engine)()
-        for ent_id in ses.query(TableEntityID):
-            self.id_cache[ent_id.id] = ent_id
-            # assuming limited number of entities, read all into memory
-            self.id_by_name[ent_id.name] = ent_id.id
-        # find the largest used source id from database
-        for src in ses.query(TableEvidenceSource.id):
-            self.free_source_id = max(self.free_source_id, src.id)
-        self.free_source_id += 1
-        ses.close()
+        with Session(self.engine) as ses:
+            for ent_id in ses.query(TableEntityID):
+                self.id_cache[ent_id.id] = ent_id
+                # assuming limited number of entities, read all into memory
+                self.id_by_name[ent_id.name] = ent_id.id
+            # find the largest used source id from database
+            for src in ses.query(TableEvidenceSource.id):
+                self.free_source_id = max(self.free_source_id, src.id)
+            self.free_source_id += 1
 
     def finish_model_load(self, system: IoTSystem):
         """Put all entities into database"""
@@ -92,11 +92,10 @@ class SQLDatabase(EntityDatabase):
             id_i = self._cache_entity(entity)
             self.id_by_name[ent_name] = id_i
             # store in database
-            ses = sessionmaker(bind=self.engine)()
-            ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name)
-            ses.add(ent_id)
-            ses.commit()
-            ses.close()
+            with Session(self.engine) as ses:
+                ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name)
+                ses.add(ent_id)
+                ses.commit()
         else:
             # not stored to database
             id_i = self._cache_entity(entity)
@@ -119,19 +118,18 @@ class SQLDatabase(EntityDatabase):
         type_s = self.event_names.get(type(event))
         if type_s is None:
             return
-        ses = sessionmaker(bind=self.engine)()
         source = event.evidence.source
         source_id = self.source_cache.get(source, -1)
-        # Sources not restored from database, copies appear
-        if source_id < 0:
-            source_id = self.free_source_id
-            self.free_source_id += 1
-            src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref)
-            ses.add(src)
-            self.source_cache[source] = source_id
-        js = event.get_data_json(self.get_id)
-        ev = event.evidence
-        ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, source_id=source_id, data=json.dumps(js))
-        ses.add(ev)
-        ses.commit()
-        ses.close()
+        with Session(self.engine) as ses:
+            # Sources not restored from database, copies appear
+            if source_id < 0:
+                source_id = self.free_source_id
+                self.free_source_id += 1
+                src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref)
+                ses.add(src)
+                self.source_cache[source] = source_id
+            js = event.get_data_json(self.get_id)
+            ev = event.evidence
+            ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, source_id=source_id, data=json.dumps(js))
+            ses.add(ev)
+            ses.commit()
