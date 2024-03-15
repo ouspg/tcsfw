@@ -2,7 +2,7 @@ import json
 from typing import Any, Optional, Dict
 
 from tcsfw.entity_database import EntityDatabase
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyEvent
@@ -59,12 +59,15 @@ class SQLDatabase(EntityDatabase):
     def _fill_cache(self):
         """Fill entity cache from database"""
         with Session(self.engine) as ses:
-            for ent_id in ses.query(TableEntityID):
+            # assuming limited number of entities, read all IDs
+            sel = select(TableEntityID)
+            for ent_id in ses.execute(sel).yield_per(1000).scalars():
                 self.id_cache[ent_id.id] = ent_id
-                # assuming limited number of entities, read all into memory
                 self.id_by_name[ent_id.name] = ent_id.id
+
             # find the largest used source id from database
-            for src in ses.query(TableEvidenceSource.id):
+            sel = select(TableEvidenceSource)
+            for src in ses.execute(sel).yield_per(1000).scalars():
                 self.free_source_id = max(self.free_source_id, src.id)
             self.free_source_id += 1
 
