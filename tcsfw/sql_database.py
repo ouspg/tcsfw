@@ -2,7 +2,7 @@ import json
 from typing import Any, Optional, Dict
 
 from tcsfw.entity_database import EntityDatabase
-from sqlalchemy import Boolean, Column, Integer, String, create_engine, select
+from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyEvent
@@ -55,6 +55,7 @@ class SQLDatabase(EntityDatabase):
             "prop-ent": PropertyEvent,
         }
         self.event_names = {c: n for n, c in self.event_types.items()}
+        self._purge_model_events()
         self._fill_cache()
 
     def _fill_cache(self):
@@ -71,6 +72,23 @@ class SQLDatabase(EntityDatabase):
             for src in ses.execute(sel).yield_per(1000).scalars():
                 self.free_source_id = max(self.free_source_id, src.id)
             self.free_source_id += 1
+
+    def _purge_model_events(self):
+        """Purge model events from the database"""
+        with Session(self.engine) as ses:
+            # collect source_ids of model sources
+            ids = set()
+            sel = select(TableEvidenceSource.id).where(TableEvidenceSource.model == True)
+            ids.update(ses.execute(sel).scalars())
+            # select evets with these sources and delete them
+            dele = delete(TableEvent).where(TableEvent.source_id.in_(ids))
+            ses.execute(dele)
+            ses.commit()
+            # finally, delete the sources
+            dele = delete(TableEvidenceSource).where(TableEvidenceSource.model == True)
+            ses.execute(dele)
+            ses.commit()
+
 
     def finish_model_load(self, system: IoTSystem):
         """Put all entities into database"""
