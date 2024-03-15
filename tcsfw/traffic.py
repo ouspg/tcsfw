@@ -11,11 +11,12 @@ class EvidenceSource:
         self.name = name
         self.base_ref = base_ref
         self.label = label or base_ref or self.name
+        self.model_override = False  # model loading overrides values
         self.timestamp: Optional[datetime.datetime] = None
 
     def rename(self, name: str) -> Self:
         """Rename and create new source"""
-        return EvidenceSource(name, self.base_ref, self.label)
+        return EvidenceSource(name, self.base_ref, self.label, self.model_override)
 
     def __repr__(self):
         return f"{self.name} {self.base_ref}"

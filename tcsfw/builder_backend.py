@@ -774,7 +774,9 @@ class ClaimBackend(ClaimBuilder):
         self.authority = authority
         self.source = builder.sources.get(label)
         if self.source is None:
-            builder.sources[label] = self.source = EvidenceSource(f"Claims '{label}'", label=label)
+            self.source = EvidenceSource(f"Claims '{label}'", label=label)
+            self.source.model_override = True  # sent by model, override from DB
+            builder.sources[label] = self.source
         self._explanation = explanation
         self._keys: List[PropertyKey] = []
         self._locations: List[Entity] = []

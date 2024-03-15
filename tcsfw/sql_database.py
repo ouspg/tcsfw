@@ -2,7 +2,7 @@ import json
 from typing import Any, Optional, Dict
 
 from tcsfw.entity_database import EntityDatabase
-from sqlalchemy import Column, Integer, String, create_engine, select
+from sqlalchemy import Boolean, Column, Integer, String, create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyEvent
@@ -25,6 +25,7 @@ class TableEvidenceSource(Base):
     name = Column(String)
     label = Column(String)
     base_ref = Column(String)
+    model = Column(Boolean)
 
 
 class TableEvent(Base):
@@ -128,7 +129,8 @@ class SQLDatabase(EntityDatabase):
             if source_id < 0:
                 source_id = self.free_source_id
                 self.free_source_id += 1
-                src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref)
+                src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref,
+                                          model=source.model_override)
                 ses.add(src)
                 self.source_cache[source] = source_id
             js = event.get_data_json(self.get_id)

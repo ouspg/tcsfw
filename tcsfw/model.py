@@ -673,8 +673,10 @@ class EvidenceNetworkSource(EvidenceSource):
 
     def rename(self, name: Optional[str] = None, base_ref: Optional[str] = None,
                label: Optional[str] = None) -> Self:
-        return EvidenceNetworkSource(
+        s = EvidenceNetworkSource(
             self.name if name is None else name,
             self.base_ref if base_ref is None else base_ref,
             self.label if label is None else label,
             self.address_map, self.activity_map)
+        s.model_override = self.model_override
+        return s
