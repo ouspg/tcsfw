@@ -5,7 +5,7 @@ from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from tcsfw.event_interface import PropertyEvent
+from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
 from tcsfw.traffic import Event, EvidenceSource
@@ -53,6 +53,7 @@ class SQLDatabase(EntityDatabase):
         self.free_source_id = 0
         self.event_types = {
             "prop-ent": PropertyEvent,
+            "prop-add": PropertyAddressEvent,
         }
         self.event_names = {c: n for n, c in self.event_types.items()}
         self._purge_model_events()

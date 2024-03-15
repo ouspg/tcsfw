@@ -80,6 +80,10 @@ class AnyAddress:
         """Priority of addresses, if choosing one to use"""
         return 0
 
+    def get_parseable_value(self) -> str:
+        """Get value which can be unambigiously parsed"""
+        raise NotImplementedError()
+
     def __lt__(self, other):
         return self.__repr__() < other.__repr__()
 
@@ -181,6 +185,9 @@ class HWAddress(AnyAddress):
     def priority(self) -> int:
         return 1 if not self.is_multicast() else 11
 
+    def get_parseable_value(self) -> str:
+        return f"{self.data}|hw"
+
     def __eq__(self, other):
         if not isinstance(other, HWAddress):
             return False
@@ -229,6 +236,9 @@ class IPAddress(AnyAddress):
     def priority(self) -> int:
         return 2
 
+    def get_parseable_value(self) -> str:
+        return f"{self.data}"  # IP is the default
+
     def __eq__(self, other):
         if not isinstance(other, IPAddress):
             return False
@@ -260,6 +270,9 @@ class DNSName(AnyAddress):
 
     def priority(self) -> int:
         return 3
+
+    def get_parseable_value(self) -> str:
+        return f"{self.name}|name"
 
     def __eq__(self, other):
         if not isinstance(other, DNSName):
@@ -342,6 +355,11 @@ class EndpointAddress(AnyAddress):
 
     def priority(self) -> int:
         return self.host.priority() + 1
+
+    def get_parseable_value(self) -> str:
+        port = f":{self.port}" if self.port >= 0 else ""
+        prot = f"/{self.protocol.value}" if self.protocol != Protocol.ANY else ""
+        return f"{self.host.get_parseable_value()}{prot}{port}"
 
     def __eq__(self, other):
         if not isinstance(other, EndpointAddress):

@@ -85,6 +85,7 @@ class PropertyEvent(Event, Verdictable):
         k.get_value_json(v, r)
         return r
 
+
 class PropertyAddressEvent(Event, Verdictable):
     """Property value event by address"""
     def __init__(self, evidence: Evidence, address: AnyAddress, key_value: Tuple[PropertyKey, Any]):
@@ -105,3 +106,12 @@ class PropertyAddressEvent(Event, Verdictable):
     def get_info(self) -> str:
         # without entity, at least for event log
         return self.key_value[0].get_value_string(self.key_value[1])
+
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        k, v = self.key_value
+        r = {
+            "entity": self.address.get_parseable_value(),
+            "key": k.get_name(),
+        }
+        k.get_value_json(v, r)
+        return r
