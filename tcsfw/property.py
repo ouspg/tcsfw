@@ -107,12 +107,14 @@ class PropertyKey:
         """Get value as JSON"""
         if isinstance(value, PropertyVerdictValue):
             json_data["verdict"] = value.verdict.value
+            if value.explanation:
+                json_data["exp"] = value.explanation
         elif isinstance(value, PropertySetValue):
             json_data["set"] = [k.get_name() for k in value.sub_keys]
+            if value.explanation:
+                json_data["exp"] = value.explanation
         else:
             json_data["value"] = f"{value}"
-        if value.explanation:
-            json_data["exp"] = value.explanation
         return json_data
 
     #
