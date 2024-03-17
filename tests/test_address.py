@@ -7,6 +7,8 @@ def test_hw_address():
     assert ad.get_parseable_value() == "00:11:22:33:44:55|hw"
     assert ad.is_null() is False
     assert ad.is_global() is False
+    assert ad == HWAddress.new("00:11:22:33:44:55")
+    assert ad == HWAddress.new("0:11:22:33:44:55")
 
     assert HWAddresses.NULL == HWAddress.new("00:00:00:00:00:00")
     assert HWAddresses.NULL.is_null() is True

@@ -145,6 +145,7 @@ class Addresses:
             return DNSName(v)
         raise Exception(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
 
+
 class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
     def __init__(self, data: str):
