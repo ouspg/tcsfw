@@ -1,4 +1,4 @@
-from typing import List, Set, Optional
+from typing import Any, Callable, Dict, List, Set, Optional
 
 from tcsfw.address import IPAddresses, EndpointAddress, Protocol, HWAddress, IPAddress
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType
@@ -47,10 +47,20 @@ class NameEvent(Event):
         self.service = service
         self.name = name
         self.address = address
-        self.peers = [] if peers is None else peers
+        self.peers = [] if peers is None else peers  # The communicating peers
 
     def get_value_string(self) -> str:
         return f"{self.name}={self.address}" if self.address else self.name
+
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        r = {
+            "name": self.name,
+        }
+        if self.address:
+            r["address"] = self.address.get_parseable_value()
+        if self.peers:
+            r["peers"] = [id_resolver(p) for p in self.peers]
+        return r
 
     def __eq__(self, other):
         if not isinstance(other, NameEvent):

@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
+from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, EvidenceSource, IPFlow
 
@@ -57,6 +58,7 @@ class SQLDatabase(EntityDatabase):
             "flow-ble": BLEAdvertisementFlow,
             "prop-ent": PropertyEvent,
             "prop-add": PropertyAddressEvent,
+            "name": NameEvent,
         }
         self.event_names = {c: n for n, c in self.event_types.items()}
         self._purge_model_events()
