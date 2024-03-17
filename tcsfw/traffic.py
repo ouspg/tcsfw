@@ -90,6 +90,12 @@ class ServiceScan(Event):
         self.endpoint = endpoint
         self.service_name = service_name
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        return {
+            "endpoint": id_resolver(self.endpoint),
+            "service": self.service_name,
+        }
+
     def __repr__(self):
         return f"{self.endpoint}"
 
@@ -100,6 +106,11 @@ class HostScan(Event):
         self.host = host
         self.endpoints = endpoints
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        return {
+            "host": id_resolver(self.host),
+            "endpoints": [id_resolver(e) for e in self.endpoints],
+        }
 
 class Flow(Event):
     """Flow between two network points"""
