@@ -58,6 +58,8 @@ class Registry(EventInterface):
     def _new_event(self, event: Event):
         """Handle new event"""
         self.database.put_event(event)
+        # all sources are enabled by default
+        self.evidence_filter.setdefault(event.evidence.source.label, True)
         # Note: evidence filter not updated, it only applies to stored events
         self.all_evidence.add(event.evidence.source)
 
