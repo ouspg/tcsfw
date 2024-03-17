@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 
-from tcsfw.traffic import Event, EvidenceSource
+from tcsfw.traffic import Event, EvidenceSource, IPFlow
 
 Base = declarative_base()
 
@@ -52,6 +52,7 @@ class SQLDatabase(EntityDatabase):
         self.source_cache: Dict[EvidenceSource, int] = {}
         self.free_source_id = 0
         self.event_types = {
+            "flow-ip": IPFlow,
             "prop-ent": PropertyEvent,
             "prop-add": PropertyAddressEvent,
         }

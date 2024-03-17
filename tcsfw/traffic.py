@@ -242,6 +242,24 @@ class IPFlow(Flow):
     def get_target_address(self) -> AnyAddress:
         return self.target[0] if self.target[1].is_null() else self.target[1]
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        r = {
+            "protocol": self.protocol.value,
+        }
+        if not self.source[0].is_null():
+            r["source_hw"] = self.source[0].get_parseable_value()
+        if not self.source[1].is_null():
+            r["source"] = self.source[1].get_parseable_value()
+        if self.source[2] >= 0:
+            r["source_port"] = self.source[2]
+        if not self.target[0].is_null():
+            r["target_hw"] = self.target[0].get_parseable_value()
+        if not self.target[1].is_null():
+            r["target"] = self.target[1].get_parseable_value()
+        if self.target[2] >= 0:
+            r["target_port"] = self.target[2]
+        return r
+
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
         self.target = HWAddress.new(target[0]), IPAddress.new(target[1]), target[2]
         return self
