@@ -1,4 +1,15 @@
-from tcsfw.address import IPAddress, IPAddresses
+from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
+
+
+def test_hw_address():
+    ad = HWAddress("00:11:22:33:44:55")
+    assert f"{ad}" == "00:11:22:33:44:55"
+    assert ad.get_parseable_value() == "00:11:22:33:44:55|hw"
+    assert ad.is_null() is False
+    assert ad.is_global() is False
+
+    assert HWAddresses.NULL == HWAddress.new("00:00:00:00:00:00")
+    assert HWAddresses.NULL.is_null() is True
 
 
 def test_ip_address():
