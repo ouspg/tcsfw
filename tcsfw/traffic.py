@@ -155,6 +155,16 @@ class EthernetFlow(Flow):
     def get_target_address(self) -> AnyAddress:
         return self.target
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        r = {}
+        if self.protocol != Protocol.ETHERNET:
+            r["protocol"] = self.protocol.value
+        r["source_hw"] = self.source.get_parseable_value()
+        r["target_hw"] = self.target.get_parseable_value()
+        if self.payload >= 0:
+            r["payload"] = self.payload
+        return r
+
     @classmethod
     def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
         """New ethernet-based protocol flow"""
@@ -324,6 +334,12 @@ class BLEAdvertisementFlow(Flow):
 
     def get_target_address(self) -> AnyAddress:
         return (self.source if self.reply else Addresses.BLE_Ad)
+
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        return {
+            "source": self.source.get_parseable_value(),
+            "event_type": self.event_type,
+        }
 
     def __repr__(self):
         return f"{self.source} >> 0x{self.event_type:02x} {self.protocol.value.upper()}"
