@@ -1,4 +1,4 @@
-from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
+from tcsfw.address import DNSName, HWAddress, HWAddresses, IPAddress, IPAddresses
 
 
 def test_hw_address():
@@ -24,3 +24,13 @@ def test_ip_address():
     assert IPAddresses.NULL.is_global() is False
 
     assert IPAddress.new("192.168.1.1").is_global() is False
+
+
+def test_dns_name():
+    ad = DNSName("www.example.com")
+    assert f"{ad}" == "www.example.com"
+    assert ad.get_parseable_value() == "www.example.com|name"
+    assert ad.is_null() is False
+    assert ad.is_global() is True
+    assert ad == DNSName("www.example.com")
+    assert ad != DNSName("www.example.org")
