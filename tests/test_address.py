@@ -1,4 +1,4 @@
-from tcsfw.address import DNSName, HWAddress, HWAddresses, IPAddress, IPAddresses
+from tcsfw.address import DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
 
 
 def test_hw_address():
@@ -36,3 +36,16 @@ def test_dns_name():
     assert ad.is_global() is True
     assert ad == DNSName("www.example.com")
     assert ad != DNSName("www.example.org")
+
+
+def test_endpoint_address():
+    ad = EndpointAddress.ip("1.2.3.4", Protocol.UDP, 1234)
+    assert f"{ad}" == "1.2.3.4/udp:1234"
+    assert ad.get_parseable_value() == "1.2.3.4/udp:1234"
+    assert ad.get_host() == IPAddress.new("1.2.3.4")
+    assert ad.protocol == Protocol.UDP
+    assert ad.port == 1234
+
+    ad = EndpointAddress.hw("0:1:2:3:4:5", Protocol.UDP, 1234)
+    assert f"{ad}" == "00:01:02:03:04:05/udp:1234"
+    assert ad.get_parseable_value() == "00:01:02:03:04:05|hw/udp:1234"
