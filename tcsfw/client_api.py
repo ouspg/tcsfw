@@ -133,6 +133,8 @@ class ClientAPI(ModelListener):
         if path == "reset":
             param = json.load(data) if data else {}
             self.post_evidence_filter(param.get("evidence", {}), include_all=param.get("include_all", False))
+            if param.get("dump_model", False):
+                r = self.get_model(RequestContext(request, self).change_path("."))
         elif path == "flow":
             flow, ref = self.parse_flow(NO_EVIDENCE, json.load(data))
             self.registry.connection(flow)
@@ -258,7 +260,7 @@ class ClientAPI(ModelListener):
                 name = name[path.index("/")]
             entity = parent.get_entity(name)
             if not entity:
-                raise FileNotFoundError(f"Parent '{parent.name}' does not have that child")
+                raise FileNotFoundError(f"Parent '{parent.name}' does not have child '{name}'")
             r_tail = path[len(name) + 1:]
             if r_tail:
                 _, r = self.get_entity(entity, context.change_path(r_tail))

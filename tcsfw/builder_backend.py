@@ -1,5 +1,6 @@
 
 import argparse
+import io
 import json
 import logging
 import pathlib
@@ -1000,7 +1001,7 @@ class SystemBackendRunner(SystemBackend):
         dump_report = True
         if self.args.test_post:
             res, data = self.args.test_post
-            resp, _ = api.api_post(APIRequest(res), io.BytesIO(data))
+            resp = api.api_post(APIRequest(res), io.BytesIO(data.encode()))
             print(json.dumps(resp, indent=4))
             dump_report = False
         if self.args.test_get:
