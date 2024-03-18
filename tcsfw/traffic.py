@@ -82,6 +82,12 @@ class Event:
     def __repr__(self):
         return self.get_value_string()
 
+    def __hash__(self) -> int:
+        return self.evidence.__hash__()
+
+    def __eq__(self, v) -> bool:
+        return self.evidence == v.evidence
+
 
 class ServiceScan(Event):
     """Individual service scan result"""

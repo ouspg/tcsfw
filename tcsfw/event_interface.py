@@ -85,6 +85,11 @@ class PropertyEvent(Event, Verdictable):
         k.get_value_json(v, r)
         return r
 
+    def __hash__(self) -> int:
+        return super().__hash__() ^ hash(self.entity) ^ hash(self.key_value)
+
+    def __eq__(self, v) -> bool:
+        return super().__eq__(v) and self.entity == v.entity and self.key_value == v.key_value
 
 class PropertyAddressEvent(Event, Verdictable):
     """Property value event by address"""
