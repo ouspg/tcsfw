@@ -89,7 +89,7 @@ class PropertyEvent(Event, Verdictable):
     def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'PropertyEvent':
         """Decode event from JSON"""
         entity = entity_resolver(data["entity"])
-        key = PropertyKey(data["key"])
+        key = PropertyKey.parse(data["key"])
         ver = Verdict.parse(data.get("verdict"))
         return PropertyEvent(evidence, entity, key.verdict(ver))
 
@@ -98,6 +98,7 @@ class PropertyEvent(Event, Verdictable):
 
     def __eq__(self, v) -> bool:
         return super().__eq__(v) and self.entity == v.entity and self.key_value == v.key_value
+
 
 class PropertyAddressEvent(Event, Verdictable):
     """Property value event by address"""

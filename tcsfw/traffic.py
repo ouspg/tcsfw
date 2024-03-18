@@ -79,6 +79,11 @@ class Event:
         """Get JSON representation of data"""
         return {}
 
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]):
+        """Placeholder for event decoding from JSON"""
+        return None
+
     def __repr__(self):
         return self.get_value_string()
 

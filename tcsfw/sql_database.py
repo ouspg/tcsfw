@@ -5,11 +5,11 @@ from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
+from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 from tcsfw.services import NameEvent
 
-from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, EvidenceSource, HostScan, IPFlow, ServiceScan
+from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
 
 Base = declarative_base()
 
@@ -97,11 +97,47 @@ class SQLDatabase(EntityDatabase):
             ses.execute(dele)
             ses.commit()
 
-
-    def finish_model_load(self, system: IoTSystem):
-        """Put all entities into database"""
+    def finish_model_load(self, interface: EventInterface):
+        """Finish model loading"""
+        # Put all entities from model into the database
+        system = interface.get_system()
         for e in system.iterate_all():
             self.get_id(e)
+        # Read all events from database
+        self.read_events(interface)
+
+    def read_events(self, interface: EventInterface):
+        """Real all events from database"""
+        source_cache: Dict[int, EvidenceSource] = {}
+
+        def get_source(source_id: int) -> EvidenceSource:
+            src = source_cache.get(source_id)
+            if src is None:
+                with Session(self.engine) as ses:
+                    sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
+                    r_data = ses.execute(sel).first()[0]
+                    src = EvidenceSource(r_data.name, r_data.label, r_data.base_ref)
+                    source_cache[source_id] = src
+            return src
+
+        with Session(self.engine) as ses:
+            sel = select(TableEvent)
+            for ev in ses.execute(sel).yield_per(1000).scalars():
+                event_type = self.event_types.get(ev.type)
+                if event_type is None:
+                    continue
+                src = get_source(ev.source_id)
+                if src is None:
+                    self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
+                    continue
+                evi = Evidence(src, ev.tail_ref)
+                js = json.loads(ev.data)
+                event = event_type.decode_data_json(evi, js, self.get_entity)
+                if event is None:
+                    continue
+                assert event.entity is not None
+                interface.consume(event)
+
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass

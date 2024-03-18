@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Optional, Dict, List
+from tcsfw.event_interface import EventInterface
 from tcsfw.model import IoTSystem
 
 from tcsfw.traffic import Event, EvidenceSource
@@ -13,7 +14,7 @@ class EntityDatabase:
         self.ids: Dict[Any, int] = {}
         self.reverse_id: List[Any] = []
 
-    def finish_model_load(self, system: IoTSystem):
+    def finish_model_load(self, interface: EventInterface):
         """Finish loading model, prepare for operation"""
         pass
 
