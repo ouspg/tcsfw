@@ -85,6 +85,14 @@ class PropertyEvent(Event, Verdictable):
         k.get_value_json(v, r)
         return r
 
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'PropertyEvent':
+        """Decode event from JSON"""
+        entity = entity_resolver(data["entity"])
+        key = PropertyKey(data["key"])
+        ver = Verdict.parse(data.get("verdict"))
+        return PropertyEvent(evidence, entity, key.verdict(ver))
+
     def __hash__(self) -> int:
         return super().__hash__() ^ hash(self.entity) ^ hash(self.key_value)
 

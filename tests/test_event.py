@@ -8,15 +8,20 @@ from tcsfw.traffic import Evidence, EvidenceSource
 def test_property_event():
     sb = SystemBackend()
     dev0 = sb.device()
-    src = EvidenceSource("Source A")
+    evi = Evidence(EvidenceSource("Source A"))
 
     entities = {
         dev0.entity: 1,
     }
+    ent_reverse = {v: k for k, v in entities.items()}
 
-    p = PropertyEvent(Evidence(src), dev0.entity, PropertyKey("prop-a").verdict(Verdict.PASS))
-    assert p.get_data_json(entities.get) == {
+    p = PropertyEvent(evi, dev0.entity, PropertyKey("prop-a").verdict(Verdict.PASS))
+    js = p.get_data_json(entities.get)
+    assert js == {
         'entity': 1, 
         'key': 'prop-a', 
         'verdict': 'Pass'
     }
+
+    p2 = PropertyEvent.decode_data_json(evi, js, ent_reverse.get)
+    assert p == p2
