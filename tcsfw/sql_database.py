@@ -171,7 +171,7 @@ class SQLDatabase(EntityDatabase):
             # connection
             source_i = self.get_id(entity.source)
             target_i = self.get_id(entity.target)
-            id_i = self.id_by_ends.get((source_i, target_i))
+            id_i = self.id_by_ends.get((source_i, target_i), -1)
             if id_i >= 0:
                 self.id_cache[entity] = id_i
                 self.entity_cache[id_i] = entity
@@ -179,6 +179,7 @@ class SQLDatabase(EntityDatabase):
             id_i = self._cache_entity(entity)
             # store in database
             with Session(self.engine) as ses:
+                ent_name = entity.long_name()
                 ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name,
                                        source=source_i, target=target_i)
                 ses.add(ent_id)
