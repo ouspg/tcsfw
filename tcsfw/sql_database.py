@@ -49,6 +49,7 @@ class SQLDatabase(EntityDatabase):
         self.db_conn = self.engine.connect()
         # cache of entity IDs
         self.id_cache: Dict[Any, int] = {}
+        self.entity_cache: Dict[int, Any] = {}
         self.free_cache_id = 1
         self.id_by_name: Dict[str, int] = {}
         # cache of evidence sources
@@ -74,7 +75,6 @@ class SQLDatabase(EntityDatabase):
             # assuming limited number of entities, read all IDs
             sel = select(TableEntityID)
             for ent_id in ses.execute(sel).yield_per(1000).scalars():
-                self.id_cache[ent_id.id] = ent_id
                 self.id_by_name[ent_id.name] = ent_id.id
 
             # find the largest used source id from database
@@ -156,6 +156,7 @@ class SQLDatabase(EntityDatabase):
             id_i = self.id_by_name.get(ent_name, -1)
             if id_i >= 0:
                 self.id_cache[entity] = id_i
+                self.entity_cache[id_i] = entity
                 return id_i
             id_i = self._cache_entity(entity)
             self.id_by_name[ent_name] = id_i
@@ -165,8 +166,14 @@ class SQLDatabase(EntityDatabase):
                 ses.add(ent_id)
                 ses.commit()
         elif isinstance(entity, Connection):
-            # connection not looked by name
+            # connection
             ent_name = entity.long_name()
+            id_i = self.id_by_name.get(ent_name, -1)
+            if id_i >= 0:
+                self.id_cache[entity] = id_i
+                self.entity_cache[id_i] = entity
+                return id_i
+            id_i = self._cache_entity(entity)
             id_i = self._cache_entity(entity)
             source_i = self.get_id(entity.source)
             target_i = self.get_id(entity.target)
@@ -179,6 +186,7 @@ class SQLDatabase(EntityDatabase):
         else:
             # not stored to database
             id_i = self._cache_entity(entity)
+        self.entity_cache[id_i] = entity
         return id_i
 
     def _cache_entity(self, entity: Any) -> int:
@@ -190,7 +198,7 @@ class SQLDatabase(EntityDatabase):
         return id_i
 
     def get_entity(self, id_value: int) -> Optional[Any]:
-        return self.id_cache.get(id_value)
+        return self.entity_cache.get(id_value)
 
     def put_event(self, event: Event):
         # store event to database
