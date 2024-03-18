@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Tuple
 
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
@@ -48,10 +48,11 @@ class SQLDatabase(EntityDatabase):
         Base.metadata.create_all(self.engine)
         self.db_conn = self.engine.connect()
         # cache of entity IDs
-        self.id_cache: Dict[Any, int] = {}
-        self.entity_cache: Dict[int, Any] = {}
+        self.id_cache: Dict[Any, int] = {}      # Id by entity
+        self.entity_cache: Dict[int, Any] = {}  # Entity by id
+        self.id_by_name: Dict[str, int] = {}    # Id by name
+        self.id_by_ends: Dict[Tuple[int, int], int] = {}
         self.free_cache_id = 1
-        self.id_by_name: Dict[str, int] = {}
         # cache of evidence sources
         self.source_cache: Dict[EvidenceSource, int] = {}
         self.free_source_id = 0
@@ -76,7 +77,8 @@ class SQLDatabase(EntityDatabase):
             sel = select(TableEntityID)
             for ent_id in ses.execute(sel).yield_per(1000).scalars():
                 self.id_by_name[ent_id.name] = ent_id.id
-
+                if ent_id.source or ent_id.target:
+                    self.id_by_ends[(ent_id.source, ent_id.target)] = ent_id.id
             # find the largest used source id from database
             sel = select(TableEvidenceSource)
             for src in ses.execute(sel).yield_per(1000).scalars():
@@ -167,16 +169,14 @@ class SQLDatabase(EntityDatabase):
                 ses.commit()
         elif isinstance(entity, Connection):
             # connection
-            ent_name = entity.long_name()
-            id_i = self.id_by_name.get(ent_name, -1)
+            source_i = self.get_id(entity.source)
+            target_i = self.get_id(entity.target)
+            id_i = self.id_by_ends.get((source_i, target_i))
             if id_i >= 0:
                 self.id_cache[entity] = id_i
                 self.entity_cache[id_i] = entity
                 return id_i
             id_i = self._cache_entity(entity)
-            id_i = self._cache_entity(entity)
-            source_i = self.get_id(entity.source)
-            target_i = self.get_id(entity.target)
             # store in database
             with Session(self.engine) as ses:
                 ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name,
