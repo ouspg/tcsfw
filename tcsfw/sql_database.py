@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
-from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode
+from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode, NodeComponent
 from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
@@ -153,7 +153,7 @@ class SQLDatabase(EntityDatabase):
         id_i = self.id_cache.get(entity, -1)
         if id_i >= 0:
             return id_i
-        if isinstance(entity, Addressable):
+        if isinstance(entity, Addressable) or isinstance(entity, NodeComponent):
             ent_name = entity.long_name()  # for now, using long name
             id_i = self.id_by_name.get(ent_name, -1)
             if id_i >= 0:
