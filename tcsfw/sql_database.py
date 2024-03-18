@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
-from tcsfw.model import Addressable, IoTSystem, NetworkNode
+from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode
 from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
@@ -18,6 +18,8 @@ class TableEntityID(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     type = Column(String)
+    source = Column(Integer)  # optional
+    target = Column(Integer)  # optional
 
 
 class TableEvidenceSource(Base):
@@ -160,6 +162,18 @@ class SQLDatabase(EntityDatabase):
             # store in database
             with Session(self.engine) as ses:
                 ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name)
+                ses.add(ent_id)
+                ses.commit()
+        elif isinstance(entity, Connection):
+            # connection not looked by name
+            ent_name = entity.long_name()
+            id_i = self._cache_entity(entity)
+            source_i = self.get_id(entity.source)
+            target_i = self.get_id(entity.target)
+            # store in database
+            with Session(self.engine) as ses:
+                ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name,
+                                       source=source_i, target=target_i)
                 ses.add(ent_id)
                 ses.commit()
         else:

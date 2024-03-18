@@ -454,7 +454,7 @@ class IoTSystem(NetworkNode):
 
     def iterate_all(self) -> Iterator[Entity]:
         yield from super().iterate_all()
-        for c in self.connections.values():
+        for c in self.get_connections():
             if c.status != Status.PLACEHOLDER:
                 yield c
 
