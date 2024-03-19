@@ -133,7 +133,7 @@ class PropertyAddressEvent(Event, Verdictable):
     @classmethod
     def decode_data_json(cls, evidence: Evidence, data: Dict,
                          entity_resolver: Callable[[Any], Any]) -> 'PropertyAddressEvent':
-        address = Addresses.parse_address(data["address"])
+        address = Addresses.parse_endpoint(data["address"])
         key = PropertyKey.parse(data["key"])
         ver = Verdict.parse(data.get("verdict"))
         return PropertyAddressEvent(evidence, address, key.verdict(ver))
