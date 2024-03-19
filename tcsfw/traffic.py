@@ -103,9 +103,16 @@ class ServiceScan(Event):
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
         return {
-            "endpoint": id_resolver(self.endpoint),
+            "endpoint": self.endpoint.get_parseable_value(),
             "service": self.service_name,
         }
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'ServiceScan':
+        """Decode event from JSON"""
+        endpoint = Addresses.parse_endpoint(data["endpoint"])
+        name = data.get("service", "")
+        return ServiceScan(evidence, endpoint, name)
 
     def __repr__(self):
         return f"{self.endpoint}"
@@ -119,9 +126,17 @@ class HostScan(Event):
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
         return {
-            "host": id_resolver(self.host),
-            "endpoints": [id_resolver(e) for e in self.endpoints],
+            "host": self.host.get_parseable_value(),
+            "endpoints": [e.get_parseable_value() for e in self.endpoints],
         }
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'HostScan':
+        """Decode event from JSON"""
+        host = Addresses.parse_endpoint(data["host"])
+        endpoints = {Addresses.parse_endpoint(e) for e in data.get("endpoints", [])}
+        return HostScan(evidence, host, endpoints)
+
 
 class Flow(Event):
     """Flow between two network points"""
