@@ -1,6 +1,6 @@
 from typing import Dict, Type, Callable, Any, Tuple
 
-from tcsfw.address import AnyAddress
+from tcsfw.address import Addresses, AnyAddress
 from tcsfw.basics import Verdict
 from tcsfw.entity import Entity
 from tcsfw.model import IoTSystem
@@ -124,8 +124,22 @@ class PropertyAddressEvent(Event, Verdictable):
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
         k, v = self.key_value
         r = {
-            "entity": self.address.get_parseable_value(),
+            "address": self.address.get_parseable_value(),
             "key": k.get_name(),
         }
         k.get_value_json(v, r)
         return r
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict,
+                         entity_resolver: Callable[[Any], Any]) -> 'PropertyAddressEvent':
+        address = Addresses.parse_address(data["address"])
+        key = PropertyKey.parse(data["key"])
+        ver = Verdict.parse(data.get("verdict"))
+        return PropertyAddressEvent(evidence, address, key.verdict(ver))
+
+    def __hash__(self) -> int:
+        return super().__hash__() ^ hash(self.address) ^ hash(self.key_value)
+
+    def __eq__(self, v) -> bool:
+        return super().__eq__(v) and self.address == v.address and self.key_value == v.key_value
