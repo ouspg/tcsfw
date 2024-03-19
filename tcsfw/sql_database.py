@@ -139,7 +139,6 @@ class SQLDatabase(EntityDatabase):
                 event = event_type.decode_data_json(evi, js, self.get_entity)
                 if event is None:
                     continue
-                assert event.entity is not None
                 interface.consume(event)
 
 
