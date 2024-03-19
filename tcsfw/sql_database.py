@@ -17,9 +17,10 @@ class TableEntityID(Base):
     __tablename__ = 'entity_ids'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    source = Column(Integer)    # optional
+    target = Column(Integer)    # optional
+    long_name = Column(String)  # null, if same as short name
     type = Column(String)
-    source = Column(Integer)  # optional
-    target = Column(Integer)  # optional
 
 
 class TableEvidenceSource(Base):
@@ -158,20 +159,22 @@ class SQLDatabase(EntityDatabase):
         if id_i >= 0:
             return id_i
         cache_key = None
-        store_name = None
+        short_name = None
+        long_name = None
         source_i = target_i = None
         if isinstance(entity, Service):
             # service
             source_i = self.get_id(entity.get_parent_host())
-            cache_key = entity.name, source_i
-            store_name = entity.name
+            short_name = entity.name
+            long_name = entity.long_name()
+            cache_key = short_name, source_i
         elif isinstance(entity, Addressable) or isinstance(entity, NodeComponent):
             # host or component
-            store_name = entity.long_name()  # for now, using long name
-            cache_key = store_name
+            short_name = entity.long_name()  # for now, using long name
+            cache_key = short_name
         elif isinstance(entity, Connection):
             # connection
-            store_name = entity.long_name()
+            short_name = entity.long_name()
             source_i = self.get_id(entity.source)
             target_i = self.get_id(entity.target)
             cache_key = source_i, target_i
@@ -186,8 +189,8 @@ class SQLDatabase(EntityDatabase):
             id_i = self._cache_entity(entity)
             # store in database
             with Session(self.engine) as ses:
-                ent_id = TableEntityID(id=id_i, name=store_name, type=entity.concept_name,
-                                       source=source_i, target=target_i)
+                ent_id = TableEntityID(id=id_i, name=short_name, source=source_i, target=target_i,
+                                       long_name=long_name, type=entity.concept_name)
                 ses.add(ent_id)
                 ses.commit()
             self.id_by_key[cache_key] = id_i
