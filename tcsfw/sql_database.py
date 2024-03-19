@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
-from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode, NodeComponent
+from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode, NodeComponent, Service
 from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
@@ -48,10 +48,9 @@ class SQLDatabase(EntityDatabase):
         Base.metadata.create_all(self.engine)
         self.db_conn = self.engine.connect()
         # cache of entity IDs
-        self.id_cache: Dict[Any, int] = {}      # Id by entity
-        self.entity_cache: Dict[int, Any] = {}  # Entity by id
-        self.id_by_name: Dict[str, int] = {}    # Id by name
-        self.id_by_ends: Dict[Tuple[int, int], int] = {}
+        self.id_by_key: Dict[Any, int] = {}      # Id by entity-type specific key
+        self.id_cache: Dict[Any, int] = {}       # Id by entity
+        self.entity_cache: Dict[int, Any] = {}   # Entity by id
         self.free_cache_id = 1
         # cache of evidence sources
         self.source_cache: Dict[EvidenceSource, int] = {}
@@ -76,10 +75,16 @@ class SQLDatabase(EntityDatabase):
             # assuming limited number of entities, read all IDs
             sel = select(TableEntityID)
             for ent_id in ses.execute(sel).yield_per(1000).scalars():
-                self.id_by_name[ent_id.name] = ent_id.id
+                if ent_id.source is None and ent_id.target is None:
+                    cache_key = ent_id.name  # host
+                elif ent_id.source is not None and ent_id.target is not None:
+                    cache_key = ent_id.source, ent_id.target  # connection
+                elif ent_id.source is not None:
+                    cache_key = ent_id.name, ent_id.source  # service
+                else:
+                    raise ValueError(f"Bad entity id row {ent_id}")
+                self.id_by_key[cache_key] = ent_id.id
                 self.entity_cache[ent_id.id] = None  # reserve ID
-                if ent_id.source or ent_id.target:
-                    self.id_by_ends[(ent_id.source, ent_id.target)] = ent_id.id
             # find the largest used source id from database
             sel = select(TableEvidenceSource)
             for src in ses.execute(sel).yield_per(1000).scalars():
@@ -152,25 +157,28 @@ class SQLDatabase(EntityDatabase):
         id_i = self.id_cache.get(entity, -1)
         if id_i >= 0:
             return id_i
-        if isinstance(entity, Addressable) or isinstance(entity, NodeComponent):
-            ent_name = entity.long_name()  # for now, using long name
-            id_i = self.id_by_name.get(ent_name, -1)
-            if id_i >= 0:
-                self.id_cache[entity] = id_i
-                self.entity_cache[id_i] = entity
-                return id_i
-            id_i = self._cache_entity(entity)
-            self.id_by_name[ent_name] = id_i
-            # store in database
-            with Session(self.engine) as ses:
-                ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name)
-                ses.add(ent_id)
-                ses.commit()
+        cache_key = None
+        store_name = None
+        source_i = target_i = None
+        if isinstance(entity, Service):
+            # service
+            source_i = self.get_id(entity.get_parent_host())
+            cache_key = entity.name, source_i
+            store_name = entity.name
+        elif isinstance(entity, Addressable) or isinstance(entity, NodeComponent):
+            # host or component
+            store_name = entity.long_name()  # for now, using long name
+            cache_key = store_name
         elif isinstance(entity, Connection):
             # connection
+            store_name = entity.long_name()
             source_i = self.get_id(entity.source)
             target_i = self.get_id(entity.target)
-            id_i = self.id_by_ends.get((source_i, target_i), -1)
+            cache_key = source_i, target_i
+
+        if cache_key is not None:
+            # store to DB, unless already stored
+            id_i = self.id_by_key.get(cache_key, -1)
             if id_i >= 0:
                 self.id_cache[entity] = id_i
                 self.entity_cache[id_i] = entity
@@ -178,15 +186,14 @@ class SQLDatabase(EntityDatabase):
             id_i = self._cache_entity(entity)
             # store in database
             with Session(self.engine) as ses:
-                ent_name = entity.long_name()
-                ent_id = TableEntityID(id=id_i, name=ent_name, type=entity.concept_name,
+                ent_id = TableEntityID(id=id_i, name=store_name, type=entity.concept_name,
                                        source=source_i, target=target_i)
                 ses.add(ent_id)
                 ses.commit()
+            self.id_by_key[cache_key] = id_i
         else:
             # not stored to database
             id_i = self._cache_entity(entity)
-        self.entity_cache[id_i] = entity
         return id_i
 
     def _cache_entity(self, entity: Any) -> int:
