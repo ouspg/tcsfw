@@ -77,6 +77,7 @@ class SQLDatabase(EntityDatabase):
             sel = select(TableEntityID)
             for ent_id in ses.execute(sel).yield_per(1000).scalars():
                 self.id_by_name[ent_id.name] = ent_id.id
+                self.entity_cache[ent_id.id] = None  # reserve ID
                 if ent_id.source or ent_id.target:
                     self.id_by_ends[(ent_id.source, ent_id.target)] = ent_id.id
             # find the largest used source id from database
@@ -141,7 +142,6 @@ class SQLDatabase(EntityDatabase):
                     continue
                 interface.consume(event)
 
-
     def reset(self, source_filter: Dict[str, bool] = None):
         pass
 
@@ -191,9 +191,10 @@ class SQLDatabase(EntityDatabase):
 
     def _cache_entity(self, entity: Any) -> int:
         id_i = self.free_cache_id
-        while id_i in self.id_cache:
+        while id_i in self.entity_cache:
             id_i += 1
         self.id_cache[entity] = self.free_cache_id = id_i
+        self.entity_cache[id_i] = entity
         self.free_cache_id += 1
         return id_i
 

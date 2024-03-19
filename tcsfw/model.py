@@ -631,7 +631,7 @@ class IoTSystem(NetworkNode):
         return se, path
 
     def __repr__(self):
-        s = []
+        s = [self.long_name()]
         for h in self.get_hosts():
             s.append(f"{h.status.value} {h.name} {sorted(h.addresses)}")
         for conn in self.connections.values():
