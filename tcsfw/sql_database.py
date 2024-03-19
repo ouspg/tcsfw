@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional, Dict, Tuple
+from typing import Any, Iterator, Optional, Dict, Tuple
 
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
@@ -108,16 +108,15 @@ class SQLDatabase(EntityDatabase):
             ses.execute(dele)
             ses.commit()
 
-    def finish_model_load(self, interface: EventInterface):
-        """Finish model loading"""
+    def restore_stored(self, interface: EventInterface) -> Iterator[Event]:
         # Put all entities from model into the database
         system = interface.get_system()
         for e in system.iterate_all():
             self.get_id(e)
         # Read all events from database
-        self.read_events(interface)
+        return self.read_events(interface)
 
-    def read_events(self, interface: EventInterface):
+    def read_events(self, interface: EventInterface) -> Iterator[Event]:
         """Real all events from database"""
         source_cache: Dict[int, EvidenceSource] = {}
 
@@ -146,7 +145,7 @@ class SQLDatabase(EntityDatabase):
                 event = event_type.decode_data_json(evi, js, self.get_entity)
                 if event is None:
                     continue
-                interface.consume(event)
+                yield event
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass

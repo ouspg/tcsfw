@@ -27,7 +27,10 @@ class Registry(EventInterface):
 
     def finish_model_load(self) -> Self:
         """Finish loading model, prepare for operation"""
-        self.database.finish_model_load(self.logging)  # FIXME: Event sources are not registered
+        for e in self.database.restore_stored(self.logging):
+            # events already stored
+            self.evidence_filter.setdefault(e.evidence.source.label, True)
+            self.all_evidence.add(e.evidence.source)
         return self
 
     def get_id(self, entity) -> int:

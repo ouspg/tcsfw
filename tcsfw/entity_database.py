@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, Dict, List
+from typing import Any, Iterable, Optional, Dict, List
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import IoTSystem
 
@@ -14,9 +14,9 @@ class EntityDatabase:
         self.ids: Dict[Any, int] = {}
         self.reverse_id: List[Any] = []
 
-    def finish_model_load(self, interface: EventInterface):
-        """Finish loading model, prepare for operation"""
-        pass
+    def restore_stored(self, interface: EventInterface) -> Iterable[Event]:
+        """Restore stored events after model is loaded"""
+        return []
 
     def reset(self, source_filter: Dict[str, bool] = None):
         """Reset database cursor"""
