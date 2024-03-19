@@ -1,4 +1,4 @@
-from tcsfw.address import DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
+from tcsfw.address import Addresses, DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
 
 
 def test_hw_address():
@@ -49,3 +49,17 @@ def test_endpoint_address():
     ad = EndpointAddress.hw("0:1:2:3:4:5", Protocol.UDP, 1234)
     assert f"{ad}" == "00:01:02:03:04:05/udp:1234"
     assert ad.get_parseable_value() == "00:01:02:03:04:05|hw/udp:1234"
+
+
+def test_parse_address():
+    a = Addresses.parse_address("1.2.3.4")
+    assert isinstance(a, IPAddress)
+    assert f"{a}" == "1.2.3.4"
+
+    a = Addresses.parse_address("www.example.com|name")
+    assert isinstance(a, DNSName)
+    assert f"{a}" == "www.example.com"
+
+    a = Addresses.parse_address("1:2:3:4:5:6|hw")
+    assert isinstance(a, HWAddress)
+    assert f"{a}" == "01:02:03:04:05:06"
