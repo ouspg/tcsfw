@@ -79,7 +79,7 @@ class SQLDatabase(EntityDatabase):
                 if ent_id.source is None and ent_id.target is None:
                     cache_key = ent_id.name  # host
                 elif ent_id.source is not None and ent_id.target is not None:
-                    cache_key = ent_id.source, ent_id.target  # connection
+                    cache_key = ent_id.source, ent_id.target  # component or connection
                 elif ent_id.source is not None:
                     cache_key = ent_id.name, ent_id.source  # service
                 else:
@@ -168,10 +168,15 @@ class SQLDatabase(EntityDatabase):
             short_name = entity.name
             long_name = entity.long_name()
             cache_key = short_name, source_i
-        elif isinstance(entity, Addressable) or isinstance(entity, NodeComponent):
+        elif isinstance(entity, Addressable):
             # host or component
             short_name = entity.long_name()  # for now, using long name
             cache_key = short_name
+        elif isinstance(entity, NodeComponent):
+            # component
+            short_name = entity.name
+            source_i = self.get_id(entity.entity)
+            cache_key = short_name, source_i
         elif isinstance(entity, Connection):
             # connection
             short_name = entity.long_name()
