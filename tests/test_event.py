@@ -2,7 +2,9 @@ from tcsfw.address import Addresses, EndpointAddress, Protocol
 from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
+from tcsfw.main import DNS
 from tcsfw.property import PropertyKey
+from tcsfw.services import NameEvent
 from tcsfw.traffic import Evidence, EvidenceSource
 
 
@@ -57,4 +59,29 @@ def test_property_address_event():
 
     p2 = PropertyAddressEvent.decode_data_json(evi, js, lambda x: None)
     assert p2.get_verdict() == Verdict.FAIL
+    assert p == p2
+
+
+def test_name_event():
+    sb = SystemBackend()
+    dev0 = sb.device()
+    service = dev0 / DNS
+    evi = Evidence(EvidenceSource("Source A"))
+
+    entities = {
+        dev0.entity: 1,
+        service.entity: 12,
+    }
+    ent_reverse = {v: k for k, v in entities.items()}
+
+    p = NameEvent(evi, service.entity, "www.example.com")
+    js = p.get_data_json(entities.get)
+    assert js == {
+        'service': 12,
+        'name': 'www.example.com'
+    }
+
+    p2 = NameEvent.decode_data_json(evi, js, ent_reverse.get)
+    assert p2.service == service.entity
+    assert p2.name == "www.example.com"
     assert p == p2
