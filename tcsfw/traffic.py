@@ -196,11 +196,19 @@ class EthernetFlow(Flow):
         r = {}
         if self.protocol != Protocol.ETHERNET:
             r["protocol"] = self.protocol.value
-        r["source_hw"] = self.source.get_parseable_value()
-        r["target_hw"] = self.target.get_parseable_value()
+        r["source"] = f"{self.source}"
+        r["target"] = f"{self.target}"
         if self.payload >= 0:
             r["payload"] = self.payload
         return r
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'EthernetFlow':
+        protocol = Protocol.get_protocol(data.get("protocol"), Protocol.ETHERNET)
+        source = HWAddress.new(data["source"])
+        target = HWAddress.new(data["target"])
+        payload = data.get("payload", -1)
+        return EthernetFlow(evidence, source, target, payload, protocol)
 
     @classmethod
     def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
@@ -309,7 +317,6 @@ class IPFlow(Flow):
 
     @classmethod
     def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'IPFlow':
-        """Decode event from JSON"""
         protocol = Protocol.get_protocol(data["protocol"])
         s_hw = HWAddress.new(data.get("source_hw")) if "source_hw" in data else HWAddresses.NULL
         s_ip = IPAddress.new(data.get("source")) if "source" in data else IPAddresses.NULL
@@ -386,9 +393,16 @@ class BLEAdvertisementFlow(Flow):
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
         return {
-            "source": self.source.get_parseable_value(),
+            "source": f"{self.source}",
             "event_type": self.event_type,
         }
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict,
+                         entity_resolver: Callable[[Any], Any]) -> 'BLEAdvertisementFlow':
+        source = HWAddress.new(data["source"])
+        event_type = data["event_type"]
+        return BLEAdvertisementFlow(evidence, source, event_type)
 
     def __repr__(self):
         return f"{self.source} >> 0x{self.event_type:02x} {self.protocol.value.upper()}"

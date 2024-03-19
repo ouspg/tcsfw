@@ -25,7 +25,7 @@ class Protocol(enum.Enum):
     @classmethod
     def get_protocol(cls, value: str, default: Optional['Protocol'] = None) -> Optional['Protocol']:
         try:
-            return cls[value.upper()]
+            return cls[value.upper()] if value else default
         except KeyError:
             return default
 
