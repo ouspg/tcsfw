@@ -145,6 +145,17 @@ class Addresses:
             return DNSName(v)
         raise Exception(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
 
+    @classmethod
+    def parse_endpoint(cls, value: str) -> AnyAddress:
+        """Parse address or endpoint"""
+        a, _, p = value.partition("/")
+        addr = cls.parse_address(a)
+        if p == "":
+            return addr
+        prot, _, port = p.partition(":")
+        if port == "":
+            return EndpointAddress(addr, Protocol.get_protocol(prot), -1)
+        return EndpointAddress(addr, Protocol.get_protocol(prot), int(port))
 
 class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""

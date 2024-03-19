@@ -63,3 +63,18 @@ def test_parse_address():
     a = Addresses.parse_address("1:2:3:4:5:6|hw")
     assert isinstance(a, HWAddress)
     assert f"{a}" == "01:02:03:04:05:06"
+
+
+def test_parse_endpoint_address():
+    a = Addresses.parse_endpoint("1.2.3.4/udp:1234")
+    assert isinstance(a, EndpointAddress)
+    assert f"{a}" == "1.2.3.4/udp:1234"
+    assert a.get_host() == IPAddress.new("1.2.3.4")
+    assert a.protocol == Protocol.UDP
+    assert a.port == 1234
+
+    a = Addresses.parse_endpoint("1:2:3:4:5:6|hw/HTTP")
+    assert f"{a}" == "01:02:03:04:05:06/http"
+    assert a.get_host() == HWAddress.new("01:02:03:04:05:06")
+    assert a.protocol == Protocol.HTTP
+    assert a.port == -1
