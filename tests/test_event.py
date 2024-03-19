@@ -5,7 +5,7 @@ from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
 from tcsfw.main import DNS
 from tcsfw.property import PropertyKey
 from tcsfw.services import NameEvent
-from tcsfw.traffic import Evidence, EvidenceSource
+from tcsfw.traffic import Evidence, EvidenceSource, IPFlow
 
 
 def test_property_event():
@@ -84,4 +84,23 @@ def test_name_event():
     p2 = NameEvent.decode_data_json(evi, js, ent_reverse.get)
     assert p2.service == service.entity
     assert p2.name == "www.example.com"
+    assert p == p2
+
+
+def test_ipflow_event():
+    p = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234)
+
+    js = p.get_data_json(lambda x: None)
+    assert js == {
+        'protocol': 'udp',
+        'source_hw': '01:00:00:00:00:01',
+        'source': '192.168.0.1',
+        'source_port': 1100,
+        'target_hw': '01:00:00:00:00:02',
+        'target': '192.168.0.2',
+        'target_port': 1234
+    }
+
+    evi = Evidence(EvidenceSource("Source A"))
+    p2 = IPFlow.decode_data_json(evi, js, lambda x: None)
     assert p == p2

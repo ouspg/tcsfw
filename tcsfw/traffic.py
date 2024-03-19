@@ -294,18 +294,30 @@ class IPFlow(Flow):
             "protocol": self.protocol.value,
         }
         if not self.source[0].is_null():
-            r["source_hw"] = self.source[0].get_parseable_value()
+            r["source_hw"] = f"{self.source[0]}"
         if not self.source[1].is_null():
-            r["source"] = self.source[1].get_parseable_value()
+            r["source"] = f"{self.source[1]}"
         if self.source[2] >= 0:
             r["source_port"] = self.source[2]
         if not self.target[0].is_null():
-            r["target_hw"] = self.target[0].get_parseable_value()
+            r["target_hw"] = f"{self.target[0]}"
         if not self.target[1].is_null():
-            r["target"] = self.target[1].get_parseable_value()
+            r["target"] = f"{self.target[1]}"
         if self.target[2] >= 0:
             r["target_port"] = self.target[2]
         return r
+
+    @classmethod
+    def decode_data_json(cls, evidence: Evidence, data: Dict, entity_resolver: Callable[[Any], Any]) -> 'IPFlow':
+        """Decode event from JSON"""
+        protocol = Protocol.get_protocol(data["protocol"])
+        s_hw = HWAddress.new(data.get("source_hw")) if "source_hw" in data else HWAddresses.NULL
+        s_ip = IPAddress.new(data.get("source")) if "source" in data else IPAddresses.NULL
+        s_port = data.get("source_port", -1)
+        t_hw = HWAddress.new(data.get("target_hw")) if "target_hw" in data else HWAddresses.NULL
+        t_ip = IPAddress.new(data.get("target")) if "target" in data else IPAddresses.NULL
+        t_port = data.get("target_port", -1)
+        return IPFlow(evidence, source=(s_hw, s_ip, s_port), target=(t_hw, t_ip, t_port), protocol=protocol)
 
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
         self.target = HWAddress.new(target[0]), IPAddress.new(target[1]), target[2]
