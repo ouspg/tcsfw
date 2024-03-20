@@ -96,6 +96,7 @@ class EventLogger(EventInterface, ModelListener):
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         if self.current is None:
             self.logger.warning("Property change without event to assign it: %s", value[0])
+            return
         # assign all property changes during an event
         ev = LoggingEvent(self.current.event, entity=entity, property=value)
         self.logs.append(ev)
