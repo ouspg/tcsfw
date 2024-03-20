@@ -428,7 +428,7 @@ class ClientAPI(ModelListener):
             raise Exception("Unknown entity type %s", type(entity))
         return f"{p}-{int_id}"
 
-    def connectionChange(self, connection: Connection):
+    def connection_change(self, connection: Connection):
         if not connection.is_relevant(ignore_ends=True):
             return
         for ln, req in self.api_listener:
@@ -436,7 +436,7 @@ class ClientAPI(ModelListener):
             d = self.get_connection(connection, context)
             ln.connectionChange({"connection": d}, connection)
 
-    def hostChange(self, host: Host):
+    def host_change(self, host: Host):
         for ln, req in self.api_listener:
             context = RequestContext(req.change_path("."), self)
             _, d = self.get_entity(host, context)

@@ -545,12 +545,12 @@ class IoTSystem(NetworkNode):
             nn = f"{Addresses.get_prioritized(host.addresses)}"
             if nn != host.name:
                 host.name = self.free_child_name(nn)
-        self.call_listeners(lambda ln: ln.hostChange(host))
+        self.call_listeners(lambda ln: ln.host_change(host))
 
         for h in self.get_hosts():
             if h != host:
                 h.addresses.discard(ip_address)
-                self.call_listeners(lambda ln: ln.hostChange(h))
+                self.call_listeners(lambda ln: ln.host_change(h))
 
     def get_system(self) -> 'IoTSystem':
         return self
@@ -641,15 +641,15 @@ class IoTSystem(NetworkNode):
 
 class ModelListener:
     """Listener for model changes"""
-    def connectionChange(self, connection: Connection):
+    def connection_change(self, connection: Connection):
         """Connection created or changed"""
         pass
 
-    def hostChange(self, host: Host):
+    def host_change(self, host: Host):
         """Host created or changed"""
         pass
 
-    def propertyChange(self, entity: Entity, value: Tuple[PropertyKey, Any]):
+    def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         """Property changed. Not all changes create events, just the 'important' ones"""
         pass
 

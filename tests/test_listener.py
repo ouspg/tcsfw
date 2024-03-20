@@ -12,11 +12,11 @@ class AModelListener(ModelListener):
         self.events = []
         self.labels: List[str] = []
 
-    def hostChange(self, host: Host):
+    def host_change(self, host: Host):
         self.events.append(host)
         self.labels.append(f"host {host}")
 
-    def connectionChange(self, connection: Connection):
+    def connection_change(self, connection: Connection):
         self.events.append(connection)
         self.labels.append(f"conn {connection}")
 
