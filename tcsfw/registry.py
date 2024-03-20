@@ -31,6 +31,7 @@ class Registry(EventInterface):
             # events already stored
             self.evidence_filter.setdefault(e.evidence.source.label, True)
             self.all_evidence.add(e.evidence.source)
+            self.logging.consume(e)
         return self
 
     def get_id(self, entity) -> int:
