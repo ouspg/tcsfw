@@ -133,6 +133,7 @@ class ClientAPI(ModelListener):
         if path == "reset":
             param = json.load(data) if data else {}
             self.post_evidence_filter(param.get("evidence", {}), include_all=param.get("include_all", False))
+            self.system_reset()
             if param.get("dump_model", False):
                 r = self.get_model(RequestContext(request, self).change_path("."))
         elif path == "flow":
@@ -160,6 +161,13 @@ class ClientAPI(ModelListener):
             if ev:
                 e_filter[ev] = sel
         self.registry.reset(e_filter, include_all)
+
+    def system_reset(self):
+        """Do system reset listener calls"""
+        for ln, req in self.api_listener:
+            context = RequestContext(req, self)
+            d = self.get_system_info(context)
+            ln.systemReset({"system": d}, self.registry.system)
 
     def get_log(self, entity="", key="") -> Dict:
         """Get log"""
@@ -419,12 +427,6 @@ class ClientAPI(ModelListener):
         else:
             raise Exception("Unknown entity type %s", type(entity))
         return f"{p}-{int_id}"
-
-    def systemReset(self, system: IoTSystem):
-        for ln, req in self.api_listener:
-            context = RequestContext(req, self)
-            d = self.get_system_info(context)
-            ln.systemReset({"system": d}, system)
 
     def connectionChange(self, connection: Connection):
         if not connection.is_relevant(ignore_ends=True):

@@ -12,10 +12,6 @@ class AModelListener(ModelListener):
         self.events = []
         self.labels: List[str] = []
 
-    def systemReset(self, system: IoTSystem):
-        self.events.append(system)
-        self.labels.append(f"reset")
-
     def hostChange(self, host: Host):
         self.events.append(host)
         self.labels.append(f"host {host}")
@@ -55,8 +51,7 @@ def test_model_events():
 
     lis.events.clear()
     reg.reset(enable_all=True)
-    assert len(lis.events) == 1
-    assert lis.events[0] == reg.system
+    assert len(lis.events) == 0
 
 
 def test_registry_events():
@@ -76,6 +71,6 @@ def test_registry_events():
     # FIXME: We do not get one address event the 2nd time, as addresses are not cleared on reset
     # - If this is a problem, registry could keep track of learned addresses and clear them on reset
 
-    assert len(lis.events) == 5
-    for i in [(0, 1), (2, 2), (3, 3), (4, 4)]:
+    assert len(lis.events) == 4
+    for i in [(0, 0), (2, 1), (3, 2), (4, 3)]:
         assert lis0.labels[i[0]] == lis.labels[i[1]], f"missmatch at {i[0]}, {i[1]}"

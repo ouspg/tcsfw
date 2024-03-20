@@ -641,10 +641,6 @@ class IoTSystem(NetworkNode):
 
 class ModelListener:
     """Listener for model changes"""
-    def systemReset(self, system: IoTSystem):
-        """System reset"""
-        pass
-
     def connectionChange(self, connection: Connection):
         """Connection created or changed"""
         pass

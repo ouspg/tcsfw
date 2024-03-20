@@ -31,8 +31,6 @@ class Inspector(EventInterface):
         self.connection_count.clear()
         self.sessions.clear()
         self._list_hosts()
-        # Ask clients to reload NOW - hosts and connection are not sent
-        self.system.call_listeners(lambda ln: ln.systemReset(self.system))
 
     def _list_hosts(self):
         """List all hosts"""
