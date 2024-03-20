@@ -1,7 +1,10 @@
 import tempfile
+from tcsfw.address import HWAddress, IPAddress
 from tcsfw.builder_backend import SystemBackend
+from tcsfw.model import EvidenceNetworkSource
 from tcsfw.registry import Registry, Inspector
 from tcsfw.sql_database import SQLDatabase
+from tcsfw.traffic import Evidence, EvidenceSource, IPFlow
 
 
 def test_db_id_storage():
@@ -30,3 +33,27 @@ def test_db_id_storage():
         assert reg.get_id(dev3.entity) == 4
         assert reg.get_id(dev2.entity) == 3
 
+
+def test_db_source_storage():
+    """Test storing and restoring evidence sources"""
+    with tempfile.NamedTemporaryFile() as tmp_file:
+        tmp = tmp_file.name
+
+        sb = SystemBackend()
+        dev1 = sb.device()
+        reg = Registry(Inspector(sb.system), db=SQLDatabase(f"sqlite:///{tmp}")).finish_model_load()
+
+        src = EvidenceNetworkSource("Source A")
+        src.address_map[HWAddress.new("1:0:0:0:0:1")] = dev1.entity
+        p = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234)
+        p.evidence = Evidence(src)
+        assert dev1.entity.connections == []
+        con = reg.connection(p)
+        assert dev1.entity.connections[0] == con  # thanks to address mapping
+
+        sb = SystemBackend()
+        dev1 = sb.device()
+        reg = Registry(Inspector(sb.system), db=SQLDatabase(f"sqlite:///{tmp}"))
+        assert dev1.entity.connections == []
+        reg.finish_model_load()
+        assert dev1.entity.connections[0].source == dev1.entity  # thanks to address mapping

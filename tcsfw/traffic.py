@@ -18,6 +18,10 @@ class EvidenceSource:
         """Rename and create new source"""
         return EvidenceSource(name, self.base_ref, self.label, self.model_override)
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        """Get extra data as JSON"""
+        return {}
+
     def __repr__(self):
         return f"{self.name} {self.base_ref}"
 
@@ -290,6 +294,11 @@ class IPFlow(Flow):
 
     def reverse(self) -> Self:
         return IPFlow(self.evidence, self.target, self.source, self.protocol)
+
+    def new_evidence(self, evidence: Evidence) -> Self:
+        flow = IPFlow(evidence, self.source, self.target, self.protocol)
+        flow.evidence = evidence
+        return flow
 
     def get_source_address(self) -> AnyAddress:
         return self.source[0] if self.source[1].is_null() else self.source[1]

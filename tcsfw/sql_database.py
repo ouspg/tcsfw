@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
-from tcsfw.model import Addressable, Connection, IoTSystem, NetworkNode, NodeComponent, Service
+from tcsfw.model import Addressable, Connection, EvidenceNetworkSource, IoTSystem, NetworkNode, NodeComponent, Service
 from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
@@ -30,6 +30,7 @@ class TableEvidenceSource(Base):
     label = Column(String)
     base_ref = Column(String)
     model = Column(Boolean)
+    data = Column(String)  # JSON
 
 
 class TableEvent(Base):
@@ -38,7 +39,7 @@ class TableEvent(Base):
     type = Column(String)
     source_id = Column(Integer)  # TableEvidenceSource
     tail_ref = Column(String)
-    data = Column(String) # JSON
+    data = Column(String)  # JSON
 
 
 class SQLDatabase(EntityDatabase):
@@ -126,7 +127,9 @@ class SQLDatabase(EntityDatabase):
                 with Session(self.engine) as ses:
                     sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
                     r_data = ses.execute(sel).first()[0]
-                    src = EvidenceSource(r_data.name, r_data.label, r_data.base_ref)
+                    src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
+                    js = json.loads(r_data.data)
+                    src.decode_data_json(js, self.get_entity)
                     source_cache[source_id] = src
             return src
 
@@ -228,8 +231,9 @@ class SQLDatabase(EntityDatabase):
             if source_id < 0:
                 source_id = self.free_source_id
                 self.free_source_id += 1
+                data_js = source.get_data_json(self.get_id)
                 src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref,
-                                          model=source.model_override)
+                                          model=source.model_override, data=json.dumps(data_js))
                 ses.add(src)
                 self.source_cache[source] = source_id
             js = event.get_data_json(self.get_id)

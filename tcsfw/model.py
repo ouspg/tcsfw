@@ -680,3 +680,21 @@ class EvidenceNetworkSource(EvidenceSource):
             self.address_map, self.activity_map)
         s.model_override = self.model_override
         return s
+
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        r = super().get_data_json(id_resolver)
+        if self.address_map:
+            r["address_map"] = {k.get_parseable_value(): id_resolver(v) for k, v in self.address_map.items()}
+        if self.activity_map:
+            r["activity_map"] = {id_resolver(k): v.value for k, v in self.activity_map.items()}
+        return r
+
+    def decode_data_json(self, data: Dict, id_resolver: Callable[[Any], Any]) -> 'EvidenceNetworkSource':
+        """Parse data from JSON"""
+        for a, e in data.get("address_map", {}).items():
+            ent = id_resolver(e)
+            self.address_map[Addresses.parse_endpoint(a)] = ent
+        for n, a in data.get("activity_map", {}).items():
+            ent = id_resolver(n)
+            self.activity_map[ent] = ExternalActivity(a)
+        return self
