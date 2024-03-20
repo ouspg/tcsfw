@@ -1,10 +1,12 @@
 import tempfile
 from tcsfw.address import HWAddress, IPAddress
 from tcsfw.builder_backend import SystemBackend
+from tcsfw.event_interface import PropertyEvent
 from tcsfw.model import EvidenceNetworkSource
+from tcsfw.property import Properties
 from tcsfw.registry import Registry, Inspector
 from tcsfw.sql_database import SQLDatabase
-from tcsfw.traffic import Evidence, EvidenceSource, IPFlow
+from tcsfw.traffic import NO_EVIDENCE, Evidence, EvidenceSource, IPFlow
 
 
 def test_db_id_storage():
@@ -32,6 +34,31 @@ def test_db_id_storage():
         assert reg.get_id(dev1.entity) == 2
         assert reg.get_id(dev3.entity) == 4
         assert reg.get_id(dev2.entity) == 3
+
+
+def test_with_unepxected_entities():
+    """Test DB with unexpected entities created as due events, not originally in the model"""
+    with tempfile.NamedTemporaryFile() as tmp_file:
+        tmp = tmp_file.name
+
+        # Run 1
+        sb = SystemBackend()
+        dev1 = sb.device().hw("1:0:0:0:0:1")
+        reg = Registry(Inspector(sb.system), db=SQLDatabase(f"sqlite:///{tmp}")).finish_model_load()
+        # connection, target is new unexpected entity
+        p = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234)
+        con = reg.connection(p)
+        # send property event to new entity
+        ev = PropertyEvent(NO_EVIDENCE, con.target, Properties.AUTHENTICATION.verdict())
+        reg.property_update(ev)
+        assert Properties.AUTHENTICATION in con.target.properties
+
+        # in the next run, the property event goes to entity now in the model
+
+        # Run 2
+        sb = SystemBackend()
+        dev1 = sb.device().hw("1:0:0:0:0:1")
+        reg = Registry(Inspector(sb.system), db=SQLDatabase(f"sqlite:///{tmp}")).finish_model_load()
 
 
 def test_db_source_storage():
