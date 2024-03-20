@@ -58,8 +58,6 @@ class NMAPScan(BaseFileCheckTool):
             elif hw_addr in used_ads:
                 host = system.get_endpoint(hw_addr)
                 assert isinstance(host, Host)
-                if ip_addr and not system.is_external(ip_addr):
-                    system.learn_ip_address(host, ip_addr)
             else:
                 # unknown addresses are not included to roster
                 continue
