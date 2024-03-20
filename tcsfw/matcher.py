@@ -174,9 +174,11 @@ class MatchEngine:
                     me.external_activity = fs
 
     def updateAddresses(self, host: Host, old: Set[AnyAddress]):
-        # update address -> endpoint mappings
+        # remove old mappings for the addresses
         for ad in old:
-            self.endpoints[ad] = [m for m in self.endpoints.get(ad, []) if m.entity != host]
+            ends = self.endpoints.get(ad, [])
+            self.endpoints[ad] = [m for m in ends if m.entity != host]
+        # add the host again
         self._add_host(host)
 
     def _add_host(self, entity: Addressable) -> 'MatchEndpoint':
