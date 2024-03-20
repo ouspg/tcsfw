@@ -72,6 +72,7 @@ class NameEvent(Event):
         assert service is None or isinstance(service, DNSService), f"Bad service {service.__class__.__name__}"
         address = IPAddress.new(data.get("address")) if "address" in data else None
         peers = [entity_resolver(p) for p in data.get("peers", [])]
+        assert all(p for p in peers)
         return NameEvent(evidence, service, name, address, peers)
 
     def __eq__(self, other):

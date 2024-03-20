@@ -649,10 +649,6 @@ class ModelListener:
         """Connection created or changed"""
         pass
 
-    def newFlow(self, source: AnyAddress, target: AnyAddress, flow: Flow, connection: Connection):
-        """New flow event"""
-        pass
-
     def hostChange(self, host: Host):
         """Host created or changed"""
         pass

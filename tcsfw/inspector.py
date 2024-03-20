@@ -127,8 +127,6 @@ class Inspector(EventInterface):
                 self.system.call_listeners(lambda ln: ln.hostChange(target.get_parent_host()))
             if conn in send:
                 self.system.call_listeners(lambda ln: ln.connectionChange(conn))
-            if flow in send:
-                self.system.call_listeners(lambda ln: ln.newFlow(s, t, flow, conn))
         return conn
 
     def name(self, event: NameEvent) -> Host:
