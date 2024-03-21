@@ -1,5 +1,6 @@
 import tempfile
 from tcsfw.address import HWAddress, IPAddress
+from tcsfw.basics import ExternalActivity
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.event_interface import PropertyEvent
 from tcsfw.model import EvidenceNetworkSource
@@ -72,6 +73,7 @@ def test_db_source_storage():
 
         src = EvidenceNetworkSource("Source A")
         src.address_map[HWAddress.new("1:0:0:0:0:1")] = dev1.entity
+        src.activity_map[dev1.entity] = ExternalActivity.BANNED  # the default, but practising
         p = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234)
         p.evidence = Evidence(src)
         assert dev1.entity.connections == []
