@@ -52,7 +52,8 @@ def test_with_unepxected_entities():
         # send property event to new entity
         ev = PropertyEvent(NO_EVIDENCE, con.target, Properties.AUTHENTICATION.verdict())
         reg.property_update(ev)
-        assert Properties.AUTHENTICATION in con.target.properties
+        # it is no there - events no longer delivered to unexpected entities
+        assert Properties.AUTHENTICATION not in con.target.properties
 
         # in the next run, the property event goes to entity now in the model
 
