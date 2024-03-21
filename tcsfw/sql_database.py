@@ -1,5 +1,5 @@
 import json
-from typing import Any, Iterator, Optional, Dict, Tuple
+from typing import Any, Iterator, List, Optional, Dict, Tuple
 
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
@@ -126,6 +126,19 @@ class SQLDatabase(EntityDatabase, ModelListener):
 
     def read_events(self, interface: EventInterface) -> Iterator[Event]:
         """Real all events from database"""
+        # read rows in batches, as event handling may cause DB operations
+        offset = 0
+        while True:
+            batch = self._read_event_batch(offset)
+            if not batch:
+                return  # no more events
+            offset += len(batch)
+            for ev in batch:
+                event = self._form_event(ev)
+                yield event
+
+    def _read_event_batch(self, offset: int) -> List[Tuple[str, EvidenceSource, str, str]]:
+        """Read a batch of events from database"""
         source_cache: Dict[int, EvidenceSource] = {}
 
         def get_source(ses: Session, source_id: int) -> EvidenceSource:
@@ -139,36 +152,29 @@ class SQLDatabase(EntityDatabase, ModelListener):
                 source_cache[source_id] = src
             return src
 
-        # read rows in batches, as event handling may cause DB operations
-        r_size = 1000
-        offset = 0
-        while True:
-            batch = []
-            with Session(self.engine) as ses:
-                with ses.begin():
-                    sel = select(TableEvent).offset(offset).limit(r_size)
-                    for ev in ses.execute(sel).scalars():
-                        src = get_source(ses, ev.source_id)
-                        batch.append((ev.type, src, ev.tail_ref, ev.data))
+        r_size = 8196
+        batch = []
+        with Session(self.engine) as ses:
+            with ses.begin():
+                sel = select(TableEvent).offset(offset).limit(r_size)
+                for ev in ses.execute(sel).scalars():
+                    src = get_source(ses, ev.source_id)
+                    batch.append((ev.type, src, ev.tail_ref, ev.data))
+        return batch
 
-            # outside DB session, process
-            if not batch:
-                return  # no more events
-            offset += len(batch)
-            for ev in batch:
-                e_type, src, e_tail, e_data = ev
-                event_type = self.event_types.get(e_type)
-                if event_type is None:
-                    continue
-                if src is None:
-                    self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
-                    continue
-                evi = Evidence(src, e_tail)
-                js = json.loads(e_data)
-                event = event_type.decode_data_json(evi, js, self.get_entity)
-                if event is None:
-                    continue
-                yield event
+    def _form_event(self, data: Tuple[str, EvidenceSource, str, str]) -> Optional[Event]:
+        """Form an event from database data"""
+        e_type, src, e_tail, e_data = data
+        event_type = self.event_types.get(e_type)
+        if event_type is None:
+            return None
+        if src is None:
+            self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
+            return None
+        evi = Evidence(src, e_tail)
+        js = json.loads(e_data)
+        event = event_type.decode_data_json(evi, js, self.get_entity)
+        return event
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass
