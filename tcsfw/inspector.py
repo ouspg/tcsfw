@@ -160,6 +160,9 @@ class Inspector(EventInterface):
 
     def property_update(self, update: PropertyEvent) -> Entity:
         s = update.entity
+        if s.status in {Status.PLACEHOLDER, Status.UNEXPECTED}:
+            # no properties for placeholders or unexpected entities
+            return s
         key, val = update.key_value
         if key.model and key not in s.properties:
             self.logger.debug("Value for model property %s ignored, as it is not in model", key)
