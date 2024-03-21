@@ -141,23 +141,34 @@ class SQLDatabase(EntityDatabase, ModelListener):
                         source_cache[source_id] = src
             return src
 
-        with Session(self.engine) as ses:
-            with ses.begin():
-                sel = select(TableEvent)
-                for ev in ses.execute(sel).yield_per(1000).scalars():
-                    event_type = self.event_types.get(ev.type)
-                    if event_type is None:
-                        continue
-                    src = get_source(ev.source_id)
-                    if src is None:
-                        self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
-                        continue
-                    evi = Evidence(src, ev.tail_ref)
-                    js = json.loads(ev.data)
-                    event = event_type.decode_data_json(evi, js, self.get_entity)
-                    if event is None:
-                        continue
-                    yield event
+        # read rows in batches, as event handling may cause DB operations
+        r_size = 1000
+        offset = 0
+        while True:
+            batch = []
+            with Session(self.engine) as ses:
+                count = 0
+                with ses.begin():
+                    sel = select(TableEvent).offset(offset).limit(r_size)
+                    for ev in ses.execute(sel).scalars():
+                        count += 1
+                        event_type = self.event_types.get(ev.type)
+                        if event_type is None:
+                            continue
+                        src = get_source(ev.source_id)
+                        if src is None:
+                            self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
+                            continue
+                        evi = Evidence(src, ev.tail_ref)
+                        js = json.loads(ev.data)
+                        event = event_type.decode_data_json(evi, js, self.get_entity)
+                        if event is None:
+                            continue
+                        batch.append(event)
+            if count == 0:
+                return  # no more events
+            offset += r_size
+            yield from batch
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass
