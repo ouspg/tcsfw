@@ -128,17 +128,15 @@ class SQLDatabase(EntityDatabase, ModelListener):
         """Real all events from database"""
         source_cache: Dict[int, EvidenceSource] = {}
 
-        def get_source(source_id: int) -> EvidenceSource:
+        def get_source(ses: Session, source_id: int) -> EvidenceSource:
             src = source_cache.get(source_id)
             if src is None:
-                with Session(self.engine) as ses:
-                    with ses.begin():
-                        sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
-                        r_data = ses.execute(sel).first()[0]
-                        src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
-                        js = json.loads(r_data.data)
-                        src.decode_data_json(js, self.get_entity)
-                        source_cache[source_id] = src
+                sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
+                r_data = ses.execute(sel).first()[0]
+                src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
+                js = json.loads(r_data.data)
+                src.decode_data_json(js, self.get_entity)
+                source_cache[source_id] = src
             return src
 
         # read rows in batches, as event handling may cause DB operations
@@ -147,28 +145,30 @@ class SQLDatabase(EntityDatabase, ModelListener):
         while True:
             batch = []
             with Session(self.engine) as ses:
-                count = 0
                 with ses.begin():
                     sel = select(TableEvent).offset(offset).limit(r_size)
                     for ev in ses.execute(sel).scalars():
-                        count += 1
-                        event_type = self.event_types.get(ev.type)
-                        if event_type is None:
-                            continue
-                        src = get_source(ev.source_id)
-                        if src is None:
-                            self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
-                            continue
-                        evi = Evidence(src, ev.tail_ref)
-                        js = json.loads(ev.data)
-                        event = event_type.decode_data_json(evi, js, self.get_entity)
-                        if event is None:
-                            continue
-                        batch.append(event)
-            if count == 0:
+                        src = get_source(ses, ev.source_id)
+                        batch.append((ev.type, src, ev.tail_ref, ev.data))
+
+            # outside DB session, process
+            if not batch:
                 return  # no more events
-            offset += r_size
-            yield from batch
+            offset += len(batch)
+            for ev in batch:
+                e_type, src, e_tail, e_data = ev
+                event_type = self.event_types.get(e_type)
+                if event_type is None:
+                    continue
+                if src is None:
+                    self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
+                    continue
+                evi = Evidence(src, e_tail)
+                js = json.loads(e_data)
+                event = event_type.decode_data_json(evi, js, self.get_entity)
+                if event is None:
+                    continue
+                yield event
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass
