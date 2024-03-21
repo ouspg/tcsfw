@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
-from tcsfw.model import Addressable, Connection, EvidenceNetworkSource, IoTSystem, NetworkNode, NodeComponent, Service
+from tcsfw.model import Addressable, Connection, EvidenceNetworkSource, Host, IoTSystem, ModelListener, NetworkNode, NodeComponent, Service
 from tcsfw.services import NameEvent
 
 from tcsfw.traffic import BLEAdvertisementFlow, EthernetFlow, Event, Evidence, EvidenceSource, HostScan, IPFlow, ServiceScan
@@ -42,7 +42,7 @@ class TableEvent(Base):
     data = Column(String)  # JSON
 
 
-class SQLDatabase(EntityDatabase):
+class SQLDatabase(EntityDatabase, ModelListener):
     """Use SQL database for storage"""
     def __init__(self, db_uri: str):
         super().__init__()
@@ -110,12 +110,18 @@ class SQLDatabase(EntityDatabase):
             ses.commit()
 
     def restore_stored(self, interface: EventInterface) -> Iterator[Event]:
-        # Put all entities from model into the database
         system = interface.get_system()
+        # Add self as model listener, unless already added
+        if self not in system.model_listeners:
+            system.model_listeners.append(self)
+        # Put all entities from model into the database
         for e in system.iterate_all():
             self.get_id(e)
         # Read all events from database
         return self.read_events(interface)
+
+    def host_change(self, host: Host):
+        self.get_id(host) # learn new hosts
 
     def read_events(self, interface: EventInterface) -> Iterator[Event]:
         """Real all events from database"""
