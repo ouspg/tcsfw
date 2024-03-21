@@ -96,18 +96,18 @@ class SQLDatabase(EntityDatabase, ModelListener):
     def _purge_model_events(self):
         """Purge model events from the database"""
         with Session(self.engine) as ses:
-            # collect source_ids of model sources
-            ids = set()
-            sel = select(TableEvidenceSource.id).where(TableEvidenceSource.model == True)
-            ids.update(ses.execute(sel).scalars())
-            # select evets with these sources and delete them
-            dele = delete(TableEvent).where(TableEvent.source_id.in_(ids))
-            ses.execute(dele)
-            ses.commit()
-            # finally, delete the sources
-            dele = delete(TableEvidenceSource).where(TableEvidenceSource.model == True)
-            ses.execute(dele)
-            ses.commit()
+            with ses.begin():
+                # collect source_ids of model sources
+                ids = set()
+                sel = select(TableEvidenceSource.id).where(TableEvidenceSource.model == True)
+                ids.update(ses.execute(sel).scalars())
+                # select evets with these sources and delete them
+                dele = delete(TableEvent).where(TableEvent.source_id.in_(ids))
+                ses.execute(dele)
+                # finally, delete the sources
+                dele = delete(TableEvidenceSource).where(TableEvidenceSource.model == True)
+                ses.execute(dele)
+                ses.commit()
 
     def restore_stored(self, interface: EventInterface) -> Iterator[Event]:
         system = interface.get_system()
@@ -131,30 +131,32 @@ class SQLDatabase(EntityDatabase, ModelListener):
             src = source_cache.get(source_id)
             if src is None:
                 with Session(self.engine) as ses:
-                    sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
-                    r_data = ses.execute(sel).first()[0]
-                    src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
-                    js = json.loads(r_data.data)
-                    src.decode_data_json(js, self.get_entity)
-                    source_cache[source_id] = src
+                    with ses.begin():
+                        sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
+                        r_data = ses.execute(sel).first()[0]
+                        src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
+                        js = json.loads(r_data.data)
+                        src.decode_data_json(js, self.get_entity)
+                        source_cache[source_id] = src
             return src
 
         with Session(self.engine) as ses:
-            sel = select(TableEvent)
-            for ev in ses.execute(sel).yield_per(1000).scalars():
-                event_type = self.event_types.get(ev.type)
-                if event_type is None:
-                    continue
-                src = get_source(ev.source_id)
-                if src is None:
-                    self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
-                    continue
-                evi = Evidence(src, ev.tail_ref)
-                js = json.loads(ev.data)
-                event = event_type.decode_data_json(evi, js, self.get_entity)
-                if event is None:
-                    continue
-                yield event
+            with ses.begin():
+                sel = select(TableEvent)
+                for ev in ses.execute(sel).yield_per(1000).scalars():
+                    event_type = self.event_types.get(ev.type)
+                    if event_type is None:
+                        continue
+                    src = get_source(ev.source_id)
+                    if src is None:
+                        self.logger.warning(f"Event {ev.id} has unknown source {ev.source_id}")
+                        continue
+                    evi = Evidence(src, ev.tail_ref)
+                    js = json.loads(ev.data)
+                    event = event_type.decode_data_json(evi, js, self.get_entity)
+                    if event is None:
+                        continue
+                    yield event
 
     def reset(self, source_filter: Dict[str, bool] = None):
         pass
@@ -202,10 +204,11 @@ class SQLDatabase(EntityDatabase, ModelListener):
             id_i = self._cache_entity(entity)
             # store in database
             with Session(self.engine) as ses:
-                ent_id = TableEntityID(id=id_i, name=short_name, source=source_i, target=target_i,
-                                       long_name=long_name, type=entity.concept_name)
-                ses.add(ent_id)
-                ses.commit()
+                with ses.begin():
+                    ent_id = TableEntityID(id=id_i, name=short_name, source=source_i, target=target_i,
+                                        long_name=long_name, type=entity.concept_name)
+                    ses.add(ent_id)
+                    ses.commit()
             self.id_by_key[cache_key] = id_i
         else:
             # not stored to database
@@ -233,17 +236,18 @@ class SQLDatabase(EntityDatabase, ModelListener):
         source = event.evidence.source
         source_id = self.source_cache.get(source, -1)
         with Session(self.engine) as ses:
-            # Sources not restored from database, copies appear
-            if source_id < 0:
-                source_id = self.free_source_id
-                self.free_source_id += 1
-                data_js = source.get_data_json(self.get_id)
-                src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref,
-                                          model=source.model_override, data=json.dumps(data_js))
-                ses.add(src)
-                self.source_cache[source] = source_id
-            js = event.get_data_json(self.get_id)
-            ev = event.evidence
-            ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, source_id=source_id, data=json.dumps(js))
-            ses.add(ev)
-            ses.commit()
+            with ses.begin():
+                # Sources not restored from database, copies appear
+                if source_id < 0:
+                    source_id = self.free_source_id
+                    self.free_source_id += 1
+                    data_js = source.get_data_json(self.get_id)
+                    src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref,
+                                            model=source.model_override, data=json.dumps(data_js))
+                    ses.add(src)
+                    self.source_cache[source] = source_id
+                js = event.get_data_json(self.get_id)
+                ev = event.evidence
+                ev = TableEvent(type=type_s, tail_ref=ev.tail_ref, source_id=source_id, data=json.dumps(js))
+                ses.add(ev)
+                ses.commit()
