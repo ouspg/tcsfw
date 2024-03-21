@@ -46,7 +46,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
     """Use SQL database for storage"""
     def __init__(self, db_uri: str):
         super().__init__()
-        self.events_thru_db = True  # all go to DB first
+        self.events_thru_db = False  # Later: all go to DB first
         self.engine = create_engine(db_uri)
         Base.metadata.create_all(self.engine)
         self.db_conn = self.engine.connect()
