@@ -189,6 +189,9 @@ class Inspector(EventInterface):
         s = self._get_seen_entity(add)
         if s is None:
             raise NotImplementedError(f"Processing properties for {add} not implemented")
+        if s.status in {Status.PLACEHOLDER, Status.UNEXPECTED}:
+            # no properties for placeholders or unexpected entities
+            return s
         key, val = update.key_value
         if key.model and key not in s.properties:
             self.logger.debug("Value for model property %s ignored, as it is not in model", key)
