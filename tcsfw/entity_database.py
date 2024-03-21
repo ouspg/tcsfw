@@ -10,6 +10,7 @@ class EntityDatabase:
     """Store and retrieve events, later entities, etc."""
     def __init__(self):
         self.logger = logging.getLogger("database")
+        self.events_thru_db = False  # all events through DB?
         # local ID integers for entities and connections, usable for persistent DB
         self.ids: Dict[Any, int] = {}
         self.reverse_id: List[Any] = []

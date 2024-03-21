@@ -86,27 +86,39 @@ class Registry(EventInterface):
 
     def connection(self, flow: Flow) -> Optional[Connection]:
         self._new_event(flow)
+        if self.database.events_thru_db:
+            return None
         return self.logging.connection(flow)
 
     def name(self, event: NameEvent) -> Optional[Host]:
         self._new_event(event)
+        if self.database.events_thru_db:
+            return None
         return self.logging.name(event)
 
     def property_update(self, update: PropertyEvent) -> Optional[Entity]:
         self._new_event(update)
+        if self.database.events_thru_db:
+            return None
         return self.logging.property_update(update)
 
     def property_address_update(self, update: PropertyAddressEvent) -> Optional[Entity]:
         self._new_event(update)
+        if self.database.events_thru_db:
+            return None
         return self.logging.property_address_update(update)
 
     def service_scan(self, scan: ServiceScan) -> Optional[Service]:
         self._new_event(scan)
+        if self.database.events_thru_db:
+            return None
         return self.logging.service_scan(scan)
 
     def host_scan(self, scan: HostScan) -> Optional[Host]:
         self._new_event(scan)
         return self.logging.host_scan(scan)
+        if self.database.events_thru_db:
+            return None
 
     def __repr__(self):
         return self.logging.__repr__()
