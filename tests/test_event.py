@@ -3,7 +3,7 @@ from tcsfw.basics import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent
 from tcsfw.main import DNS
-from tcsfw.property import PropertyKey
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import Evidence, EvidenceSource, IPFlow
 
@@ -89,6 +89,7 @@ def test_name_event():
 
 def test_ipflow_event():
     p = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:2", "192.168.0.2", 1234)
+    Properties.MITM.put_verdict(p.properties, Verdict.PASS)
 
     js = p.get_data_json(lambda x: None)
     assert js == {
@@ -98,7 +99,10 @@ def test_ipflow_event():
         'source_port': 1100,
         'target_hw': '01:00:00:00:00:02',
         'target': '192.168.0.2',
-        'target_port': 1234
+        'target_port': 1234,
+        'properties': {
+            'check:mitm': {'verdict': 'Pass'}
+        }
     }
 
     evi = Evidence(EvidenceSource("Source A"))

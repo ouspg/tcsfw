@@ -118,6 +118,12 @@ class Inspector(EventInterface):
                 # a reply
                 update_seen_status(target)
 
+        # flow event can carry properties
+        if conn.status == Status.EXPECTED:
+            for prop, v in flow.properties.items():
+                # No model events, perhaps later?
+                prop.update(conn.properties, v)
+
         if self.system.model_listeners and send:
             if source in send:
                 self.system.call_listeners(lambda ln: ln.host_change(source.get_parent_host()))

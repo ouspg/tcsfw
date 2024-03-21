@@ -3,6 +3,7 @@ from typing import Any, Callable, Tuple, Set, Optional, Self, Union, Dict
 
 from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, AnyAddress, \
     Addresses
+from tcsfw.property import Properties, PropertyKey
 
 
 class EvidenceSource:
@@ -149,6 +150,7 @@ class Flow(Event):
         self.protocol = protocol
         self.reply = False  # Is this reply? Set by inspector
         self.timestamp: Optional[datetime.datetime] = None
+        self.properties: Dict[PropertyKey, Any] = {}  # optional properties for the connection
 
     def stack(self, target: bool) -> Tuple[AnyAddress]:
         """Get source or target address stack"""
@@ -175,6 +177,29 @@ class Flow(Event):
         """Get target top address"""
         return NotImplementedError()
 
+    def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
+        r = {}  # protocol set by subclass, which knows the default
+        if self.protocol != Protocol.ETHERNET:
+            r["protocol"] = self.protocol.value
+        if self.properties:
+            p_r = r["properties"] = {}
+            for k, v in self.properties.items():
+                p_r[k.get_name()] = k.get_value_json(v, {})
+        return r
+
+    def decode_properties_json(self, data: Dict):
+        """Decode properties from JSON"""
+        for k, v in data.get("properties", {}).items():
+            key = PropertyKey.parse(k)
+            value = key.decode_value_json(v)
+            self.properties[key] = value
+
+    def __hash__(self) -> int:
+        return self.protocol.__hash__() ^ hash(self.properties)
+
+    def __eq__(self, v) -> bool:
+        return self.protocol == v.protocol and self.properties == v.properties
+
 
 class EthernetFlow(Flow):
     def __init__(self, evidence: Evidence, source: HWAddress, target: HWAddress, payload=-1,
@@ -197,7 +222,7 @@ class EthernetFlow(Flow):
         return self.target
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
-        r = {}
+        r = super().get_data_json(id_resolver)
         if self.protocol != Protocol.ETHERNET:
             r["protocol"] = self.protocol.value
         r["source"] = f"{self.source}"
@@ -212,7 +237,9 @@ class EthernetFlow(Flow):
         source = HWAddress.new(data["source"])
         target = HWAddress.new(data["target"])
         payload = data.get("payload", -1)
-        return EthernetFlow(evidence, source, target, payload, protocol)
+        r = EthernetFlow(evidence, source, target, payload, protocol)
+        r.decode_properties_json(data)
+        return r
 
     @classmethod
     def new(cls, protocol: Protocol, address: str) -> 'EthernetFlow':
@@ -244,8 +271,8 @@ class EthernetFlow(Flow):
     def __eq__(self, other):
         if not isinstance(other, EthernetFlow):
             return False
-        return self.protocol == other.protocol and self.source == other.source and self.payload == other.payload \
-            and self.target == other.target
+        return self.source == other.source and self.payload == other.payload and self.target == other.target \
+            and super().__eq__(other)
 
 
 class IPFlow(Flow):
@@ -307,9 +334,8 @@ class IPFlow(Flow):
         return self.target[0] if self.target[1].is_null() else self.target[1]
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
-        r = {
-            "protocol": self.protocol.value,
-        }
+        r = super().get_data_json(id_resolver)
+        r["protocol"] = self.protocol.value
         if not self.source[0].is_null():
             r["source_hw"] = f"{self.source[0]}"
         if not self.source[1].is_null():
@@ -333,7 +359,9 @@ class IPFlow(Flow):
         t_hw = HWAddress.new(data.get("target_hw")) if "target_hw" in data else HWAddresses.NULL
         t_ip = IPAddress.new(data.get("target")) if "target" in data else IPAddresses.NULL
         t_port = data.get("target_port", -1)
-        return IPFlow(evidence, source=(s_hw, s_ip, s_port), target=(t_hw, t_ip, t_port), protocol=protocol)
+        r = IPFlow(evidence, source=(s_hw, s_ip, s_port), target=(t_hw, t_ip, t_port), protocol=protocol)
+        r.decode_properties_json(data)
+        return r
 
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
         self.target = HWAddress.new(target[0]), IPAddress.new(target[1]), target[2]
@@ -355,7 +383,7 @@ class IPFlow(Flow):
     def __eq__(self, other):
         if not isinstance(other, IPFlow):
             return False
-        return self.protocol == other.protocol and self.source == other.source and self.target == other.target
+        return self.source == other.source and self.target == other.target and super().__eq__(other)
 
     @classmethod
     def parse_from_json(cls, value: Dict) -> 'IPFlow':
@@ -401,17 +429,19 @@ class BLEAdvertisementFlow(Flow):
         return (self.source if self.reply else Addresses.BLE_Ad)
 
     def get_data_json(self, id_resolver: Callable[[Any], Any]) -> Dict:
-        return {
-            "source": f"{self.source}",
-            "event_type": self.event_type,
-        }
+        r = super().get_data_json(id_resolver)
+        r["source"] = f"{self.source}"
+        r["event_type"] = self.event_type
+        return r
 
     @classmethod
     def decode_data_json(cls, evidence: Evidence, data: Dict,
                          entity_resolver: Callable[[Any], Any]) -> 'BLEAdvertisementFlow':
         source = HWAddress.new(data["source"])
         event_type = data["event_type"]
-        return BLEAdvertisementFlow(evidence, source, event_type)
+        r = BLEAdvertisementFlow(evidence, source, event_type)
+        r.decode_properties_json(data)
+        return r
 
     def __repr__(self):
         return f"{self.source} >> 0x{self.event_type:02x} {self.protocol.value.upper()}"
@@ -422,4 +452,4 @@ class BLEAdvertisementFlow(Flow):
     def __eq__(self, other):
         if not isinstance(other, BLEAdvertisementFlow):
             return False
-        return self.protocol == other.protocol and self.source == other.source and self.event_type == other.event_type
+        return self.source == other.source and self.event_type == other.event_type and super().__eq__(other)
