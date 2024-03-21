@@ -133,7 +133,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
             if src is None:
                 sel = select(TableEvidenceSource).where(TableEvidenceSource.id == source_id)
                 r_data = ses.execute(sel).first()[0]
-                src = EvidenceNetworkSource(r_data.name, r_data.label, r_data.base_ref)
+                src = EvidenceNetworkSource(r_data.name, r_data.base_ref, r_data.label)
                 js = json.loads(r_data.data)
                 src.decode_data_json(js, self.get_entity)
                 source_cache[source_id] = src
