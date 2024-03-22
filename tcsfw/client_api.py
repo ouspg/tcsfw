@@ -111,9 +111,9 @@ class ClientAPI(ModelListener):
         """Get API data"""
         context = RequestContext(request, self)
         path = request.path
-        if path == "model":
+        if path == "all":
             request.get_connections = False
-            return self.get_model(context.change_path("."))
+            return {"events:" : list(self.api_iterate_all(request.change_path(".")))}
         elif path.startswith("coverage"):
             return self.get_coverage(context.change_path(path[8:]))
         elif path.startswith("host/"):
@@ -134,8 +134,8 @@ class ClientAPI(ModelListener):
             param = json.load(data) if data else {}
             self.post_evidence_filter(param.get("evidence", {}), include_all=param.get("include_all", False))
             self.system_reset()
-            if param.get("dump_model", False):
-                r = self.get_model(RequestContext(request, self).change_path("."))
+            if param.get("dump_all", False):
+                r = {"events": list(self.api_iterate_all(request.change_path(".")))}
         elif path == "flow":
             flow, ref = self.parse_flow(NO_EVIDENCE, json.load(data))
             self.registry.connection(flow)
@@ -207,9 +207,9 @@ class ClientAPI(ModelListener):
         """Get status and verdict for an entity"""
         return f"{status.value}/{verdict.value}"
 
-    def get_properties(self, properties: Dict[PropertyKey, Any]) -> Dict:
+    def get_properties(self, properties: Dict[PropertyKey, Any], json_dict: Dict = None) -> Dict:
         """Get properties"""
-        cs = {}
+        cs = {} if json_dict is None else json_dict
         for key, p  in properties.items():
             vs = {
                 "name": key.get_name(short=True),
@@ -226,6 +226,11 @@ class ClientAPI(ModelListener):
                 vs["info"] = f"{p}"
             cs[key.get_name()] = vs
         return cs
+
+    def get_entity_properties(self, entity: Entity) -> Dict:
+        """Get entity properties"""
+        r = self.get_properties(entity.properties, {"id": self.get_id(entity)})
+        return r
 
     def get_components(self, entity: NetworkNode, context: RequestContext) -> List:
         def sub(component: NodeComponent) -> Dict:
@@ -295,18 +300,6 @@ class ClientAPI(ModelListener):
             r["host_id"] = self.get_id(host)
         if isinstance(entity.parent, Addressable):
             r["parent_id"] = self.get_id(entity.parent)
-        if entity.children:
-            r["services"] = [self.get_entity(c, context)[1]
-                             for c in entity.children if c.status != Status.PLACEHOLDER]
-        if entity.components:
-            r["components"] = self.get_components(entity, context)
-        if isinstance(entity, Host):
-            if context.request.get_connections:
-                cj: List[Dict] = r.setdefault("connections", [])
-                for c in entity.connections:
-                    if c.is_relevant(ignore_ends=True):
-                        cj.append(self.get_connection(c, context))
-        r["properties"] = self.get_properties(entity.properties)
         return entity, r
 
     def get_connection(self, connection: Connection, context: RequestContext) -> Dict:
@@ -338,29 +331,8 @@ class ClientAPI(ModelListener):
         s = self.registry.system
         si = {
             "system_name": s.name,
-            "components": self.get_components(s, context),
-            # "checks": self.get_checks(s.status, s.claims),
         }
         return si
-
-    def get_model(self, context: RequestContext) -> Dict:
-        """Get whole model"""
-        system = self.registry.system
-        root: Dict[str, Any] = {
-            "reset": {},
-            "system": self.get_system_info(context)
-        }
-        hj = root.setdefault("hosts", [])
-        for h in system.get_hosts():
-            if h.status != Status.PLACEHOLDER:
-                _, hr = self.get_entity(h, context)
-                hj.append(hr)
-        cj = root.setdefault("connections", [])
-        for c in self.registry.system.get_connections():
-            cr = self.get_connection(c, context)
-            cj.append(cr)
-        root["evidence"] = self.get_evidence_filter()
-        return root
 
     def get_evidence_filter(self) -> Dict:
         """Get evidence filter"""
@@ -392,20 +364,24 @@ class ClientAPI(ModelListener):
         system = self.registry.system
         request.get_connections = False
         # start with reset, client should clear all entity and connection information
-        its = [
-            {"reset": {}},
-            {"system": self.get_system_info(context)},
-        ]
+        yield {"reset": {}}
+        yield {"system": self.get_system_info(context)}
+        if system.properties:
+            yield {"properties": self.get_entity_properties(system)}
         # ... as we list it here then
         for h in system.get_hosts():
             if h.status != Status.PLACEHOLDER:
                 _, hr = self.get_entity(h, context)
-                its.append({"host": hr})
+                yield {"host": hr}
+                if h.properties:
+                    yield {"properties": self.get_entity_properties(h)}
+                for c in h.children:
+                    _, cr = self.get_entity(c, context)
+                    yield {"service": cr}
         for c in self.registry.system.get_connections():
             cr = self.get_connection(c, context)
-            its.append({"connection": cr})
-        its.append({"evidence": self.get_evidence_filter()})
-        return its
+            yield {"connection": cr}
+        yield {"evidence": self.get_evidence_filter()}
 
     def get_by_id(self, id_string: str) -> Optional:
         """Get entity by id string"""
@@ -424,6 +400,8 @@ class ClientAPI(ModelListener):
             p = "conn"
         elif isinstance(entity, NodeComponent):
             p = "com"
+        elif isinstance(entity, IoTSystem):
+            p = "system"
         else:
             raise Exception("Unknown entity type %s", type(entity))
         return f"{p}-{int_id}"
