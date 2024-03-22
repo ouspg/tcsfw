@@ -232,30 +232,16 @@ class ClientAPI(ModelListener):
         r = self.get_properties(entity.properties, {"id": self.get_id(entity)})
         return r
 
-    def get_components(self, entity: NetworkNode, context: RequestContext) -> List:
+    def get_components(self, entity: NetworkNode, context: RequestContext) -> Iterable[Tuple[NodeComponent, Dict]]:
         def sub(component: NodeComponent) -> Dict:
-            # if isinstance(component, Software):
-                # FIXME - putting in release info even without claims for it
-                # info = component.info
-                # claim_d = Claim.identifier_map(claims)
-                # if info.first_release and not FirstRelease.find(claim_d):
-                #     c = FirstRelease(info.first_release)
-                #     claims[c] = ClaimStatus(c, verdict=Verdict.EXTERNAL)
-                # if info.latest_release_name and info.latest_release and not LatestRelease.find(claim_d):
-                #     c = LatestRelease(info.latest_release_name, info.latest_release)
-                #     claims[c] = ClaimStatus(c, verdict=Verdict.EXTERNAL)
-                # if info.interval_days is not None and not ReleaseInterval.find(claim_d):
-                #     c = ReleaseInterval(info.interval_days)
-                #     claims[c] = ClaimStatus(c, verdict=Verdict.EXTERNAL)
             com_cs = {
                 "name": component.name,
                 "id": self.get_id(component),
                 "status": self.get_status_verdict(component.status, component.get_verdict(context.verdict_cache)),
-                "properties": self.get_properties(component.properties)
             }
             if component.sub_components:
                 com_cs["sub_components"] = [sub(c) for c in component.sub_components]
-            return com_cs
+            return component, com_cs
 
         root_list = []
         for com in entity.components:
@@ -322,7 +308,6 @@ class ClientAPI(ModelListener):
             "target_host_id": self.get_id(t.get_parent_host()),
             "status": self.get_status_verdict(connection.status, connection.get_verdict(context.verdict_cache)),
             "type": connection.con_type.value,
-            "properties": self.get_properties(connection.properties),
         }
         return cr
 
@@ -373,14 +358,22 @@ class ClientAPI(ModelListener):
             if h.status != Status.PLACEHOLDER:
                 _, hr = self.get_entity(h, context)
                 yield {"host": hr}
+                for com, com_r in self.get_components(h, context):
+                    yield {"component": com_r}
+                    if com.properties:
+                        yield {"properties": self.get_entity_properties(com)}
                 if h.properties:
                     yield {"properties": self.get_entity_properties(h)}
                 for c in h.children:
                     _, cr = self.get_entity(c, context)
                     yield {"service": cr}
+                    if c.properties:
+                        yield {"properties": self.get_entity_properties(h)}
         for c in self.registry.system.get_connections():
             cr = self.get_connection(c, context)
             yield {"connection": cr}
+            if c.properties:
+                yield {"properties": self.get_entity_properties(c)}
         yield {"evidence": self.get_evidence_filter()}
 
     def get_by_id(self, id_string: str) -> Optional:
