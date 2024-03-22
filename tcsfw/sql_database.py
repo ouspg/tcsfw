@@ -1,5 +1,5 @@
 import json
-from typing import Any, Iterator, List, Optional, Dict, Tuple
+from typing import Any, Iterator, List, Optional, Dict, Tuple, Set
 
 from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
@@ -74,6 +74,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
         # keep state of pending reads
         self.pending_offset = 0
         self.pending_batch = []
+        self.pending_source_ids = set()
 
     def _fill_cache(self):
         """Fill entity cache from database"""
@@ -131,6 +132,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
         """Real all events from database"""
         # read rows in batches, as event handling may cause DB operations
         offset = 0
+        self.pending_offset = -1  # indicate all is read
         while True:
             batch = self._read_event_batch(offset)
             if not batch:
@@ -140,7 +142,8 @@ class SQLDatabase(EntityDatabase, ModelListener):
                 event = self._form_event(ev)
                 yield event
 
-    def _read_event_batch(self, offset: int) -> List[Tuple[str, EvidenceSource, str, str]]:
+    def _read_event_batch(self, offset: int,
+                          sources: Optional[Set[int]] = None) -> List[Tuple[str, EvidenceSource, str, str]]:
         """Read a batch of events from database"""
         source_cache: Dict[int, EvidenceSource] = {}
 
@@ -159,8 +162,15 @@ class SQLDatabase(EntityDatabase, ModelListener):
         batch = []
         with Session(self.engine) as ses:
             with ses.begin():
-                sel = select(TableEvent).offset(offset).limit(r_size)
+                sel = select(TableEvent)
+                # if sources is None:
+                #     sel = select(TableEvent)
+                # else:
+                #     sel = select(TableEvent).where(TableEvent.source_id in sources)
+                sel = sel.offset(offset).limit(r_size)
                 for ev in ses.execute(sel).scalars():
+                    if sources is not None and ev.source_id not in sources:
+                        continue
                     src = get_source(ses, ev.source_id)
                     batch.append((ev.type, src, ev.tail_ref, ev.data))
         return batch
@@ -180,16 +190,30 @@ class SQLDatabase(EntityDatabase, ModelListener):
         return event
 
     def reset(self, source_filter: Dict[str, bool] = None):
-        # FIXME: Filter not used
+        # Clear state
         self.pending_offset = 0
         self.pending_batch = []
+        # Filter which sources are included
+        labels = set([f for f, v in source_filter.items() if v])
+        ids = set()
+        with Session(self.engine) as ses:
+            with ses.begin():
+                # collect source_ids of model sources
+                sel = select(TableEvidenceSource)  # .where(TableEvidenceSource.label in labels)
+                for src in ses.execute(sel).yield_per(1000).scalars():
+                    if src.label in labels:
+                        ids.add(src.id)
+        self.pending_source_ids = ids
 
     def next_pending(self) -> Optional[Event]:
+        if self.pending_offset < 0:
+            return None  # all read
         if not self.pending_batch:
             # read new batch
-            self.pending_batch = self._read_event_batch(self.pending_offset)
+            self.pending_batch = self._read_event_batch(self.pending_offset, sources=self.pending_source_ids)
             if not self.pending_batch:
-                return None  # No more data
+                self.pending_offset = -1  # No more data
+                return None
             self.pending_offset += len(self.pending_batch)
         ev = self._form_event(self.pending_batch[0])
         self.pending_batch = self.pending_batch[1:]
