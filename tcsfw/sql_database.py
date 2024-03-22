@@ -71,6 +71,9 @@ class SQLDatabase(EntityDatabase, ModelListener):
         self.event_names = {c: n for n, c in self.event_types.items()}
         self._purge_model_events()
         self._fill_cache()
+        # keep state of pending reads
+        self.pending_offset = 0
+        self.pending_batch = []
 
     def _fill_cache(self):
         """Fill entity cache from database"""
@@ -177,10 +180,20 @@ class SQLDatabase(EntityDatabase, ModelListener):
         return event
 
     def reset(self, source_filter: Dict[str, bool] = None):
-        pass
+        # FIXME: Filter not used
+        self.pending_offset = 0
+        self.pending_batch = []
 
     def next_pending(self) -> Optional[Event]:
-        return None
+        if not self.pending_batch:
+            # read new batch
+            self.pending_batch = self._read_event_batch(self.pending_offset)
+            if not self.pending_batch:
+                return None  # No more data
+            self.pending_offset += len(self.pending_batch)
+        ev = self._form_event(self.pending_batch[0])
+        self.pending_batch = self.pending_batch[1:]
+        return ev
 
     def get_id(self, entity) -> int:
         id_i = self.id_cache.get(entity, -1)
