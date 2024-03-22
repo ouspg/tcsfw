@@ -368,7 +368,7 @@ class ClientAPI(ModelListener):
                     _, cr = self.get_entity(c, context)
                     yield {"service": cr}
                     if c.properties:
-                        yield {"properties": self.get_entity_properties(h)}
+                        yield {"properties": self.get_entity_properties(c)}
         for c in self.registry.system.get_connections():
             cr = self.get_connection(c, context)
             yield {"connection": cr}
