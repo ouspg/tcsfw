@@ -10,7 +10,7 @@ from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim import AbstractClaim
 from tcsfw.claim_coverage import RequirementClaimMapper
-from tcsfw.client_api import APIRequest
+from tcsfw.client_api import APIRequest, ClientAPI, ClientPrompt
 from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, Software
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import ClaimAuthority
@@ -931,6 +931,7 @@ class SystemBackendRunner(SystemBackend):
 
         parser.add_argument("--db", type=str, help="Connect to SQL database")
         parser.add_argument("--http-server", type=int, help="Listen HTTP requests at port")
+        parser.add_argument("--prompt", action="store_true", help="Run test prompt loop")
         parser.add_argument("--test-delay", type=int, help="HTTP request artificial test delay, ms")
         parser.add_argument("--no-auth-ok", action="store_true", help="Skip check for auth token in TCSFW_SERVER_API_KEY")
 
@@ -1032,6 +1033,10 @@ class SystemBackendRunner(SystemBackend):
                 report.tabular(sys.stdout, latex=True)
             else:
                 raise Exception(f"Unknown output format '{out_form}'")
+
+        if self.args.prompt:
+            prompt = ClientPrompt(ClientAPI(registry, cc))
+            prompt.prompt_loop()
 
         if self.args.http_server:
             server = HTTPServerRunner(api, port=self.args.http_server, no_auth_ok=self.args.no_auth_ok)

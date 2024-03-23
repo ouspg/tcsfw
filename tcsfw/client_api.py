@@ -1,5 +1,6 @@
 import json
 import logging
+import shutil
 import urllib
 from typing import Dict, List, Tuple, Any, Iterable, BinaryIO, Optional
 
@@ -413,3 +414,61 @@ class ClientAPI(ModelListener):
             _, d = self.get_entity(host, context)
             ln.hostChange({"host": d}, host)
 
+
+class ClientPrompt:
+    """A prompt to interact with the model"""
+    def __init__(self, api: ClientAPI):
+        self.api = api
+        # find out screen dimensions
+        self.screen_height = shutil.get_terminal_size()[1]
+
+    def prompt_loop(self):
+        """Prompt loop"""
+        buffer = []
+        buffer_index = 0
+
+        def print_lines(start_line: int) -> int:
+            start_line = max(0, start_line)
+            show_lines = min(self.screen_height - 1, len(buffer) - start_line)
+            print("\n".join(buffer[start_line:start_line + show_lines]))
+            return start_line + show_lines
+
+        while True:
+            # read a line from stdin
+            line = input("> ")
+            if line in {"quit", "q"}:
+                break
+            if line in {"more", "m"}:
+                buffer_index = print_lines(buffer_index)
+                continue
+            if line in {"prev", "p"}:
+                buffer_index = print_lines(buffer_index - 2 * (self.screen_height + 1))
+                continue
+            if line in {"top", "t"}:
+                buffer_index = print_lines(0)
+                continue
+            if line in {"end", "e"}:
+                buffer_index = print_lines(len(buffer) - self.screen_height + 1)
+                continue
+            try:
+                # format method and arguments
+                parts = line.partition(" ")
+                method = parts[0].lower()
+                args = parts[2]
+                if method in {"get", "g"}:
+                    req = APIRequest.parse(args)
+                    out = json.dumps(self.api.api_get(req), indent=2)
+                elif method in {"post", "p"}:
+                    parts = args.partition(" ")
+                    req = APIRequest.parse(parts[0])
+                    data = parts[2] if parts[2] else None
+                    out = json.dumps(self.api.api_post(req, data), indent=2)
+                else:
+                    print(f"Unknown method {method}")
+                    continue
+                buffer = out.split("\n")
+                show_lines = min(self.screen_height - 1, len(buffer))
+                print("\n".join(buffer[:show_lines]))
+                buffer_index = show_lines
+            except Exception as e:
+                print(f"{e}")
