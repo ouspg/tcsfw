@@ -1,4 +1,4 @@
-from typing import Dict, Type, Callable, Any, Tuple
+from typing import Dict, Optional, Type, Callable, Any, Tuple
 
 from tcsfw.address import Addresses, AnyAddress
 from tcsfw.basics import Verdict
@@ -143,3 +143,26 @@ class PropertyAddressEvent(Event, Verdictable):
 
     def __eq__(self, v) -> bool:
         return super().__eq__(v) and self.address == v.address and self.key_value == v.key_value
+
+
+class EventMap:
+    Event_types = {
+            "flow-eth": EthernetFlow,
+            "flow-ip": IPFlow,
+            "flow-ble": BLEAdvertisementFlow,
+            "prop-ent": PropertyEvent,
+            "prop-add": PropertyAddressEvent,
+            "name": NameEvent,
+            "scan-service": ServiceScan,
+            "scan-host": HostScan,
+        }
+
+    Event_names = {v: k for k, v in Event_types.items()}
+
+    @classmethod
+    def get_event_class(cls, name: str) -> Optional[Type[Event]]:
+        return cls.Event_types.get(name)
+
+    @classmethod
+    def get_event_name(cls, event: Type[Event]) -> str:
+        return cls.Event_names[event]

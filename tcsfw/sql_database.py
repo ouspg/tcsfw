@@ -5,7 +5,7 @@ from tcsfw.entity_database import EntityDatabase
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, delete, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
+from tcsfw.event_interface import EventInterface, EventMap, PropertyAddressEvent, PropertyEvent
 from tcsfw.model import Addressable, Connection, EvidenceNetworkSource, Host, IoTSystem, ModelListener, NetworkNode, NodeComponent, Service
 from tcsfw.services import NameEvent
 
@@ -58,17 +58,8 @@ class SQLDatabase(EntityDatabase, ModelListener):
         # cache of evidence sources
         self.source_cache: Dict[EvidenceSource, int] = {}
         self.free_source_id = 0
-        self.event_types = {
-            "flow-eth": EthernetFlow,
-            "flow-ip": IPFlow,
-            "flow-ble": BLEAdvertisementFlow,
-            "prop-ent": PropertyEvent,
-            "prop-add": PropertyAddressEvent,
-            "name": NameEvent,
-            "scan-service": ServiceScan,
-            "scan-host": HostScan,
-        }
-        self.event_names = {c: n for n, c in self.event_types.items()}
+        self.event_types = EventMap.Event_types
+        self.event_names = EventMap.Event_names
         self._purge_model_events()
         self._fill_cache()
         # keep state of pending reads
