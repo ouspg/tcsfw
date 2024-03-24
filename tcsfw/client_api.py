@@ -438,7 +438,7 @@ class ClientPrompt:
             line = input("> ")
             if line in {"quit", "q"}:
                 break
-            if line in {"more", "m"}:
+            if line in {"next", "n"}:
                 buffer_index = print_lines(buffer_index)
                 continue
             if line in {"prev", "p"}:
