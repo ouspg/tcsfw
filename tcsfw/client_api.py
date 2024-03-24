@@ -424,7 +424,7 @@ class ClientAPI(ModelListener):
 import prompt_toolkit
 from prompt_toolkit.history import FileHistory
 
-class ClientPrompt:
+class ClientPrompt(APIListener):
     """A prompt to interact with the model"""
     def __init__(self, api: ClientAPI):
         self.api = api
@@ -433,16 +433,18 @@ class ClientPrompt:
         # session with history
         history_file = os.path.expanduser("~/.tcsfw_prompt_history")
         self.session = prompt_toolkit.PromptSession(history=FileHistory(history_file))
+        # listen for APi events
+        self.api.api_listener.append((self, APIRequest(".")))
+        self.buffer: List[str] = []
 
     def prompt_loop(self):
         """Prompt loop"""
-        buffer = []
         buffer_index = 0
 
         def print_lines(start_line: int) -> int:
             start_line = max(0, start_line)
-            show_lines = min(self.screen_height - 1, len(buffer) - start_line)
-            print("\n".join(buffer[start_line:start_line + show_lines]))
+            show_lines = min(self.screen_height - 1, len(self.buffer) - start_line)
+            print("\n".join(self.buffer[start_line:start_line + show_lines]))
             return start_line + show_lines
 
         while True:
@@ -460,7 +462,7 @@ class ClientPrompt:
                 buffer_index = print_lines(0)
                 continue
             if line in {"end", "e"}:
-                buffer_index = print_lines(len(buffer) - self.screen_height + 1)
+                buffer_index = print_lines(len(self.buffer) - self.screen_height + 1)
                 continue
             try:
                 # format method and arguments
@@ -469,20 +471,34 @@ class ClientPrompt:
                 args = parts[2]
                 if method in {"get", "g"}:
                     req = APIRequest.parse(args)
+                    self.buffer = []
                     out = json.dumps(self.api.api_get(req), indent=2)
                 elif method in {"post", "p"}:
                     parts = args.partition(" ")
                     req = APIRequest.parse(parts[0])
                     data = parts[2] if parts[2] else None
                     bin_data = None if data is None else io.BytesIO(data.encode())
+                    self.buffer = []
                     out = json.dumps(self.api.api_post(req, bin_data), indent=2)
                 else:
                     print(f"Unknown method {method}")
                     continue
-                buffer = out.split("\n")
-                show_lines = min(self.screen_height - 1, len(buffer))
-                print("\n".join(buffer[:show_lines]))
+                self.buffer.extend(out.split("\n"))
+                show_lines = min(self.screen_height - 1, len(self.buffer))
+                print("\n".join(self.buffer[:show_lines]))
                 buffer_index = show_lines
             except Exception as e:
                 # print full stack trace
                 traceback.print_exc()
+
+    ## API listener callbacks
+
+    def systemReset(self, data: Dict, system: IoTSystem):
+        self.buffer.append(json.dumps(data, indent=2))
+
+    def hostChange(self, data: Dict, host: Host):
+        self.buffer.append(json.dumps(data, indent=2))
+
+    def connectionChange(self, data: Dict, connection: Connection):
+        self.buffer.append(json.dumps(data, indent=2))
+
