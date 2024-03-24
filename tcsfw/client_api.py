@@ -14,6 +14,7 @@ from tcsfw.basics import Verdict
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import Entity
+from tcsfw.event_interface import EventMap
 from tcsfw.model import Addressable, NetworkNode, Connection, Host, Service, ModelListener, IoTSystem, NodeComponent
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.property import PropertyKey, PropertySetValue, PropertyVerdictValue
@@ -143,11 +144,14 @@ class ClientAPI(ModelListener):
         elif path == "flow":
             flow, ref = self.parse_flow(NO_EVIDENCE, json.load(data))
             self.registry.connection(flow)
-        # NOTE: We would need DNS service instance
-        # elif path == "name":
-        #     js = json.load(data)
-        #     self.registry.name(
-        #         NameEvent(NO_EVIDENCE, js["name"], address=IPAddress.new(js["address"]) if "address" in js else None))
+        elif path.startswith("event/"):
+            e_name = path[6:]
+            e_type = EventMap.get_event_class(e_name)
+            if e_type is None:
+                raise FileNotFoundError(f"Unknown event type {e_name}")
+            js = json.load(data) if data else {}
+            e = e_type.decode_data_json(NO_EVIDENCE, js, self.get_by_id)
+            self.registry.consume(e)
         elif path == "capture":
             raw = Raw.stream(data)
             count = PCAPReader(self.registry.system).parse(raw)
@@ -470,7 +474,8 @@ class ClientPrompt:
                     parts = args.partition(" ")
                     req = APIRequest.parse(parts[0])
                     data = parts[2] if parts[2] else None
-                    out = json.dumps(self.api.api_post(req, data), indent=2)
+                    bin_data = None if data is None else io.BytesIO(data.encode())
+                    out = json.dumps(self.api.api_post(req, bin_data), indent=2)
                 else:
                     print(f"Unknown method {method}")
                     continue
