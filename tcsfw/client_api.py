@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import shutil
 import urllib
 from typing import Dict, List, Tuple, Any, Iterable, BinaryIO, Optional
@@ -414,6 +415,8 @@ class ClientAPI(ModelListener):
             _, d = self.get_entity(host, context)
             ln.hostChange({"host": d}, host)
 
+import prompt_toolkit
+from prompt_toolkit.history import FileHistory
 
 class ClientPrompt:
     """A prompt to interact with the model"""
@@ -421,6 +424,9 @@ class ClientPrompt:
         self.api = api
         # find out screen dimensions
         self.screen_height = shutil.get_terminal_size()[1]
+        # session with history
+        history_file = os.path.expanduser("~/.tcsfw_prompt_history")
+        self.session = prompt_toolkit.PromptSession(history=FileHistory(history_file))
 
     def prompt_loop(self):
         """Prompt loop"""
@@ -435,7 +441,7 @@ class ClientPrompt:
 
         while True:
             # read a line from stdin
-            line = input("> ")
+            line = self.session.prompt("tcsfw> ")
             if line in {"quit", "q"}:
                 break
             if line in {"next", "n"}:
