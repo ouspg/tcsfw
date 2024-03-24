@@ -1,7 +1,9 @@
+import io
 import json
 import logging
 import os
 import shutil
+import traceback
 import urllib
 from typing import Dict, List, Tuple, Any, Iterable, BinaryIO, Optional
 
@@ -477,4 +479,5 @@ class ClientPrompt:
                 print("\n".join(buffer[:show_lines]))
                 buffer_index = show_lines
             except Exception as e:
-                print(f"{e}")
+                # print full stack trace
+                traceback.print_exc()
