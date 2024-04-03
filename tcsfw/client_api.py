@@ -71,6 +71,8 @@ class APIListener:
     def hostChange(self, data: Dict, host: Host):
         pass
 
+    def propertyChange(self, data: Dict, entity: Entity):
+        pass
 
 class RequestContext:
     def __init__(self, request: APIRequest, api: 'ClientAPI'):
@@ -425,10 +427,20 @@ class ClientAPI(ModelListener):
             _, d = self.get_entity(host, context)
             ln.hostChange({"host": d}, host)
 
+    def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
+        props = self.get_properties({value[0]: value[1]})
+        d = {
+            "id": self.get_id(entity),
+            "properties": props,
+        }
+        js = {"update": d}
+        for ln, req in self.api_listener:
+            ln.propertyChange(js, entity)
+
 import prompt_toolkit
 from prompt_toolkit.history import FileHistory
 
-class ClientPrompt:
+class ClientPrompt(APIListener):
     """A prompt to interact with the model"""
     def __init__(self, api: ClientAPI):
         self.api = api
@@ -495,3 +507,7 @@ class ClientPrompt:
             except Exception as e:
                 # print full stack trace
                 traceback.print_exc()
+
+    def propertyChange(self, data: Dict, entity: Entity):
+        out = json.dumps(data)
+        self.buffer.extend(out.split("\n"))

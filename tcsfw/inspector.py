@@ -168,21 +168,8 @@ class Inspector(EventInterface):
             self.logger.debug("Value for model property %s ignored, as it is not in model", key)
             return None
         key.update(s.properties, val)
-        if isinstance(s, Addressable):
-            self.system.call_listeners(lambda ln: ln.host_change(s.get_parent_host()))
-            return s
-        if isinstance(s, NodeComponent):
-            entity = s.entity
-            if isinstance(entity, IoTSystem):
-                return s  # no event
-            self.system.call_listeners(lambda ln: ln.host_change(s.entity.get_parent_host()))
-            return s
-        if isinstance(s, Connection):
-            self.system.call_listeners(lambda ln: ln.connection_change(s))
-            return s
-        if isinstance(s, IoTSystem):
-            return s  # No event - not shown in GUI now
-        raise NotImplementedError(f"Processing properties for {s} not implemented")
+        # call listeners
+        self.system.call_listeners(lambda ln: ln.property_change(s, (key, val)))
 
     def property_address_update(self, update: PropertyAddressEvent) -> Entity:
         add = update.address

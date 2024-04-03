@@ -11,6 +11,7 @@ from typing import Dict, Tuple, List
 from aiohttp import web, WSMsgType
 
 from tcsfw.client_api import ClientAPI, APIRequest, APIListener
+from tcsfw.entity import Entity
 from tcsfw.model import Host, Connection, IoTSystem
 
 
@@ -32,6 +33,10 @@ class Session(APIListener):
             self.server.send_queue.put_nowait((self, data))
 
     def hostChange(self, data: Dict, host: Host):
+        if self.subscribed:
+            self.server.send_queue.put_nowait((self, data))
+
+    def propertyChange(self, data: Dict, entity: Entity):
         if self.subscribed:
             self.server.send_queue.put_nowait((self, data))
 
