@@ -96,6 +96,8 @@ class ClientAPI(ModelListener):
         registry.system.model_listeners.append(self)
         # local IDs strings for entities and connections
         self.ids: Dict[Any, str] = {}
+        # iterate all entities to create IDs for them (yes, a hack)
+        list(self.api_iterate_all(APIRequest(".")))
 
     def parse_flow(self, evidence: Evidence, data: Dict) -> Tuple[Flow, str]:
         """Parse flow"""
