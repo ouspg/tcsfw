@@ -96,8 +96,6 @@ class ClientAPI(ModelListener):
         registry.system.model_listeners.append(self)
         # local IDs strings for entities and connections
         self.ids: Dict[Any, str] = {}
-        # iterate all entities to create IDs for them (yes, a hack)
-        list(self.api_iterate_all(APIRequest(".")))
 
     def parse_flow(self, evidence: Evidence, data: Dict) -> Tuple[Flow, str]:
         """Parse flow"""
@@ -436,6 +434,8 @@ class ClientPrompt:
         self.api = api
         # find out screen dimensions
         self.screen_height = shutil.get_terminal_size()[1]
+        # iterate all entities to create IDs for them (yes, a hack)
+        list(api.api_iterate_all(APIRequest(".")))
         # session with history
         history_file = os.path.expanduser("~/.tcsfw_prompt_history")
         self.session = prompt_toolkit.PromptSession(history=FileHistory(history_file))
