@@ -439,16 +439,18 @@ class ClientPrompt:
         # session with history
         history_file = os.path.expanduser("~/.tcsfw_prompt_history")
         self.session = prompt_toolkit.PromptSession(history=FileHistory(history_file))
+        # current output buffer
+        self.buffer = []
+        self.buffer_index = 0
+        # listen for events
+        api.api_listener.append((self, APIRequest(".")))
 
     def prompt_loop(self):
         """Prompt loop"""
-        buffer = []
-        buffer_index = 0
-
         def print_lines(start_line: int) -> int:
             start_line = max(0, start_line)
             show_lines = min(self.screen_height - 1, len(buffer) - start_line)
-            print("\n".join(buffer[start_line:start_line + show_lines]))
+            print("\n".join(self.buffer[start_line:start_line + show_lines]))
             return start_line + show_lines
 
         while True:
@@ -457,22 +459,23 @@ class ClientPrompt:
             if line in {"quit", "q"}:
                 break
             if line in {"next", "n"}:
-                buffer_index = print_lines(buffer_index)
+                self.buffer_index = print_lines(self.buffer_index)
                 continue
             if line in {"prev", "p"}:
-                buffer_index = print_lines(buffer_index - 2 * (self.screen_height + 1))
+                self.buffer_index = print_lines(self.buffer_index - 2 * (self.screen_height + 1))
                 continue
             if line in {"top", "t"}:
-                buffer_index = print_lines(0)
+                self.buffer_index = print_lines(0)
                 continue
             if line in {"end", "e"}:
-                buffer_index = print_lines(len(buffer) - self.screen_height + 1)
+                self.buffer_index = print_lines(len(self.buffer) - self.screen_height + 1)
                 continue
             try:
                 # format method and arguments
                 parts = line.partition(" ")
                 method = parts[0].lower()
                 args = parts[2]
+                self.buffer.clear() # collect new output
                 if method in {"get", "g"}:
                     req = APIRequest.parse(args)
                     out = json.dumps(self.api.api_get(req), indent=2)
@@ -485,10 +488,10 @@ class ClientPrompt:
                 else:
                     print(f"Unknown method {method}")
                     continue
-                buffer = out.split("\n")
-                show_lines = min(self.screen_height - 1, len(buffer))
-                print("\n".join(buffer[:show_lines]))
-                buffer_index = show_lines
+                self.buffer.extend(out.split("\n"))
+                show_lines = min(self.screen_height - 1, len(self.buffer))
+                print("\n".join(self.buffer[:show_lines]))
+                self.buffer_index = show_lines
             except Exception as e:
                 # print full stack trace
                 traceback.print_exc()
