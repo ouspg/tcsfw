@@ -21,7 +21,7 @@ from tcsfw.property import Properties, PropertyKey, PropertySetValue, PropertyVe
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.specifications import Specifications
-from tcsfw.traffic import Evidence, NO_EVIDENCE, Flow, IPFlow
+from tcsfw.traffic import NO_EVIDENCE
 from tcsfw.verdict import Status, Verdictable
 
 # format strings
@@ -101,21 +101,6 @@ class ClientAPI(ModelListener):
         # local IDs strings for entities and connections
         self.ids: Dict[Any, str] = {}
 
-    def parse_flow(self, evidence: Evidence, data: Dict) -> Tuple[Flow, str]:
-        """Parse flow"""
-        s = (
-            HWAddress.new(data["source-hw"]) if "source-hw" in data else HWAddresses.NULL,
-            IPAddress.new(data["source-ip"]) if "source-ip" in data else IPAddresses.NULL,
-            int(data["source-port"]) if "source-port" in data else 0,
-        )
-        t = (
-            HWAddress.new(data["target-hw"]) if "target-hw" in data else HWAddresses.NULL,
-            IPAddress.new(data["target-ip"]) if "target-ip" in data else IPAddresses.NULL,
-            int(data["target-port"]) if "target-port" in data else 0,
-        )
-        ref = data.get("ref", "")
-        return IPFlow(evidence, s, t, Protocol[data["protocol"] if "protocol" in data else Protocol.ANY]), ref
-
     def api_get(self, request: APIRequest) -> Dict:
         """Get API data"""
         context = RequestContext(request, self)
@@ -145,9 +130,6 @@ class ClientAPI(ModelListener):
             self.system_reset()
             if param.get("dump_all", False):
                 r = {"events": list(self.api_iterate_all(request.change_path(".")))}
-        elif path == "flow":
-            flow, ref = self.parse_flow(NO_EVIDENCE, json.load(data))
-            self.registry.connection(flow)
         elif path.startswith("event/"):
             e_name = path[6:]
             e_type = EventMap.get_event_class(e_name)
