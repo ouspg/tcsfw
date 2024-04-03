@@ -62,16 +62,16 @@ class APIRequest:
 
 class APIListener:
     """Model change listener through API"""
-    def systemReset(self, data: Dict, system: IoTSystem):
+    def note_system_reset(self, data: Dict, system: IoTSystem):
         pass
 
-    def connectionChange(self, data: Dict, connection: Connection):
+    def note_connection_change(self, data: Dict, connection: Connection):
         pass
 
-    def hostChange(self, data: Dict, host: Host):
+    def note_host_change(self, data: Dict, host: Host):
         pass
 
-    def propertyChange(self, data: Dict, entity: Entity):
+    def note_property_change(self, data: Dict, entity: Entity):
         pass
 
 class RequestContext:
@@ -177,7 +177,7 @@ class ClientAPI(ModelListener):
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
             d = self.get_system_info(context)
-            ln.systemReset({"system": d}, self.registry.system)
+            ln.note_system_reset({"system": d}, self.registry.system)
 
     def get_log(self, entity="", key="") -> Dict:
         """Get log"""
@@ -419,13 +419,13 @@ class ClientAPI(ModelListener):
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
             d = self.get_connection(connection, context)
-            ln.connectionChange({"connection": d}, connection)
+            ln.note_connection_change({"connection": d}, connection)
 
     def host_change(self, host: Host):
         for ln, req in self.api_listener:
             context = RequestContext(req.change_path("."), self)
             _, d = self.get_entity(host, context)
-            ln.hostChange({"host": d}, host)
+            ln.note_host_change({"host": d}, host)
 
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         props = self.get_properties({value[0]: value[1]})
@@ -435,7 +435,7 @@ class ClientAPI(ModelListener):
         }
         js = {"update": d}
         for ln, req in self.api_listener:
-            ln.propertyChange(js, entity)
+            ln.note_property_change(js, entity)
 
 import prompt_toolkit
 from prompt_toolkit.history import FileHistory
@@ -508,6 +508,6 @@ class ClientPrompt(APIListener):
                 # print full stack trace
                 traceback.print_exc()
 
-    def propertyChange(self, data: Dict, entity: Entity):
+    def note_property_change(self, data: Dict, entity: Entity):
         out = json.dumps(data)
         self.buffer.extend(out.split("\n"))

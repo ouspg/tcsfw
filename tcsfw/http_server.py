@@ -24,19 +24,19 @@ class Session(APIListener):
         self.subscribed = False  # subscribed?
         self.server.api.api_listener.append((self, self.original_request))
 
-    def systemReset(self, data: Dict, system: IoTSystem):
+    def note_system_reset(self, data: Dict, system: IoTSystem):
         if self.subscribed:
             self.server.dump_model(self)
 
-    def connectionChange(self, data: Dict, connection: Connection):
+    def note_connection_change(self, data: Dict, connection: Connection):
         if self.subscribed:
             self.server.send_queue.put_nowait((self, data))
 
-    def hostChange(self, data: Dict, host: Host):
+    def note_host_change(self, data: Dict, host: Host):
         if self.subscribed:
             self.server.send_queue.put_nowait((self, data))
 
-    def propertyChange(self, data: Dict, entity: Entity):
+    def note_property_change(self, data: Dict, entity: Entity):
         if self.subscribed:
             self.server.send_queue.put_nowait((self, data))
 
