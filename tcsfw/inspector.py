@@ -35,21 +35,20 @@ class Inspector(EventInterface):
     def _list_hosts(self):
         """List all hosts"""
         self.known_entities.clear()
-        self.known_entities.update(self.system.get_hosts())
+        self.known_entities.update(self.system.iterate_all())
 
     def _check_entity(self, entity: Entity) -> bool:
         """Check if an entity is known, send events, as required"""
         if entity in self.known_entities:
             return False
         self.known_entities.add(entity)
-        if entity.status == Status.UNEXPECTED:
-            # unexpected new entity, send event
-            if isinstance(entity, Connection):
-                self.system.call_listeners(lambda ln: ln.connection_change(entity))
-            if isinstance(entity, Host):
-                self.system.call_listeners(lambda ln: ln.host_change(entity))
-            if isinstance(entity, Service):
-                self.system.call_listeners(lambda ln: ln.service_change(entity))
+        # new entity, send event
+        if isinstance(entity, Connection):
+            self.system.call_listeners(lambda ln: ln.connection_change(entity))
+        if isinstance(entity, Host):
+            self.system.call_listeners(lambda ln: ln.host_change(entity))
+        if isinstance(entity, Service):
+            self.system.call_listeners(lambda ln: ln.service_change(entity))
         return True
 
     def get_system(self) -> IoTSystem:
@@ -74,16 +73,13 @@ class Inspector(EventInterface):
             # new session or direction
             self.sessions[flow] = reply
 
-        send = set()  # connection, flow, source and/or target
-        send_props = {}  # property updates
+        updated = set()   # entity which status updated
+        send = set()      # force to send entity update
 
         def update_seen_status(entity: Addressable):
             changed = []
             entity.set_seen_now(changed)
-            for ent in changed:
-                # verdict change, send event
-                prop = Properties.EXPECTED.verdict(ent.get_expected_verdict())
-                send_props[prop[0]] = ent, prop[1]
+            updated.update(changed)
 
         # if we have a connection, the endpoints cannot be placeholders
         source, target = conn.source, conn.target
@@ -92,14 +88,11 @@ class Inspector(EventInterface):
         if target.status == Status.PLACEHOLDER:
             target.status = conn.status
 
-        self.known_entities.add(source.get_parent_host())
-        self.known_entities.add(target.get_parent_host())
-
         external = conn.status == Status.EXTERNAL
         if c_count == 1:
             # new connection is seen
             conn.set_seen_now()
-            send.add(conn)
+            updated.add(conn)
             # what about learning local IP/HW address pairs
             if isinstance(flow, IPFlow):
                 ends = (conn.target, conn.source) if reply else (conn.source, conn.target)
@@ -112,7 +105,6 @@ class Inspector(EventInterface):
 
         if new_session:
             # flow event for each new session
-            send.add(flow)
             # new direction, update sender
             if not reply:
                 update_seen_status(source)
@@ -127,27 +119,31 @@ class Inspector(EventInterface):
                     exp = conn.target.get_expected_verdict(default=None)
                     if exp is None:
                         target.set_property(Properties.EXPECTED.verdict(Verdict.INCON))
-                        send.add(target)
             else:
                 # a reply
                 update_seen_status(target)
 
+        # these entities to send events, in this order
+        entities = [conn, source, source.get_parent_host(), target, target.get_parent_host()]
+
+        for ent in entities:
+            is_new = self._check_entity(ent)
+            if is_new:
+                updated.discard(ent)  # no separate update required
+
         # flow event can carry properties
         if conn.status == Status.EXPECTED:
-            for prop, v in flow.properties.items():
+            for p, v in flow.properties.items():
                 # No model events, perhaps later?
-                prop.update(conn.properties, v)
+                p.update(conn.properties, v)
+                self.system.call_listeners(lambda ln: ln.property_change(conn, (p, v)))
 
-        if self.system.model_listeners and send:
-            if source in send:
-                self.system.call_listeners(lambda ln: ln.host_change(source.get_parent_host()))
-            if target in send:
-                self.system.call_listeners(lambda ln: ln.host_change(target.get_parent_host()))
-            if conn in send:
-                self.system.call_listeners(lambda ln: ln.connection_change(conn))
-        if self.system.model_listeners:
-            for p, (ent, v) in send_props.items():
-                self.system.call_listeners(lambda ln: ln.property_change(ent, (p, v)))
+        for ent in entities:
+            if ent not in updated:
+                continue
+            v = ent.get_expected_verdict()
+            self.system.call_listeners(lambda ln: ln.property_change(ent, (Properties.EXPECTED, v)))
+            updated.discard(ent)
         return conn
 
     def name(self, event: NameEvent) -> Host:

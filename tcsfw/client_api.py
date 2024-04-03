@@ -425,6 +425,9 @@ class ClientAPI(ModelListener):
             context = RequestContext(req, self)
             d = self.get_connection(connection, context)
             ln.note_connection_change({"connection": d}, connection)
+        # check if connection ends have changed status
+        self._find_verdict_changes(connection.source)
+        self._find_verdict_changes(connection.target)
 
     def host_change(self, host: Host):
         for ln, req in self.api_listener:
@@ -443,8 +446,7 @@ class ClientAPI(ModelListener):
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         props = self.get_properties({value[0]: value[1]})
         d = {
-            "id": self.get_id(entity),
-            "properties": props,
+            "id": self.get_id(entity)
         }
         # check if status change
         old_v = self.verdict_cache.pop(entity)
@@ -455,6 +457,8 @@ class ClientAPI(ModelListener):
                 if isinstance(entity, Service):
                     # check if parent verdict changed, too
                     self._find_verdict_changes(entity.get_parent_host())
+        if props:
+            d["properties"] = {}
         js = {"update": d}
         for ln, req in self.api_listener:
             ln.note_property_change(js, entity)
@@ -463,11 +467,9 @@ class ClientAPI(ModelListener):
     def _find_verdict_changes(self, entity: Entity):
         """Find parent verdict changes and send updates, as required"""
         old_v = self.verdict_cache.pop(entity)
-        if old_v is None:
-            return  # new entity, no update
         new_v = entity.get_verdict(self.verdict_cache)
-        if new_v == old_v:
-            return  # no verdict change
+        if old_v is None or new_v == old_v:
+            return  # new entity or no change -> no update
         js = {"update": {
             "id": self.get_id(entity),
             "status": self.get_status_verdict(entity.status, new_v),
