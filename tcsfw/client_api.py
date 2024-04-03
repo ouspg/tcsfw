@@ -502,6 +502,7 @@ class ClientPrompt(APIListener):
 
     def prompt_loop(self):
         """Prompt loop"""
+
         def print_lines(start_line: int) -> int:
             start_line = max(0, start_line)
             show_lines = min(self.screen_height - 1, len(self.buffer) - start_line)
@@ -535,12 +536,14 @@ class ClientPrompt(APIListener):
                 self.buffer.clear() # collect new output
                 if method in {"get", "g"}:
                     req = APIRequest.parse(args)
+                    self.buffer = []
                     out = json.dumps(self.api.api_get(req), indent=2)
                 elif method in {"post", "p"}:
                     parts = args.partition(" ")
                     req = APIRequest.parse(parts[0])
                     data = parts[2] if parts[2] else None
                     bin_data = None if data is None else io.BytesIO(data.encode())
+                    self.buffer = []
                     out = json.dumps(self.api.api_post(req, bin_data), indent=2)
                 else:
                     print(f"Unknown method {method}")
