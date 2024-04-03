@@ -17,7 +17,7 @@ from tcsfw.entity import Entity
 from tcsfw.event_interface import EventMap
 from tcsfw.model import Addressable, NetworkNode, Connection, Host, Service, ModelListener, IoTSystem, NodeComponent
 from tcsfw.pcap_reader import PCAPReader
-from tcsfw.property import PropertyKey, PropertySetValue, PropertyVerdictValue
+from tcsfw.property import Properties, PropertyKey, PropertySetValue, PropertyVerdictValue
 from tcsfw.registry import Registry
 from tcsfw.result import Report
 from tcsfw.specifications import Specifications
@@ -223,6 +223,8 @@ class ClientAPI(ModelListener):
         """Get properties"""
         cs = {} if json_dict is None else json_dict
         for key, p  in properties.items():
+            if key == Properties.EXPECTED:
+                continue  # this property is shown by status
             vs = {
                 "name": key.get_name(short=True),
             }
@@ -444,9 +446,19 @@ class ClientAPI(ModelListener):
             "id": self.get_id(entity),
             "properties": props,
         }
+        # check if status change
+        old_v = self.verdict_cache.pop(entity)
+        if old_v is not None:
+            new_v = entity.get_verdict(self.verdict_cache)
+            if new_v != old_v:
+                d["status"] = self.get_status_verdict(entity.status, new_v)
+                if isinstance(entity, Service):
+                    # check if parent verdict changed, too
+                    self._find_verdict_changes(entity.get_parent_host())
         js = {"update": d}
         for ln, req in self.api_listener:
             ln.note_property_change(js, entity)
+        self._find_verdict_changes(entity)
 
     def _find_verdict_changes(self, entity: Entity):
         """Find parent verdict changes and send updates, as required"""
@@ -458,7 +470,7 @@ class ClientAPI(ModelListener):
             return  # no verdict change
         js = {"update": {
             "id": self.get_id(entity),
-            "status": entity.status_string(),
+            "status": self.get_status_verdict(entity.status, new_v),
         }}
         for ln, req in self.api_listener:
             ln.note_property_change(js, entity)
