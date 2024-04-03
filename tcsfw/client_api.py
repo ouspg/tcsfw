@@ -82,12 +82,9 @@ class RequestContext:
         self.request = request
         self.api = api
 
-        self.verdict_cache: Dict[Entity, Verdict] = {}
-
     def change_path(self, path: str) -> 'RequestContext':
         """Change the path"""
         c = RequestContext(self.request.change_path(path), self.api)
-        c.verdict_cache = self.verdict_cache
         return c
 
 
@@ -99,6 +96,8 @@ class ClientAPI(ModelListener):
         self.logger = logging.getLogger("api")
         self.api_listener: List[Tuple[APIListener, APIRequest]] = []
         registry.system.model_listeners.append(self)
+        # API aggregates verdicts from children into parents, keep track
+        self.verdict_cache: Dict[Entity, Verdict] = {}
         # local IDs strings for entities and connections
         self.ids: Dict[Any, str] = {}
 
@@ -254,7 +253,7 @@ class ClientAPI(ModelListener):
             com_cs = {
                 "name": component.name,
                 "id": self.get_id(component),
-                "status": self.get_status_verdict(component.status, component.get_verdict(context.verdict_cache)),
+                "status": self.get_status_verdict(component.status, component.get_verdict(self.verdict_cache)),
             }
             if component.sub_components:
                 com_cs["sub_components"] = [sub(c) for c in component.sub_components]
@@ -287,7 +286,7 @@ class ClientAPI(ModelListener):
             "id": self.get_id(entity),
             "description": entity.description,
             "addresses": sorted([f"{a}" for a in entity.addresses]),
-            "status": self.get_status_verdict(entity.status, entity.get_verdict(context.verdict_cache)),
+            "status": self.get_status_verdict(entity.status, entity.get_verdict(self.verdict_cache)),
         }
         if entity.is_multicast():
             r["type"] = "Broadcast"  # special type
@@ -323,7 +322,7 @@ class ClientAPI(ModelListener):
             "target": location(t),
             "target_id": self.get_id(t),
             "target_host_id": self.get_id(t.get_parent_host()),
-            "status": self.get_status_verdict(connection.status, connection.get_verdict(context.verdict_cache)),
+            "status": self.get_status_verdict(connection.status, connection.get_verdict(self.verdict_cache)),
             "type": connection.con_type.value,
         }
         return cr
@@ -436,6 +435,8 @@ class ClientAPI(ModelListener):
             context = RequestContext(req.change_path("."), self)
             _, d = self.get_entity(service, context)
             ln.note_host_change({"service": d}, service)
+        # service affect parent verdict
+        self._find_verdict_changes(service.get_parent_host())
 
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         props = self.get_properties({value[0]: value[1]})
@@ -446,6 +447,24 @@ class ClientAPI(ModelListener):
         js = {"update": d}
         for ln, req in self.api_listener:
             ln.note_property_change(js, entity)
+
+    def _find_verdict_changes(self, entity: Entity):
+        """Find parent verdict changes and send updates, as required"""
+        old_v = self.verdict_cache.pop(entity)
+        if old_v is None:
+            return  # new entity, no update
+        new_v = entity.get_verdict(self.verdict_cache)
+        if new_v == old_v:
+            return  # no verdict change
+        js = {"update": {
+            "id": self.get_id(entity),
+            "status": entity.status_string(),
+        }}
+        for ln, req in self.api_listener:
+            ln.note_property_change(js, entity)
+        if isinstance(entity, Service):
+            # check if parent verdict changed, too
+            self._find_verdict_changes(entity.get_parent_host())
 
 import prompt_toolkit
 from prompt_toolkit.history import FileHistory
