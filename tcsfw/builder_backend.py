@@ -1035,7 +1035,7 @@ class SystemBackendRunner(SystemBackend):
                 raise Exception(f"Unknown output format '{out_form}'")
 
         if self.args.prompt:
-            prompt = ClientPrompt(ClientAPI(registry, cc))
+            prompt = ClientPrompt(api)
             prompt.prompt_loop()
 
         if self.args.http_server:
