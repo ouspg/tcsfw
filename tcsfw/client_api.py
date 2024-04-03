@@ -157,7 +157,8 @@ class ClientAPI(ModelListener):
         self.registry.reset(e_filter, include_all)
 
     def system_reset(self):
-        """Do system reset listener calls"""
+        """Do system reset with listener calls"""
+        self.verdict_cache.clear()
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
             d = self.get_system_info(context)
@@ -222,15 +223,6 @@ class ClientAPI(ModelListener):
                 vs["info"] = f"{p}"
             cs[key.get_name()] = vs
         return cs
-
-    def get_property_update(self, entity: Entity) -> Dict:
-        """Get entity properties through update"""
-        pr = self.get_properties(entity.properties)
-        r = {
-            "id": self.get_id(entity),
-            "properties": pr
-        }
-        return r
 
     def get_components(self, entity: NetworkNode, context: RequestContext) -> Iterable[Tuple[NodeComponent, Dict]]:
         def sub(component: NodeComponent) -> Dict:
@@ -344,6 +336,18 @@ class ClientAPI(ModelListener):
         js["system"] = self.get_system_info(context)
         return js
 
+
+    def _yield_property_update(self, entity: Entity) -> Iterable[Dict]:
+        """Yield property update, if properites to show"""
+        pr = self.get_properties(entity.properties)
+        if not pr:
+            return []
+        r = { "update": {
+            "id": self.get_id(entity),
+            "properties": pr
+        }}
+        yield r
+
     def api_iterate_all(self, request: APIRequest) -> Iterable[Dict]:
         """Iterate all model entities and connections"""
         context = RequestContext(request, self)
@@ -352,8 +356,7 @@ class ClientAPI(ModelListener):
         # start with reset, client should clear all entity and connection information
         yield {"reset": {}}
         yield {"system": self.get_system_info(context)}
-        if system.properties:
-            yield {"update": self.get_property_update(system)}
+        yield from self._yield_property_update(system)
         # ... as we list it here then
         for h in system.get_hosts():
             if h.status != Status.PLACEHOLDER:
@@ -361,20 +364,16 @@ class ClientAPI(ModelListener):
                 yield {"host": hr}
                 for com, com_r in self.get_components(h, context):
                     yield {"component": com_r}
-                    if com.properties:
-                        yield {"update": self.get_property_update(com)}
-                if h.properties:
-                    yield {"update": self.get_property_update(h)}
+                    yield from self._yield_property_update(com)
+                yield from self._yield_property_update(h)
                 for c in h.children:
                     _, cr = self.get_entity(c, context)
                     yield {"service": cr}
-                    if c.properties:
-                        yield {"update": self.get_property_update(c)}
+                    yield from self._yield_property_update(c)
         for c in self.registry.system.get_connections():
             cr = self.get_connection(c, context)
             yield {"connection": cr}
-            if c.properties:
-                yield {"update": self.get_property_update(c)}
+            yield from self._yield_property_update(c)
         yield {"evidence": self.get_evidence_filter()}
 
     def get_by_id(self, id_string: str) -> Optional:
@@ -440,7 +439,7 @@ class ClientAPI(ModelListener):
                     # check if parent verdict changed, too
                     self._find_verdict_changes(entity.get_parent_host())
         if props:
-            d["properties"] = {}
+            d["properties"] = props
         js = {"update": d}
         for ln, req in self.api_listener:
             ln.note_property_change(js, entity)
