@@ -235,9 +235,13 @@ class ClientAPI(ModelListener):
             cs[key.get_name()] = vs
         return cs
 
-    def get_entity_properties(self, entity: Entity) -> Dict:
-        """Get entity properties"""
-        r = self.get_properties(entity.properties, {"id": self.get_id(entity)})
+    def get_property_update(self, entity: Entity) -> Dict:
+        """Get entity properties through update"""
+        pr = self.get_properties(entity.properties)
+        r = {
+            "id": self.get_id(entity),
+            "properties": pr
+        }
         return r
 
     def get_components(self, entity: NetworkNode, context: RequestContext) -> Iterable[Tuple[NodeComponent, Dict]]:
@@ -360,7 +364,7 @@ class ClientAPI(ModelListener):
         yield {"reset": {}}
         yield {"system": self.get_system_info(context)}
         if system.properties:
-            yield {"properties": self.get_entity_properties(system)}
+            yield {"update": self.get_property_update(system)}
         # ... as we list it here then
         for h in system.get_hosts():
             if h.status != Status.PLACEHOLDER:
@@ -369,19 +373,19 @@ class ClientAPI(ModelListener):
                 for com, com_r in self.get_components(h, context):
                     yield {"component": com_r}
                     if com.properties:
-                        yield {"properties": self.get_entity_properties(com)}
+                        yield {"update": self.get_property_update(com)}
                 if h.properties:
-                    yield {"properties": self.get_entity_properties(h)}
+                    yield {"update": self.get_property_update(h)}
                 for c in h.children:
                     _, cr = self.get_entity(c, context)
                     yield {"service": cr}
                     if c.properties:
-                        yield {"properties": self.get_entity_properties(c)}
+                        yield {"update": self.get_property_update(c)}
         for c in self.registry.system.get_connections():
             cr = self.get_connection(c, context)
             yield {"connection": cr}
             if c.properties:
-                yield {"properties": self.get_entity_properties(c)}
+                yield {"update": self.get_property_update(c)}
         yield {"evidence": self.get_evidence_filter()}
 
     def get_by_id(self, id_string: str) -> Optional:
