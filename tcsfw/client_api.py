@@ -63,15 +63,18 @@ class APIRequest:
 class APIListener:
     """Model change listener through API"""
     def note_system_reset(self, data: Dict, system: IoTSystem):
-        pass
+        self.note_event(data)
 
     def note_connection_change(self, data: Dict, connection: Connection):
-        pass
+        self.note_event(data)
 
     def note_host_change(self, data: Dict, host: Host):
-        pass
+        self.note_event(data)
 
     def note_property_change(self, data: Dict, entity: Entity):
+        self.note_event(data)
+
+    def note_event(self, data: Dict):
         pass
 
 class RequestContext:
@@ -427,6 +430,12 @@ class ClientAPI(ModelListener):
             _, d = self.get_entity(host, context)
             ln.note_host_change({"host": d}, host)
 
+    def service_change(self, service: Service):
+        for ln, req in self.api_listener:
+            context = RequestContext(req.change_path("."), self)
+            _, d = self.get_entity(service, context)
+            ln.note_host_change({"service": d}, service)
+
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         props = self.get_properties({value[0]: value[1]})
         d = {
@@ -467,7 +476,9 @@ class ClientPrompt(APIListener):
 
         while True:
             # read a line from stdin
-            line = self.session.prompt("tcsfw> ")
+            line = self.session.prompt("tcsfw> ").strip()
+            if not line:
+                continue
             if line in {"quit", "q"}:
                 break
             if line in {"next", "n"}:
@@ -508,6 +519,5 @@ class ClientPrompt(APIListener):
                 # print full stack trace
                 traceback.print_exc()
 
-    def note_property_change(self, data: Dict, entity: Entity):
-        out = json.dumps(data)
-        self.buffer.extend(out.split("\n"))
+    def note_event(self, data: Dict):
+        self.buffer.extend(json.dumps(data).split("\n"))

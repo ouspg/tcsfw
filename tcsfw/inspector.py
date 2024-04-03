@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, Set, Tuple
+from typing import Any, Dict, Set, Tuple
 
 from tcsfw.address import DNSName, AnyAddress
 from tcsfw.basics import ExternalActivity, Verdict
@@ -8,7 +8,7 @@ from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
 from tcsfw.matcher import SystemMatcher
 from tcsfw.model import IoTSystem, Connection, Service, Host, Addressable, NodeComponent
-from tcsfw.property import Properties
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import ServiceScan, HostScan, Flow, IPFlow
 from tcsfw.verdict import Status
@@ -22,7 +22,7 @@ class Inspector(EventInterface):
         self.logger = logging.getLogger("inspector")
         self.connection_count: Dict[Connection, int] = {}
         self.sessions: Dict[Flow, bool] = {}
-        self.known_hosts: Set[Host] = set()
+        self.known_entities: Set[Entity] = set()
         self._list_hosts()
 
     def reset(self):
@@ -34,8 +34,23 @@ class Inspector(EventInterface):
 
     def _list_hosts(self):
         """List all hosts"""
-        self.known_hosts.clear()
-        self.known_hosts.update(self.system.get_hosts())
+        self.known_entities.clear()
+        self.known_entities.update(self.system.get_hosts())
+
+    def _check_entity(self, entity: Entity) -> bool:
+        """Check if an entity is known, send events, as required"""
+        if entity in self.known_entities:
+            return False
+        self.known_entities.add(entity)
+        if entity.status == Status.UNEXPECTED:
+            # unexpected new entity, send event
+            if isinstance(entity, Connection):
+                self.system.call_listeners(lambda ln: ln.connection_change(entity))
+            if isinstance(entity, Host):
+                self.system.call_listeners(lambda ln: ln.host_change(entity))
+            if isinstance(entity, Service):
+                self.system.call_listeners(lambda ln: ln.service_change(entity))
+        return True
 
     def get_system(self) -> IoTSystem:
         return self.system
@@ -60,16 +75,15 @@ class Inspector(EventInterface):
             self.sessions[flow] = reply
 
         send = set()  # connection, flow, source and/or target
+        send_props = {}  # property updates
 
         def update_seen_status(entity: Addressable):
             changed = []
             entity.set_seen_now(changed)
             for ent in changed:
                 # verdict change, send event
-                send.add(entity)  # NOTE: Event sent after property event - not good
                 prop = Properties.EXPECTED.verdict(ent.get_expected_verdict())
-                self.system.call_listeners(lambda ln: ln.property_change(entity, prop))
-
+                send_props[prop[0]] = ent, prop[1]
 
         # if we have a connection, the endpoints cannot be placeholders
         source, target = conn.source, conn.target
@@ -78,8 +92,8 @@ class Inspector(EventInterface):
         if target.status == Status.PLACEHOLDER:
             target.status = conn.status
 
-        self.known_hosts.add(source.get_parent_host())
-        self.known_hosts.add(target.get_parent_host())
+        self.known_entities.add(source.get_parent_host())
+        self.known_entities.add(target.get_parent_host())
 
         external = conn.status == Status.EXTERNAL
         if c_count == 1:
@@ -131,6 +145,9 @@ class Inspector(EventInterface):
                 self.system.call_listeners(lambda ln: ln.host_change(target.get_parent_host()))
             if conn in send:
                 self.system.call_listeners(lambda ln: ln.connection_change(conn))
+        if self.system.model_listeners:
+            for p, (ent, v) in send_props.items():
+                self.system.call_listeners(lambda ln: ln.property_change(ent, (p, v)))
         return conn
 
     def name(self, event: NameEvent) -> Host:
@@ -139,7 +156,7 @@ class Inspector(EventInterface):
             address = None  # it is just redirecting to itself
         name = DNSName(event.name)
         h = self.system.learn_named_address(name, address)
-        if h not in self.known_hosts:
+        if h not in self.known_entities:
             # new host
             if h.status == Status.UNEXPECTED:
                 # unexpected host, check if it can be external
@@ -154,7 +171,7 @@ class Inspector(EventInterface):
                 else:
                     # either unknown DNS requester or peers can be externally active
                     h.status = Status.EXTERNAL
-            self.known_hosts.add(h)
+            self.known_entities.add(h)
         self.system.call_listeners(lambda ln: ln.host_change(h))
         return h
 
@@ -170,6 +187,7 @@ class Inspector(EventInterface):
         key.update(s.properties, val)
         # call listeners
         self.system.call_listeners(lambda ln: ln.property_change(s, (key, val)))
+        return s
 
     def property_address_update(self, update: PropertyAddressEvent) -> Entity:
         add = update.address
@@ -184,14 +202,19 @@ class Inspector(EventInterface):
             self.logger.debug("Value for model property %s ignored, as it is not in model", key)
             return s
         key.update(s.properties, val)
-        self.system.call_listeners(lambda ln: ln.host_change(s.get_parent_host()))
+        # call listeners
+        self.system.call_listeners(lambda ln: ln.property_change(s, (key, val)))
         return s
 
     def service_scan(self, scan: ServiceScan) -> Service:
         """The given address has a service"""
         s = self._get_seen_entity(scan.endpoint)
         assert isinstance(s, Service)
-        self.system.call_listeners(lambda ln: ln.host_change(s.get_parent_host()))
+        host = s.get_parent_host()
+        new_host = self._check_entity(host)
+        if not new_host:
+            # known host, but what about the service
+            self._check_entity(s)
         return s
 
     def host_scan(self, scan: HostScan) -> Host:
@@ -211,7 +234,7 @@ class Inspector(EventInterface):
             else:
                 # child address not in scan results
                 c.set_property(Properties.EXPECTED.verdict(Verdict.FAIL))
-        self.known_hosts.add(host)
+        self.known_entities.add(host)
         self.system.call_listeners(lambda ln: ln.host_change(host))
         return host
 

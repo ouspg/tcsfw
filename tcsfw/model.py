@@ -649,6 +649,10 @@ class ModelListener:
         """Host created or changed"""
         pass
 
+    def service_change(self, host: Host):
+        """Service created or changed"""
+        pass
+
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         """Property changed. Not all changes create events, just the 'important' ones"""
         pass

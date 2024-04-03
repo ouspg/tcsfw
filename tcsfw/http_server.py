@@ -28,15 +28,7 @@ class Session(APIListener):
         if self.subscribed:
             self.server.dump_model(self)
 
-    def note_connection_change(self, data: Dict, connection: Connection):
-        if self.subscribed:
-            self.server.send_queue.put_nowait((self, data))
-
-    def note_host_change(self, data: Dict, host: Host):
-        if self.subscribed:
-            self.server.send_queue.put_nowait((self, data))
-
-    def note_property_change(self, data: Dict, entity: Entity):
+    def note_event(self, data: Dict):
         if self.subscribed:
             self.server.send_queue.put_nowait((self, data))
 
