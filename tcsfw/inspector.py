@@ -241,7 +241,10 @@ class Inspector(EventInterface):
     def _get_seen_entity(self, endpoint: AnyAddress) -> Addressable:
         """Get entity by address, mark it seen"""
         ent = self.system.get_endpoint(endpoint)
-        ent.set_seen_now()
+        change = ent.set_seen_now()
+        if change and ent.status == Status.EXPECTED:
+            value = Properties.EXPECTED, Properties.EXPECTED.get(ent.properties)
+            self.system.call_listeners(lambda ln: ln.property_change(ent, value))
         return ent
 
     def __repr__(self):
