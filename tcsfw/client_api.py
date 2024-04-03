@@ -490,7 +490,7 @@ class ClientPrompt(APIListener):
         """Prompt loop"""
         def print_lines(start_line: int) -> int:
             start_line = max(0, start_line)
-            show_lines = min(self.screen_height - 1, len(buffer) - start_line)
+            show_lines = min(self.screen_height - 1, len(self.buffer) - start_line)
             print("\n".join(self.buffer[start_line:start_line + show_lines]))
             return start_line + show_lines
 
