@@ -239,6 +239,8 @@ class EthernetFlow(Flow):
         payload = data.get("payload", -1)
         r = EthernetFlow(evidence, source, target, payload, protocol)
         r.decode_properties_json(data)
+        if data.get("reverse", False):
+            r = r.reverse()
         return r
 
     @classmethod
@@ -361,6 +363,8 @@ class IPFlow(Flow):
         t_port = data.get("target_port", -1)
         r = IPFlow(evidence, source=(s_hw, s_ip, s_port), target=(t_hw, t_ip, t_port), protocol=protocol)
         r.decode_properties_json(data)
+        if data.get("reverse", False):
+            r = r.reverse()
         return r
 
     def __rshift__(self, target: Tuple[str, str, int]) -> 'IPFlow':
@@ -441,6 +445,8 @@ class BLEAdvertisementFlow(Flow):
         event_type = data["event_type"]
         r = BLEAdvertisementFlow(evidence, source, event_type)
         r.decode_properties_json(data)
+        if data.get("reverse", False):
+            r = r.reverse()
         return r
 
     def __repr__(self):
