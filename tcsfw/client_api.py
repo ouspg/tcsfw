@@ -332,6 +332,7 @@ class ClientAPI(ModelListener):
         """Get system information"""
         s = self.registry.system
         si = {
+            "id": self.get_id(s),
             "system_name": s.name,
         }
         return si
