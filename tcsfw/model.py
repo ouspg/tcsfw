@@ -653,7 +653,7 @@ class ModelListener:
         """Host addresses have changed"""
         pass
 
-    def service_change(self, host: Host):
+    def service_change(self, service: Service):
         """Service created or changed"""
         pass
 

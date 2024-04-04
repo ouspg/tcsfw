@@ -119,7 +119,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
     def host_change(self, host: Host):
         self.get_id(host) # learn new hosts
 
-    def service_change(self, host: Host):
+    def service_change(self, service: Service):
         self.get_id(Service)  # learn new services
 
     def read_events(self, interface: EventInterface) -> Iterator[Event]:
