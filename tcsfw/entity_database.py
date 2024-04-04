@@ -75,6 +75,8 @@ class InMemoryDatabase(EntityDatabase):
         return self.reverse_id[id_value] if id_value < len(self.reverse_id) else None
 
     def put_event(self, event: Event):
+        if not self.events_thru_db and self.cursor == len(self.trail):
+            self.cursor += 1  # assuming event is sent directly
         self.trail.append(event)
         source = event.evidence.source
         self.trail_filter.setdefault(source.label, True)
