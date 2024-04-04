@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 from tcsfw.address import DNSName, AnyAddress
 from tcsfw.basics import ExternalActivity, Verdict
@@ -146,12 +146,12 @@ class Inspector(EventInterface):
             updated.discard(ent)
         return conn
 
-    def name(self, event: NameEvent) -> Host:
+    def name(self, event: NameEvent) -> Optional[Host]:
         address = event.address
         if event.service and event.service.captive_portal and event.address in event.service.parent.addresses:
             address = None  # it is just redirecting to itself
         name = DNSName(event.name)
-        h = self.system.learn_named_address(name, address)
+        h, changes = self.system.learn_named_address(name, address)
         if h not in self.known_entities:
             # new host
             if h.status == Status.UNEXPECTED:
@@ -168,6 +168,9 @@ class Inspector(EventInterface):
                     # either unknown DNS requester or peers can be externally active
                     h.status = Status.EXTERNAL
             self.known_entities.add(h)
+        elif not changes:
+            # old host and nothing learned -> stop this maddness to save resources
+            return None
         self.system.call_listeners(lambda ln: ln.address_change(h))
         return h
 

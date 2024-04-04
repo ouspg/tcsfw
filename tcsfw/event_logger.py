@@ -112,9 +112,11 @@ class EventLogger(EventInterface, ModelListener):
         self.current = None
         return e
 
-    def name(self, event: NameEvent) -> Host:
+    def name(self, event: NameEvent) -> Optional[Host]:
         lo = self._add(event)
         e = self.inspector.name(event)
+        if e is None:
+            return None  # redundant event, no actions
         lo.pick_status_verdict(e)
         if self.event_logger:
             self.print_event(lo)
