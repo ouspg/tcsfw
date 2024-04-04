@@ -141,8 +141,8 @@ class Inspector(EventInterface):
         for ent in entities:
             if ent not in updated:
                 continue
-            v = ent.get_expected_verdict()
-            self.system.call_listeners(lambda ln: ln.property_change(ent, (Properties.EXPECTED, v)))
+            ev = Properties.EXPECTED.verdict(ent.get_expected_verdict())
+            self.system.call_listeners(lambda ln: ln.property_change(ent, ev))
             updated.discard(ent)
         return conn
 
