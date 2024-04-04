@@ -232,6 +232,7 @@ class ClientAPI(ModelListener):
             com_cs = {
                 "name": component.name,
                 "id": self.get_id(component),
+                "node_id": self.get_id(entity),
                 "status": self.get_status_verdict(component.status, component.get_verdict(self.verdict_cache)),
             }
             if component.sub_components:
