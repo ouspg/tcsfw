@@ -423,6 +423,7 @@ class ClientAPI(ModelListener):
     def address_change(self, host: Host):
         d = {
             "host_id": self.get_id(host),
+            "host_name": host.long_name(),  # to help reading JSON events
             "addresses": sorted([f"{a}" for a in host.addresses])
         }
         for ln, req in self.api_listener:
@@ -439,7 +440,8 @@ class ClientAPI(ModelListener):
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         props = self.get_properties({value[0]: value[1]})
         d = {
-            "id": self.get_id(entity)
+            "id": self.get_id(entity),
+            "ent_name": entity.long_name(),  # to help reading JSON events
         }
         # check if status change
         old_v = self.verdict_cache.pop(entity, None)
@@ -465,6 +467,7 @@ class ClientAPI(ModelListener):
             return  # new entity or no change -> no update
         js = {"update": {
             "id": self.get_id(entity),
+            "ent_name": entity.long_name(),  # to help reading JSON events
             "status": self.get_status_verdict(entity.status, new_v),
         }}
         for ln, req in self.api_listener:
