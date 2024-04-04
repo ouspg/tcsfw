@@ -430,7 +430,7 @@ class ClientAPI(ModelListener):
             "id": self.get_id(entity)
         }
         # check if status change
-        old_v = self.verdict_cache.pop(entity)
+        old_v = self.verdict_cache.pop(entity, None)
         if old_v is not None:
             new_v = entity.get_verdict(self.verdict_cache)
             if new_v != old_v:
@@ -447,7 +447,7 @@ class ClientAPI(ModelListener):
 
     def _find_verdict_changes(self, entity: Entity):
         """Find parent verdict changes and send updates, as required"""
-        old_v = self.verdict_cache.pop(entity)
+        old_v = self.verdict_cache.pop(entity, None)
         new_v = entity.get_verdict(self.verdict_cache)
         if old_v is None or new_v == old_v:
             return  # new entity or no change -> no update
