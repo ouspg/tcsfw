@@ -168,7 +168,7 @@ class Inspector(EventInterface):
                     # either unknown DNS requester or peers can be externally active
                     h.status = Status.EXTERNAL
             self.known_entities.add(h)
-        self.system.call_listeners(lambda ln: ln.host_change(h))
+        self.system.call_listeners(lambda ln: ln.address_change(h))
         return h
 
     def property_update(self, update: PropertyEvent) -> Entity:

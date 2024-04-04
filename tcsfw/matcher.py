@@ -26,7 +26,7 @@ class SystemMatcher(ModelListener):
         self.system.reset()
         return self
 
-    def host_change(self, host: Host):
+    def address_change(self, host: Host):
         ads = self.host_addresses.get(host, set())
         dns = any(isinstance(a, DNSName) for a in host.addresses)
         if not dns or ads == host.addresses:

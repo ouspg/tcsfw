@@ -545,12 +545,12 @@ class IoTSystem(NetworkNode):
             nn = f"{Addresses.get_prioritized(host.addresses)}"
             if nn != host.name:
                 host.name = self.free_child_name(nn)
-        self.call_listeners(lambda ln: ln.host_change(host))
+        self.call_listeners(lambda ln: ln.address_change(host))
 
         for h in self.get_hosts():
             if h != host:
                 h.addresses.discard(ip_address)
-                self.call_listeners(lambda ln: ln.host_change(h))
+                self.call_listeners(lambda ln: ln.address_change(h))
 
     def get_system(self) -> 'IoTSystem':
         return self
@@ -647,6 +647,10 @@ class ModelListener:
 
     def host_change(self, host: Host):
         """Host created or changed"""
+        pass
+
+    def address_change(self, host: Host):
+        """Host addresses have changed"""
         pass
 
     def service_change(self, host: Host):

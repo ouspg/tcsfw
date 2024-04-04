@@ -71,6 +71,9 @@ class APIListener:
     def note_host_change(self, data: Dict, host: Host):
         self.note_event(data)
 
+    def note_address_change(self, data: Dict, host: Host):
+        self.note_event(data)
+
     def note_property_change(self, data: Dict, entity: Entity):
         self.note_event(data)
 
@@ -415,6 +418,14 @@ class ClientAPI(ModelListener):
             context = RequestContext(req.change_path("."), self)
             _, d = self.get_entity(host, context)
             ln.note_host_change({"host": d}, host)
+
+    def address_change(self, host: Host):
+        d = {
+            "host_id": self.get_id(host),
+            "addresses": sorted([f"{a}" for a in host.addresses])
+        }
+        for ln, req in self.api_listener:
+            ln.note_address_change({"address": d}, host)
 
     def service_change(self, service: Service):
         for ln, req in self.api_listener:
