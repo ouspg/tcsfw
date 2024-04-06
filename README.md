@@ -51,3 +51,8 @@ $ python samples/ruuvi/ruuvi.py --read <batch-directory>
 The `--read` and `--http-server` arguments can be combined to inspecft the verification results using the UI.
 
 The framework has additional [command-line options](CommandLine.md).
+
+## License
+
+The project is published with [MIT license](LICENSE).
+
