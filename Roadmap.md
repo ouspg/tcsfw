@@ -29,8 +29,8 @@ The framework should be deployed for production use. This is envisioned using _O
 
 ## Test execution support
 
-At the moment, one must collect and present the tool outputs manually, which is not how things are envisioned.
+At the moment, one must collect and present the tool outputs manually, which is not how things are suppoed to work.
 
  * Add a tool to upload tool output into deployed framework instance
 
- 
+

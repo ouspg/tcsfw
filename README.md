@@ -1,24 +1,24 @@
 # Tcsfw
 
-This project is **early version** of the _Tool-driven security assessment_ (TDSA) framework.
+This is **early version** of the _Tool-driven security assessment_ (TDSA) framework.
 The framework is intended to support automated security assessment of _Internet of Things_ (IoT) and other systems by running common security tools.
 (The name is acronym from _Transparent Cybersecurity Framework_, which is name used in a research paper, but things have developed and the name is TDSA now.)
 
 The project is part of the upcoming PhD thesis of the author.
 Orginally, the project was created to demonstrate the TDSA approach for research purposes, but the goal is to make it a real-world usable security assessment 
 framework.
-The original reserach will be published in the PhD disseration, which is under works.
+The research will be published in the PhD disseration, which is under works.
 On the mean time, there are two published research papers:
 
 > Kaksonen, R., Halunen, K., Laakso, M., & Röning, J. (2023). Transparent Security Method for Automating IoT Security Assessments. In The 18th International Conference on Information Security Practice and Experience (ISPEC). Springer International Publishing.
 
 > Kaksonen, R., Halunen, K., Laakso, M., & Röning, J. (2024). Automating IoT Security Standard Testing by Common Security Tools. In ICISSP - 10th International Conference on Information Systems Security and Privacy. (p. 42-53). SciTePres
 
-The functionality of the framework is currently the reading output of several different "security" tools, mapping them into _security statement_ and _claims_, and given verdicts for the claims. Security statement describes relevant portions of a system, e.g. attack surface and security controls. Claim (requirement, test) is security-relevant assertion which can be verified. The verification is done by running [supported tools](Tools.md), which output is them used to pass verdict for the claim.
+The functionality of the framework is currently limited to reading output of several different "security" tools, mapping them into _security statement_ and _claims_, and given verdicts for the claims. Security statement describes relevant portions of a system, e.g. attack surface and security controls. Claim (requirement, test) is security-relevant assertion which can be verified. The verification is done by running [supported tools](Tools.md), which output is them used to pass verdict for the claim.
 
 ## Future plans
 
-On the long run the framework is intended to cover the collection of the tool output and provide more rich processing options and API for the claim verdicts.
+On the long run the framework is intended to cover the collection of the tool outputs and provide more rich processing options and API for the claim verdicts.
 Check the [roadmap](Roadmap.md) for upcoming features.
 
 ## Usage
