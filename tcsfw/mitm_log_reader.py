@@ -1,13 +1,12 @@
-from io import BytesIO, TextIOWrapper
-import pathlib
-import re
-from typing import List
+"""Mitmproxy log reader"""
 
-from tcsfw.address import HWAddresses, Protocol
-from tcsfw.entity import Entity
-from tcsfw.event_interface import PropertyEvent, EventInterface
-from tcsfw.model import IoTSystem, Connection, Service
-from tcsfw.property import Properties, PropertyKey
+from io import BytesIO, TextIOWrapper
+import re
+
+from tcsfw.address import HWAddresses
+from tcsfw.event_interface import EventInterface
+from tcsfw.model import IoTSystem
+from tcsfw.property import Properties
 from tcsfw.services import NameEvent
 from tcsfw.tools import BaseFileCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence, IPFlow

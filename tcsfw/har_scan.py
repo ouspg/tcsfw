@@ -1,6 +1,7 @@
+"""HAR JSON tool"""
+
 from io import BytesIO
 import json
-import pathlib
 import urllib.parse
 from datetime import datetime
 from typing import cast
@@ -16,6 +17,7 @@ from tcsfw.basics import Verdict
 
 
 class HARScan(NodeCheckTool):
+    """HAR JSON tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("har", ".json", system)
         self.tool.name = "HAR"

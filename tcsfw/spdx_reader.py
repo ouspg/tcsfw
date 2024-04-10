@@ -1,11 +1,11 @@
+"""SPDX SBOM reading tool"""
+
 from io import BytesIO
 import json
-import pathlib
 from datetime import datetime
-from typing import cast, List
+from typing import cast
 
 from tcsfw.components import Software, SoftwareComponent
-from tcsfw.entity import Entity
 from tcsfw.event_interface import PropertyEvent, EventInterface
 from tcsfw.model import IoTSystem, NodeComponent
 from tcsfw.property import Properties, PropertyKey
