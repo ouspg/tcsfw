@@ -1,6 +1,7 @@
+"""Addresses and protocols"""
+
 import enum
 import ipaddress
-import urllib.parse
 from ipaddress import IPv4Address, IPv6Address
 from typing import Union, Optional, Tuple, Iterable, Self
 
@@ -24,6 +25,7 @@ class Protocol(enum.Enum):
 
     @classmethod
     def get_protocol(cls, value: str, default: Optional['Protocol'] = None) -> Optional['Protocol']:
+        """Get protocol by name"""
         try:
             return cls[value.upper()] if value else default
         except KeyError:
@@ -72,7 +74,7 @@ class AnyAddress:
         """Is global address?"""
         return False
 
-    def change_host(self, host: 'AnyAddress') -> Self:
+    def change_host(self, _host: 'AnyAddress') -> Self:
         """Change host to given address. As default, returns this address"""
         return self
 
@@ -82,7 +84,7 @@ class AnyAddress:
 
     def get_parseable_value(self) -> str:
         """Get value which can be unambigiously parsed"""
-        raise NotImplementedError()
+        return str(self)
 
     def __lt__(self, other):
         return self.__repr__() < other.__repr__()
@@ -116,6 +118,8 @@ class PseudoAddress(AnyAddress):
 
 
 class Addresses:
+    """Address constants and utilities"""
+
     # Wildcard for any address
     ANY = PseudoAddress("*", wildcard=True)
 
@@ -156,6 +160,7 @@ class Addresses:
         if port == "":
             return EndpointAddress(addr, Protocol.get_protocol(prot), -1)
         return EndpointAddress(addr, Protocol.get_protocol(prot), int(port))
+
 
 class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
@@ -213,6 +218,8 @@ class HWAddress(AnyAddress):
 
 
 class HWAddresses:
+    """HW address constants"""
+
     NULL = HWAddress("00:00:00:00:00:00")
 
     BROADCAST = HWAddress("ff:ff:ff:ff:ff:ff")
@@ -228,6 +235,7 @@ class IPAddress(AnyAddress):
 
     @classmethod
     def new(cls, address: str) -> 'IPAddress':
+        """Create new IP address"""
         return IPAddress(ipaddress.ip_address(address))
 
     @classmethod
@@ -264,6 +272,8 @@ class IPAddress(AnyAddress):
 
 
 class IPAddresses:
+    """IP address constants"""
+
     NULL = IPAddress.new("0.0.0.0")
 
     BROADCAST = IPAddress.new("255.255.255.255")
@@ -383,6 +393,7 @@ class EndpointAddress(AnyAddress):
 
     @classmethod
     def protocol_port_string(cls, value: Optional[Tuple[Protocol, int]]) -> str:
+        """Get string value for protocol:port, omit port if value <0"""
         if value is None:
             return ""
         return f"{value[0].value}:{value[1]}" if value[1] >= 0 else f"{value[0].value}"
