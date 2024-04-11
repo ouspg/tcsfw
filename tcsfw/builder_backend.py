@@ -177,9 +177,10 @@ class SystemBackend(SystemBuilder):
         #             prop_v[0].set(s.properties, prop_v[1])
 
 
-class NodeBackend(NodeManipulator):
+class NodeBackend(NodeBuilder, NodeManipulator):
     """Node building backend"""
     def __init__(self, entity: Addressable, system: SystemBackend):
+        super().__init__(system)
         self.system = system
         self.entity = entity
         self.parent: Optional[NodeBackend] = None
@@ -262,6 +263,7 @@ class ServiceBackend(NodeBackend, ServiceBuilder):
     """Service builder backend"""
     def __init__(self, host: 'HostBackend', service: Service):
         NodeBackend.__init__(self, service, host.system)
+        ServiceBuilder.__init__(self, host.system)
         self.entity = service
         self.configurer: Optional[ProtocolConfigurer] = None
         self.entity.match_priority = 10
@@ -332,6 +334,7 @@ class HostBackend(NodeBackend, HostBuilder):
     """Host builder backend"""
     def __init__(self, entity: Host, system: SystemBackend):
         NodeBackend.__init__(self, entity, system)
+        HostBuilder.__init__(self, system)
         self.entity = entity
         system.system.children.append(entity)
         entity.status = Status.EXPECTED
@@ -341,11 +344,11 @@ class HostBackend(NodeBackend, HostBuilder):
         self.service_builders: Dict[Tuple[Protocol, int], ServiceBackend] = {}
 
     def hw(self, address: str) -> 'HostBackend':
-        add = self.new_address_(HWAddress.new(address))
+        self.new_address_(HWAddress.new(address))
         return self
 
     def ip(self, address: str) -> 'HostBackend':
-        add = self.new_address_(IPAddress.new(address))
+        self.new_address_(IPAddress.new(address))
         return self
 
     def serve(self, *protocols: ProtocolType) -> Self:
@@ -388,6 +391,7 @@ class HostBackend(NodeBackend, HostBuilder):
 class SensitiveDataBackend(SensitiveDataBuilder):
     """Sensitive data builder backend"""
     def __init__(self, parent: SystemBackend, data: List[SensitiveData]):
+        super().__init__(parent)
         self.parent = parent
         self.data = data
         # all sensitive data lives at least in system
@@ -461,6 +465,7 @@ class SoftwareBackend(SoftwareBuilder):
     ### Backend methods
 
     def get_software(self, _name: Optional[str] = None) -> Software:
+        """Get the software entity"""
         return self.sw
 
 
@@ -845,17 +850,6 @@ class ClaimBackend(ClaimBuilder):
                 self._locations.append(sw)
         return self
 
-    def claims(self, *claims: Union[AbstractClaim, Tuple[str, str]]) -> Self:
-        # bug? - requirements may be placed in extra tuple?
-        cl = []
-        for c in claims:
-            if isinstance(c, tuple) and isinstance(c[0], AbstractClaim):
-                cl.extend(c)
-            else:
-                cl.append(c)
-        # self._claims.extend(cl)
-        return self
-
     def vulnerabilities(self, *entry: Tuple[str, str]) -> Self:
         for com, cve in entry:
             self._keys.append(PropertyKey("vulnz", com, cve.lower()))
@@ -870,6 +864,7 @@ class ClaimBackend(ClaimBuilder):
         keys = self._keys
 
         class ClaimLoader(SubLoader):
+            """Loader for the claims here"""
             def __init__(self):
                 super().__init__("Manual checks")
                 self.source_label = this.source.label
@@ -1057,11 +1052,3 @@ class SystemBackendRunner(SystemBackend):
             server = HTTPServerRunner(api, port=self.args.http_server, no_auth_ok=self.args.no_auth_ok)
             server.component_delay = (self.args.test_delay or 0) / 1000
             server.run()
-
-        # # artificial connections for testing after pcaps, so that HW <-> IP resolved
-        # for cn in self.args.connection or []:
-        #     t_parser.add_artificial_connection(cn)
-        # elif self.args.uml:
-        #     print(PlantUMLRenderer().render(t_parser.system))
-        # else:
-        #     print(t_parser.inspector.print_summary(self.args.log_level == 'DEBUG'))

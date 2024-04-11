@@ -72,7 +72,6 @@ class SystemBuilder:
 class NodeBuilder:
     """Node builder base class"""
     def __init__(self, system: SystemBuilder):
-        # NOTE: This is not called from subclasses, necessarily
         self.system = system
 
     def name(self, name: str) -> Self:
