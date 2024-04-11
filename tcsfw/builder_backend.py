@@ -9,7 +9,8 @@ import pathlib
 import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
-from tcsfw.address import Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
+from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress,
+                           HWAddresses, IPAddress, IPAddresses, Protocol)
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
@@ -21,7 +22,12 @@ from tcsfw.event_interface import PropertyEvent
 from tcsfw.events import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main import ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS, BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder, CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder, NotSupportedException, ProtocolConfigurer, ProtocolType, SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup, SoftwareBuilder, SystemBuilder, VisualizerBuilder
+from tcsfw.main import (ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS,
+                        BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder,
+                        CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder,
+                        ConfigurationException, ProtocolConfigurer, ProtocolType,
+                        SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup,
+                        SoftwareBuilder, SystemBuilder, VisualizerBuilder)
 from tcsfw.main_tools import EvidenceLoader, NodeManipulator, SubLoader, ToolPlanLoader
 from tcsfw.model import Addressable, Connection, Host, IoTSystem, SensitiveData, Service
 from tcsfw.property import Properties, PropertyKey
@@ -37,9 +43,9 @@ from tcsfw.verdict import Status
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
 
-
 class SystemBackend(SystemBuilder):
     """System model builder"""
+
     def __init__(self, name="Unnamed system"):
         self.system = IoTSystem(name)
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
@@ -71,7 +77,8 @@ class SystemBackend(SystemBuilder):
         name = name or self._free_host_name("Mobile")
         b = self.get_host_(name, "Mobile application")
         b.entity.host_type = HostType.MOBILE
-        b.entity.external_activity = ExternalActivity.UNLIMITED  # who know what apps etc.
+        # who know what apps etc.
+        b.entity.external_activity = ExternalActivity.UNLIMITED
         return b
 
     def browser(self, name="") -> 'HostBackend':
@@ -103,11 +110,13 @@ class SystemBackend(SystemBuilder):
 
     def broadcast(self, protocol: 'ProtocolConfigurer') -> 'ServiceBackend':
         conf = self.get_protocol_backend(protocol)
-        add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP else f"{HWAddresses.BROADCAST}"
+        add = f"{IPAddresses.BROADCAST}" if conf.transport == Protocol.UDP \
+            else f"{HWAddresses.BROADCAST}"
         return self.multicast(add, protocol)
 
     def data(self, names: List[str], personal=False, password=False) -> 'SensitiveDataBackend':
-        d = [SensitiveData(n, personal=personal, password=password) for n in names]
+        d = [SensitiveData(n, personal=personal, password=password)
+             for n in names]
         return SensitiveDataBackend(self, d)
 
     def online_resource(self, key: str, url: str) -> Self:
@@ -126,7 +135,7 @@ class SystemBackend(SystemBuilder):
         self.claim_set.base_label = base_label
         return self.claim_set
 
-    ### Backend methods
+    # Backend methods
 
     def get_host_(self, name: str, description: str) -> 'HostBackend':
         """Get or create a host"""
@@ -138,7 +147,8 @@ class SystemBackend(SystemBuilder):
             hb = HostBackend(h, self)
         return hb
 
-    def get_protocol_backend(self, protocol: 'ProtocolConfigurer' | ProtocolType) -> 'ProtocolBackend':
+    def get_protocol_backend(self,
+                             protocol: 'ProtocolConfigurer' | ProtocolType) -> 'ProtocolBackend':
         """Get protocol backend, create if required"""
         be = self.protocols.get(protocol)
         if be is None:
@@ -146,7 +156,8 @@ class SystemBackend(SystemBuilder):
                 p = protocol
             else:
                 p = protocol()
-            assert isinstance(p, ProtocolConfigurer), f"Not protocol type: {p.__class__.__name__}"
+            assert isinstance(
+                p, ProtocolConfigurer), f"Not protocol type: {p.__class__.__name__}"
             be = self.protocols[p] = ProtocolBackend.new(p)
         return be
 
@@ -154,7 +165,8 @@ class SystemBackend(SystemBuilder):
         n = self.system.free_child_name(name_base)
         if n != name_base:
             # dirty hack, check all names match keys
-            self.hosts_by_name = {h.entity.name: h for h in self.hosts_by_name.values()}
+            self.hosts_by_name = {
+                h.entity.name: h for h in self.hosts_by_name.values()}
         return n
 
     def finish_(self):
@@ -178,6 +190,7 @@ class SystemBackend(SystemBuilder):
 
 class NodeBackend(NodeBuilder, NodeManipulator):
     """Node building backend"""
+
     def __init__(self, entity: Addressable, system: SystemBackend):
         super().__init__(system)
         self.system = system
@@ -195,7 +208,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
     def dns(self, name: str) -> Self:
         dn = DNSName(name)
         if dn in self.system.entity_by_address:
-            raise Exception(f"Using name many times: {dn}")
+            raise ConfigurationException(f"Using name many times: {dn}")
         self.system.entity_by_address[dn] = self
         self.entity.addresses.add(dn)
         return self
@@ -233,7 +246,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
         else:
             return target.connection_(self)
 
-    ### Backend methods
+    # Backend methods
 
     def get_node(self) -> NodeBuilder:
         return self.entity
@@ -242,7 +255,8 @@ class NodeBackend(NodeBuilder, NodeManipulator):
         """Add new address to the entity"""
         old = self.system.entity_by_address.get(address)
         if old:
-            raise Exception(f"Duplicate address {address}, reserved by: {old.entity.name}")
+            raise ConfigurationException(
+                f"Duplicate address {address}, reserved by: {old.entity.name}")
         self.entity.addresses.add(address)
         self.system.entity_by_address[address] = self
         return address
@@ -260,6 +274,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
 
 class ServiceBackend(NodeBackend, ServiceBuilder):
     """Service builder backend"""
+
     def __init__(self, host: 'HostBackend', service: Service):
         NodeBackend.__init__(self, service, host.system)
         ServiceBuilder.__init__(self, host.system)
@@ -268,7 +283,8 @@ class ServiceBackend(NodeBackend, ServiceBuilder):
         self.entity.match_priority = 10
         self.entity.external_activity = host.entity.external_activity
         self.parent = host
-        self.source_fixer: Optional[Callable[['HostBackend'], 'ServiceBackend']] = None
+        self.source_fixer: Optional[Callable[[
+            'HostBackend'], 'ServiceBackend']] = None
 
     def type(self, value: ConnectionType) -> 'ServiceBackend':
         # FIXME: We should block defining plaintext connection as admin?
@@ -283,7 +299,7 @@ class ServiceBackend(NodeBackend, ServiceBuilder):
         s = self.parent / protocol
         return ServiceGroupBackend([self, s])
 
-    ### Backend methods
+    # Backend methods
 
     def connection_(self, source: 'NodeBackend') -> 'ConnectionBackend':
         """Create connection from source to this service"""
@@ -307,6 +323,7 @@ class ServiceBackend(NodeBackend, ServiceBuilder):
 
 class ServiceGroupBackend(ServiceGroupBuilder):
     """Service group builder backend"""
+
     def __init__(self, services: List[ServiceBackend]):
         assert len(services) > 0, "Empty list of services"
         self.services = services
@@ -323,7 +340,7 @@ class ServiceGroupBackend(ServiceGroupBuilder):
             g.append(conf.get_service_(self.services[0].parent))
         return ServiceGroupBackend(g)
 
-    ### Backend methods
+    # Backend methods
 
     def __repr__(self):
         return " / ".join([f"{s.entity.name}" for s in self.services])
@@ -331,6 +348,7 @@ class ServiceGroupBackend(ServiceGroupBuilder):
 
 class HostBackend(NodeBackend, HostBuilder):
     """Host builder backend"""
+
     def __init__(self, entity: Host, system: SystemBackend):
         NodeBackend.__init__(self, entity, system)
         HostBuilder.__init__(self, system)
@@ -352,7 +370,7 @@ class HostBackend(NodeBackend, HostBuilder):
 
     def serve(self, *protocols: ProtocolType) -> Self:
         for p in protocols:
-            self / p
+            self / p  # pylint: disable=pointless-statement
         return self
 
     def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBackend':
@@ -389,6 +407,7 @@ class HostBackend(NodeBackend, HostBuilder):
 
 class SensitiveDataBackend(SensitiveDataBuilder):
     """Sensitive data builder backend"""
+
     def __init__(self, parent: SystemBackend, data: List[SensitiveData]):
         super().__init__(parent)
         self.parent = parent
@@ -406,6 +425,7 @@ class SensitiveDataBackend(SensitiveDataBuilder):
 
 class ConnectionBackend(ConnectionBuilder):
     """Connection builder backendq"""
+
     def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBackend]):
         self.connection = connection
         self.ends = ends
@@ -421,6 +441,7 @@ class ConnectionBackend(ConnectionBuilder):
 
 class SoftwareBackend(SoftwareBuilder):
     """Software builder backend"""
+
     def __init__(self, parent: NodeBackend, software_name: str):
         self.sw: Software = Software.get_software(parent.entity, software_name)
         if self.sw is None:
@@ -438,11 +459,13 @@ class SoftwareBackend(SoftwareBuilder):
                 if c.source.get_parent_host() == end or c.target.get_parent_host() == end:
                     cs.append(c)
         else:
-            raise NotImplementedError("Only support updates_by host implemented")
+            raise ConfigurationException(
+                "Only support updates_by host implemented")
         if not cs:
-            raise Exception(f"No connection between {self.parent} - {source}")
+            raise ConfigurationException(f"No connection between {self.parent} - {source}")
         if len(cs) != 1:
-            raise Exception(f"Several possible connections between {self.parent} - {source}")
+            raise ConfigurationException(
+                f"Several possible connections between {self.parent} - {source}")
         self.sw.update_connections.extend(cs)
         return self
 
@@ -461,7 +484,7 @@ class SoftwareBackend(SoftwareBuilder):
         self.sw.info.interval_days = days
         return self
 
-    ### Backend methods
+    # Backend methods
 
     def get_software(self, _name: Optional[str] = None) -> Software:
         """Get the software entity"""
@@ -470,6 +493,7 @@ class SoftwareBackend(SoftwareBuilder):
 
 class CookieBackend(CookieBuilder):
     """Cookie builder backend"""
+
     def __init__(self, builder: HostBackend):
         self.builder = builder
         self.component = Cookies.cookies_for(builder.entity)
@@ -481,6 +505,7 @@ class CookieBackend(CookieBuilder):
 
 class NodeVisualBackend(NodeVisualBuilder):
     """Node visual builder backend"""
+
     def __init__(self, entity: NodeBackend):
         self.entity = entity
         self.image_url: Optional[str] = None
@@ -498,6 +523,7 @@ class NodeVisualBackend(NodeVisualBuilder):
 
 class VisualizerBackend(VisualizerBuilder):
     """Visual builder backend"""
+
     def __init__(self, visualizer: Visualizer):
         self.visualizer = visualizer
 
@@ -543,11 +569,13 @@ class ProtocolBackend:
 
     def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBackend:
         """The protocol as multicast"""
-        raise NotSupportedException(f"{self.service_name} cannot be broad/multicast")
+        raise ConfigurationException(
+            f"{self.service_name} cannot be broad/multicast")
 
     def get_service_(self, parent: HostBackend) -> ServiceBackend:
         """Create or get service builder"""
-        old = parent.service_builders.get((self.transport, self.service_port if self.port_to_name else -1))
+        old = parent.service_builders.get(
+            (self.transport, self.service_port if self.port_to_name else -1))
         if old:
             return old
         b = self._create_service(parent)
@@ -557,9 +585,12 @@ class ProtocolBackend:
         parent.entity.children.append(b.entity)
         if not b.entity.addresses:
             # E.g. DHCP service fills this oneself
-            b.entity.addresses.add(EndpointAddress(Addresses.ANY, self.transport, self.service_port))
+            b.entity.addresses.add(EndpointAddress(
+                Addresses.ANY, self.transport, self.service_port))
         if self.critical_parameter:
-            parent.use_data(SensitiveDataBackend(parent.system, self.critical_parameter))  # critical protocol parameters
+            # critical protocol parameters
+            parent.use_data(SensitiveDataBackend(
+                parent.system, self.critical_parameter))
         return b
 
     def _create_service(self, parent: HostBackend) -> ServiceBackend:
@@ -580,6 +611,7 @@ class ProtocolBackend:
 
 class ARPBackend(ProtocolBackend):
     """ARP protocol backend"""
+
     def __init__(self, _configurer: ARP, broadcast_endpoint=False):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
@@ -593,8 +625,10 @@ class ARPBackend(ProtocolBackend):
             return super().get_service_(parent)
         host_s = super().get_service_(parent)
         # ARP can be broadcast, get or create the broadcast host and service
-        bc_node = parent.system.get_host_(f"{HWAddresses.BROADCAST}", description="Broadcast")
-        bc_s = bc_node.service_builders.get((self.transport, self.service_port))
+        bc_node = parent.system.get_host_(
+            f"{HWAddresses.BROADCAST}", description="Broadcast")
+        bc_s = bc_node.service_builders.get(
+            (self.transport, self.service_port))
         # Three entities:
         # host_s: ARP service at host
         # bc_node: Broadcast logical node
@@ -602,22 +636,26 @@ class ARPBackend(ProtocolBackend):
         if not bc_s:
             # create ARP service
             bc_node.new_address_(HWAddresses.BROADCAST)
-            bc_node.entity.external_activity = ExternalActivity.OPEN   # anyone can make broadcasts (it does not reply)
+            # anyone can make broadcasts (it does not reply)
+            bc_node.entity.external_activity = ExternalActivity.OPEN
             bc_node.entity.host_type = HostType.ADMINISTRATIVE
             # ARP service at the broadcast node, but avoid looping back to ARPBackend
-            bc_s = ARPBackend(ARP(), broadcast_endpoint=True).get_service_(bc_node)
+            bc_s = ARPBackend(
+                ARP(), broadcast_endpoint=True).get_service_(bc_node)
             bc_s.entity.host_type = HostType.ADMINISTRATIVE
             bc_s.entity.con_type = ConnectionType.ADMINISTRATIVE
             bc_s.entity.external_activity = bc_node.entity.external_activity
             host_s.entity.external_activity = self.external_activity
-        c_ok = any([c.source == host_s.entity for c in host_s.entity.get_parent_host().connections])
+        c_ok = any(
+            [c.source == host_s.entity for c in host_s.entity.get_parent_host().connections])
         if not c_ok:
-            host_s >> bc_s
+            host_s >> bc_s  # # pylint: disable=pointless-statement
         return bc_s  # NOTE: the broadcast
 
 
 class DHCPBackend(ProtocolBackend):
     """DHCP protocol backend"""
+
     def __init__(self, configurer: DHCP):
         super().__init__(Protocol.UDP, port=configurer.port, name="DHCP")
         # DHCP requests go to broadcast, thus the reply looks like request
@@ -642,6 +680,7 @@ class DHCPBackend(ProtocolBackend):
 
 class DNSBackend(ProtocolBackend):
     """DNS protocol backend"""
+
     def __init__(self, configurer: DNS):
         super().__init__(Protocol.UDP, port=configurer.port, name="DNS")
         self.external_activity = ExternalActivity.OPEN
@@ -657,6 +696,7 @@ class DNSBackend(ProtocolBackend):
 
 class EAPOLBackend(ProtocolBackend):
     """EAPOL protocol backend"""
+
     def __init__(self, configurer: EAPOL):
         super().__init__(Protocol.ETHERNET, port=0x888e, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
@@ -667,8 +707,10 @@ class EAPOLBackend(ProtocolBackend):
 
 class HTTPBackend(ProtocolBackend):
     """HTTP protocol backend"""
+
     def __init__(self, configurer: HTTP):
-        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.HTTP, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port,
+                         protocol=Protocol.HTTP, name=configurer.name)
         self.authentication = configurer.auth
         self.redirect_only = False
 
@@ -676,12 +718,14 @@ class HTTPBackend(ProtocolBackend):
         s = super().get_service_(parent)
         if self.redirect_only:
             # persistent property
-            s.entity.set_property(Properties.HTTP_REDIRECT.verdict(explanation="HTTP redirect to TLS"))
+            s.entity.set_property(Properties.HTTP_REDIRECT.verdict(
+                explanation="HTTP redirect to TLS"))
         return s
 
 
 class ICMPBackend(ProtocolBackend):
     """ICMP protocol backend"""
+
     def __init__(self, configurer: ICMP):
         super().__init__(Protocol.IP, port=1, name=configurer.name)
         self.external_activity = ExternalActivity.OPEN
@@ -693,12 +737,14 @@ class ICMPBackend(ProtocolBackend):
         s.entity.host_type = HostType.ADMINISTRATIVE
         s.entity.con_type = ConnectionType.ADMINISTRATIVE
         # ICMP can be a service for other hosts
-        s.entity.external_activity = max(self.external_activity, parent.entity.external_activity)
+        s.entity.external_activity = max(
+            self.external_activity, parent.entity.external_activity)
         return s
 
 
 class IPBackend(ProtocolBackend):
     """IP protocol backend"""
+
     def __init__(self, configurer: IP):
         super().__init__(Protocol.IP, name=configurer.name)
         if configurer.administration:
@@ -708,8 +754,10 @@ class IPBackend(ProtocolBackend):
 
 class TLSBackend(ProtocolBackend):
     """TLS protocol backend"""
+
     def __init__(self, configurer: TLS):
-        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.TLS, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port,
+                         protocol=Protocol.TLS, name=configurer.name)
         self.authentication = configurer.auth
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("TLS-creds"))
@@ -717,6 +765,7 @@ class TLSBackend(ProtocolBackend):
 
 class NTPBackend(ProtocolBackend):
     """NTP protocol backend"""
+
     def __init__(self, configurer: NTP):
         super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
@@ -726,8 +775,10 @@ class NTPBackend(ProtocolBackend):
 
 class SSHBackend(ProtocolBackend):
     """SSH protocol backend"""
+
     def __init__(self, configurer: SSH):
-        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.SSH, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port,
+                         protocol=Protocol.SSH, name=configurer.name)
         self.authentication = True
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("SSH-creds"))
@@ -735,6 +786,7 @@ class SSHBackend(ProtocolBackend):
 
 class TCPBackend(ProtocolBackend):
     """TCP protocol backend"""
+
     def __init__(self, configurer: TCP):
         super().__init__(Protocol.TCP, port=configurer.port, name=configurer.name)
         if configurer.administrative:
@@ -744,6 +796,7 @@ class TCPBackend(ProtocolBackend):
 
 class UDPBackend(ProtocolBackend):
     """UDP protocol backend"""
+
     def __init__(self, configurer: UDP):
         super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
         if configurer.administrative:
@@ -762,11 +815,14 @@ class UDPBackend(ProtocolBackend):
 
 class BLEAdvertisementBackend(ProtocolBackend):
     """BLE advertisement backend"""
+
     def __init__(self, configurer: BLEAdvertisement):
-        super().__init__(Protocol.BLE, port=configurer.event_type, name=configurer.name, protocol=Protocol.BLE)
+        super().__init__(Protocol.BLE, port=configurer.event_type,
+                         name=configurer.name, protocol=Protocol.BLE)
 
     def as_multicast_(self, address: str, system: SystemBackend) -> 'ServiceBackend':
-        b = system.get_host_(name="BLE Ads", description="Bluetooth LE Advertisements")
+        b = system.get_host_(
+            name="BLE Ads", description="Bluetooth LE Advertisements")
         b.new_address_(Addresses.BLE_Ad)
         b.entity.external_activity = ExternalActivity.PASSIVE
         return self.get_service_(b)
@@ -793,6 +849,7 @@ class ProtocolConfigurers:
 
 class ClaimBackend(ClaimBuilder):
     """Claim builder"""
+
     def __init__(self, builder: 'ClaimSetBackend', explanation: str, verdict: Verdict, label: str,
                  authority=ClaimAuthority.MODEL):
         self.builder = builder
@@ -854,7 +911,7 @@ class ClaimBackend(ClaimBuilder):
             self._keys.append(PropertyKey("vulnz", com, cve.lower()))
         return self
 
-    ## Backend methods
+    # Backend methods
 
     def finish_loaders(self) -> SubLoader:
         """Finish by returning the loader to use"""
@@ -864,17 +921,20 @@ class ClaimBackend(ClaimBuilder):
 
         class ClaimLoader(SubLoader):
             """Loader for the claims here"""
+
             def __init__(self):
                 super().__init__("Manual checks")
                 self.source_label = this.source.label
 
-            def load(self, registry: Registry, coverage: RequirementClaimMapper, filter: LabelFilter):
+            def load(self, registry: Registry, coverage: RequirementClaimMapper, 
+                     filter: LabelFilter):
                 if not filter.filter(self.source_label):
                     return
                 evidence = Evidence(this.source)
                 for loc in locations:
                     for key in keys:
-                        kv = PropertyKey.create(key.segments).verdict(this._verdict, explanation=this._explanation)
+                        kv = PropertyKey.create(key.segments).verdict(
+                            this._verdict, explanation=this._explanation)
                         ev = PropertyEvent(evidence, loc, kv)
                         registry.property_update(ev)
         return ClaimLoader()
@@ -882,6 +942,7 @@ class ClaimBackend(ClaimBuilder):
 
 class ClaimSetBackend(ClaimSetBuilder):
     """Builder for set of claims"""
+
     def __init__(self, builder: SystemBackend):
         self.builder = builder
         self.claim_builders: List[ClaimBackend] = []
@@ -902,7 +963,7 @@ class ClaimSetBackend(ClaimSetBuilder):
     def ignore(self, explanation="") -> ClaimBackend:
         return ClaimBackend(self, explanation, Verdict.IGNORE, self.base_label)
 
-    def plan_tool(self, tool_name: str, group: Tuple[str, str], location: RequirementSelector, 
+    def plan_tool(self, tool_name: str, group: Tuple[str, str], location: RequirementSelector,
                   *key: Tuple[str, ...]) -> ToolPlanLoader:
         sl = ToolPlanLoader(group)
         sl.location = location
@@ -913,7 +974,7 @@ class ClaimSetBackend(ClaimSetBuilder):
         self.tool_plans.append(sl)
         return sl
 
-    ## Backend methods
+    # Backend methods
 
     def finish_loaders(self) -> List[SubLoader]:
         """Finish"""
@@ -925,33 +986,47 @@ class ClaimSetBackend(ClaimSetBuilder):
 
 class SystemBackendRunner(SystemBackend):
     """Backend for system builder"""
+
     def __init__(self, name="Unnamed system"):
         super().__init__(name)
         parser = argparse.ArgumentParser()
-        parser.add_argument("--read", "-r", action="append", help="Read tool output from batch directories")
-        parser.add_argument("--help-tools", action="store_true", help="List tools read from batch")
-        parser.add_argument("--def-loads", "-L", type=str, help="Comma-separated list of tools to load")
-        parser.add_argument("--set-ip", action="append", help="Set DNS-name for entity, format 'name=ip, ...'")
+        parser.add_argument("--read", "-r", action="append",
+                            help="Read tool output from batch directories")
+        parser.add_argument("--help-tools", action="store_true",
+                            help="List tools read from batch")
+        parser.add_argument("--def-loads", "-L", type=str,
+                            help="Comma-separated list of tools to load")
+        parser.add_argument("--set-ip", action="append",
+                            help="Set DNS-name for entity, format 'name=ip, ...'")
         parser.add_argument("--output", "-o", help="Output format")
-        parser.add_argument("--dhcp", action="store_true", help="Add default DHCP server handling")
-        parser.add_argument("--dns", action="store_true", help="Add default DNS server handling")
+        parser.add_argument("--dhcp", action="store_true",
+                            help="Add default DHCP server handling")
+        parser.add_argument("--dns", action="store_true",
+                            help="Add default DNS server handling")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
 
         parser.add_argument("--db", type=str, help="Connect to SQL database")
-        parser.add_argument("--http-server", type=int, help="Listen HTTP requests at port")
-        parser.add_argument("--prompt", action="store_true", help="Run test prompt loop")
-        parser.add_argument("--test-delay", type=int, help="HTTP request artificial test delay, ms")
-        parser.add_argument("--no-auth-ok", action="store_true", help="Skip check for auth token in TCSFW_SERVER_API_KEY")
+        parser.add_argument("--http-server", type=int,
+                            help="Listen HTTP requests at port")
+        parser.add_argument("--prompt", action="store_true",
+                            help="Run test prompt loop")
+        parser.add_argument("--test-delay", type=int,
+                            help="HTTP request artificial test delay, ms")
+        parser.add_argument("--no-auth-ok", action="store_true",
+                            help="Skip check for auth token in TCSFW_SERVER_API_KEY")
 
-        parser.add_argument("--test-get", action="append", help="Test API GET, repeat for many")
+        parser.add_argument("--test-get", action="append",
+                            help="Test API GET, repeat for many")
         parser.add_argument("--test-post", nargs=2, help="Test API POST")
 
-        parser.add_argument("--log-events", action="store_true", help="Log events")
+        parser.add_argument(
+            "--log-events", action="store_true", help="Log events")
 
         self.parser = parser
         self.args = parser.parse_args()
-        logging.basicConfig(format='%(message)s', level=getattr(logging, self.args.log_level or 'INFO'))
+        logging.basicConfig(format='%(message)s', level=getattr(
+            logging, self.args.log_level or 'INFO'))
 
     def run(self):
         """Model is ready, run the checks"""
@@ -980,7 +1055,8 @@ class SystemBackendRunner(SystemBackend):
 
         for set_ip in self.args.set_ip or []:
             name, _, ips = set_ip.partition("=")
-            h = self.system.get_entity(name) or self.system.get_endpoint(DNSName.name_or_ip(name))
+            h = self.system.get_entity(name) or self.system.get_endpoint(
+                DNSName.name_or_ip(name))
             if not isinstance(h, Host) or not h.is_relevant():
                 raise ValueError(f"No such host '{name}'")
             for ip in ips.split(","):
@@ -1041,13 +1117,14 @@ class SystemBackendRunner(SystemBackend):
             elif out_form == 'table-latex':
                 report.tabular(sys.stdout, latex=True)
             else:
-                raise Exception(f"Unknown output format '{out_form}'")
+                raise ConfigurationException(f"Unknown output format '{out_form}'")
 
         if self.args.prompt:
             prompt = ClientPrompt(api)
             prompt.prompt_loop()
 
         if self.args.http_server:
-            server = HTTPServerRunner(api, port=self.args.http_server, no_auth_ok=self.args.no_auth_ok)
+            server = HTTPServerRunner(
+                api, port=self.args.http_server, no_auth_ok=self.args.no_auth_ok)
             server.component_delay = (self.args.test_delay or 0) / 1000
             server.run()

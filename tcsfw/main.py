@@ -10,8 +10,8 @@ ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
 ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 
 
-class NotSupportedException(Exception):
-    """Feature or function not supported"""
+class ConfigurationException(Exception):
+    """Feature or function misconfigured"""
     def __init__(self, message: str):
         super().__init__(message)
 
