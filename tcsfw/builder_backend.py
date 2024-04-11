@@ -859,7 +859,7 @@ class ClaimBackend(ClaimBuilder):
             self.source.model_override = True  # sent by model, override from DB
             builder.sources[label] = self.source
         self.explanation = explanation
-        self.keys: List[PropertyKey] = []
+        self.property_keys: List[PropertyKey] = []
         self.locations: List[Entity] = []
         self.verdict = verdict
         builder.claim_builders.append(self)
@@ -868,7 +868,7 @@ class ClaimBackend(ClaimBuilder):
         key = PropertyKey.create(segments)
         if key.is_protected():
             key = key.prefix_key(Properties.PREFIX_MANUAL)
-        self.keys.append(key)
+        self.property_keys.append(key)
         return self
 
     def keys(self, *key: Tuple[str, ...]) -> Self:
@@ -877,7 +877,7 @@ class ClaimBackend(ClaimBuilder):
             k = PropertyKey.create(seg)
             if k.is_protected():
                 k = k.prefix_key(Properties.PREFIX_MANUAL)
-            self.keys.append(k)
+            self.property_keys.append(k)
         return self
 
     def verdict_ignore(self) -> Self:
@@ -907,7 +907,7 @@ class ClaimBackend(ClaimBuilder):
 
     def vulnerabilities(self, *entry: Tuple[str, str]) -> Self:
         for com, cve in entry:
-            self.keys.append(PropertyKey("vulnz", com, cve.lower()))
+            self.property_keys.append(PropertyKey("vulnz", com, cve.lower()))
         return self
 
     # Backend methods
@@ -916,7 +916,7 @@ class ClaimBackend(ClaimBuilder):
         """Finish by returning the loader to use"""
         this = self
         locations = self.locations
-        keys = self.keys
+        keys = self.property_keys
 
         class ClaimLoader(SubLoader):
             """Loader for the claims here"""
