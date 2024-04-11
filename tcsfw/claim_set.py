@@ -7,7 +7,7 @@ from tcsfw.basics import HostType, Verdict
 from tcsfw.claim import AbstractClaim
 from tcsfw.components import DataReference, Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
-from tcsfw.events import ReleaseInfo
+from tcsfw.release_info import ReleaseInfo
 from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import Properties, PropertyKey, PropertyVerdictValue, \
     PropertySetValue

@@ -19,7 +19,7 @@ from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, S
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
-from tcsfw.events import ReleaseInfo
+from tcsfw.release_info import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
 from tcsfw.main import (ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS,

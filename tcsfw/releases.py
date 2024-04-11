@@ -13,7 +13,7 @@ from tcsfw.model import IoTSystem, NetworkNode, NodeComponent
 from tcsfw.property import PropertyKey
 from tcsfw.tools import ComponentCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.events import ReleaseInfo
+from tcsfw.release_info import ReleaseInfo
 
 
 class ReleaseReader(ComponentCheckTool):

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Set
 
-from tcsfw.events import ReleaseInfo
+from tcsfw.release_info import ReleaseInfo
 from tcsfw.model import NodeComponent, Connection, NetworkNode, Host, SensitiveData, Addressable
 
 
