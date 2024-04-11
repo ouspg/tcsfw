@@ -1,13 +1,12 @@
-import dataclasses
+"""Match events into system model"""
+
 import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
-from tcsfw.address import AnyAddress, EndpointAddress, HWAddress, IPAddress, Addresses, IPAddresses, Protocol, \
-    DNSName
+from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName
 from tcsfw.basics import ExternalActivity, Verdict
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
-from tcsfw.services import DHCPService
 from tcsfw.traffic import Flow, EvidenceSource, IPFlow
 from tcsfw.verdict import Status
 
@@ -131,7 +130,6 @@ class ConnectionFinder:
 
     def end_for_new_connection(self, target: bool, other_end: Optional[AddressMatch] = None) -> Optional[AddressMatch]:
         """Pick best source or target for new connection"""
-        system = self.system.system
         end = None
         for ms in (self.targets if target else self.sources).values():
             if other_end and ms.endpoint.is_same_host(other_end.endpoint):
@@ -174,6 +172,7 @@ class MatchEngine:
                     me.external_activity = fs
 
     def updateAddresses(self, host: Host, old: Set[AnyAddress]):
+        """Update addresses for a host"""
         # remove old mappings for the addresses
         for ad in old:
             ends = self.endpoints.get(ad, [])
