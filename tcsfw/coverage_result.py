@@ -1,15 +1,12 @@
+"""Coverage report generation"""
+
 import logging
-import os
 import textwrap
-from typing import TextIO, Tuple, Dict, Optional, List, Set, Callable, Iterator
+from typing import TextIO, Tuple, Dict, Optional, List
 
 from tcsfw.claim_coverage import RequirementClaimMapper, ClaimMapping, RequirementStatus
-from tcsfw.claim_set import ClaimContext
-from tcsfw.default_requirements import DEFAULT
 from tcsfw.entity import Entity, ClaimStatus, ClaimAuthority
-from tcsfw.etsi_ts_103_701 import ETSI_TS_103_701, ETSI_TS_103_701_FIN
 from tcsfw.event_logger import EventLogger
-from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.requirement import Specification, Requirement
 from tcsfw.traffic import EvidenceSource
@@ -39,10 +36,8 @@ class CoverageReport:
 
     def print_summary(self, writer: TextIO, specification: Specification, name: str):
         """Print coverage summary"""
-        pri = specification.cutoff_priority
         if "-" in name:
-            name, _, ps= name.rpartition("-")
-            pri = int(ps)
+            name, _, _ = name.rpartition("-")
         if name == "stats":
             self._print_statistics(writer, specification)
         elif name == "tars":
@@ -54,7 +49,7 @@ class CoverageReport:
         elif not name:
             self._print_coverage(writer, specification)
         else:
-            raise Exception(f"No such coverage info '{name}'")
+            raise ValueError(f"No such coverage info '{name}'")
 
     def _print_source_coverage(self, writer: TextIO, specification: Specification):
         mapping = self._get_mappings(specification)
@@ -102,7 +97,7 @@ class CoverageReport:
             for k, v in props.items():
                 prop_s.append(("[x] " if v else "[ ] ") + f"{k}")
             if prop_s:
-                s += f"\n    " + " ".join(prop_s)
+                s += "\n    " + " ".join(prop_s)
             return s
 
         if by_targets:
@@ -180,21 +175,23 @@ class CoverageReport:
                 r_all, r_pass = target_reqs[t]
                 writer.write(f"{t:<40} {passed:>3}/{all:<3} pass/reqs={r_pass}/{r_all}\n")
 
+    @classmethod
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
+        """Marger chacater for status"""
         if status is None or status.verdict == Verdict.INCON:
             return " "
         if status.verdict == Verdict.IGNORE:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "-"
             return "."
-        if stGatewayatus.verdict == Verdict.PASS:
+        if status.verdict == Verdict.PASS:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "X"
             return "x"
-        raise Exception(f"Unknown verdict {status.verdict}")
+        raise ValueError(f"Unknown verdict {status.verdict}")
 
     @classmethod
-    def _light(self, verdict: Verdict) -> str:
+    def _light(cls, verdict: Verdict) -> str:
         """Verdict traffic light"""
         if verdict in {Verdict.IGNORE, Verdict.INCON}:
             return "yellow"
@@ -203,7 +200,7 @@ class CoverageReport:
         return "red"
 
     @classmethod
-    def _update_verdict(self, base: Verdict, verdict: Optional[Verdict]) -> Verdict:
+    def _update_verdict(cls, base: Verdict, verdict: Optional[Verdict]) -> Verdict:
         """Update aggregate verdict"""
         if verdict is None:
             return base
@@ -262,7 +259,7 @@ class CoverageReport:
         legend = {
             req_legend: "Requirements",
             cov_legend: "Coverage items",
-            f"": "Coverage items",
+            "": "Coverage items",
             f"Tool {Verdict.PASS.value}": "Verification pass",
             f"Tool {Verdict.FAIL.value}": "Verification fail",
             ignore_len_name: "Not relevant",
@@ -270,7 +267,7 @@ class CoverageReport:
             f"Manual {Verdict.PASS.value}": "Explained pass",
             f"Manual {Verdict.IGNORE.value}": "Explained not relevant",
         }
-        legend_c = {n: 0 for n in legend.keys()}
+        legend_c = {n: 0 for n in legend}
 
         req_count = 0
         for sec_title, req_map in sec_map.items():
