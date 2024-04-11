@@ -1,3 +1,5 @@
+"""Basic definitions"""
+
 import enum
 from typing import Optional
 
