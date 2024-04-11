@@ -10,6 +10,12 @@ ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]
 ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 
 
+class NotSupportedException(Exception):
+    """Feature or function not supported"""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class SystemBuilder:
     """System model builder"""
     def network(self, mask: str) -> Self:

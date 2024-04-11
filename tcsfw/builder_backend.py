@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 from tcsfw.address import Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
-from tcsfw.claim import AbstractClaim
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest, ClientPrompt
 from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, Software
@@ -22,7 +21,7 @@ from tcsfw.event_interface import PropertyEvent
 from tcsfw.events import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main import ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS, BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder, CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder, ProtocolConfigurer, ProtocolType, SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup, SoftwareBuilder, SystemBuilder, VisualizerBuilder
+from tcsfw.main import ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS, BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder, CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder, NotSupportedException, ProtocolConfigurer, ProtocolType, SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup, SoftwareBuilder, SystemBuilder, VisualizerBuilder
 from tcsfw.main_tools import EvidenceLoader, NodeManipulator, SubLoader, ToolPlanLoader
 from tcsfw.model import Addressable, Connection, Host, IoTSystem, SensitiveData, Service
 from tcsfw.property import Properties, PropertyKey
@@ -544,7 +543,7 @@ class ProtocolBackend:
 
     def as_multicast_(self, address: str, system: SystemBackend) -> ServiceBackend:
         """The protocol as multicast"""
-        raise NotImplementedError(f"{self.service_name} cannot be broad/multicast")
+        raise NotSupportedException(f"{self.service_name} cannot be broad/multicast")
 
     def get_service_(self, parent: HostBackend) -> ServiceBackend:
         """Create or get service builder"""
@@ -581,7 +580,7 @@ class ProtocolBackend:
 
 class ARPBackend(ProtocolBackend):
     """ARP protocol backend"""
-    def __init__(self, configurer: ARP, broadcast_endpoint=False):
+    def __init__(self, _configurer: ARP, broadcast_endpoint=False):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
