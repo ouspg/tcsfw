@@ -1,34 +1,40 @@
+"""Model builder backend"""
 
 import argparse
 import io
+import ipaddress
 import json
 import logging
 import pathlib
 import sys
-from tcsfw.address import DNSName, HWAddresses, IPAddress, IPAddresses
+from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
+
+from tcsfw.address import Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Protocol
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim import AbstractClaim
 from tcsfw.claim_coverage import RequirementClaimMapper
-from tcsfw.client_api import APIRequest, ClientAPI, ClientPrompt
+from tcsfw.client_api import APIRequest, ClientPrompt
 from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, Software
 from tcsfw.coverage_result import CoverageReport
-from tcsfw.entity import ClaimAuthority
+from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
+from tcsfw.events import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.latex_output import LaTeXGenerator
-from tcsfw.main import *
-from tcsfw.main import NodeBuilder
+from tcsfw.main import ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS, BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder, CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder, ProtocolConfigurer, ProtocolType, SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup, SoftwareBuilder, SystemBuilder, VisualizerBuilder
 from tcsfw.main_tools import EvidenceLoader, NodeManipulator, SubLoader, ToolPlanLoader
-from tcsfw.model import *
-from tcsfw.property import Properties
+from tcsfw.model import Addressable, Connection, Host, IoTSystem, SensitiveData, Service
+from tcsfw.property import Properties, PropertyKey
 from tcsfw.registry import Registry
 from tcsfw.inspector import Inspector
 from tcsfw.result import Report
+from tcsfw.selector import RequirementSelector
 from tcsfw.services import DHCPService, DNSService
 from tcsfw.specifications import Specifications
 from tcsfw.sql_database import SQLDatabase
-from tcsfw.traffic import Evidence
+from tcsfw.traffic import Evidence, EvidenceSource
+from tcsfw.verdict import Status
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
 
@@ -40,7 +46,7 @@ class SystemBackend(SystemBuilder):
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
         self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
         self.network_masks = []
-        self.claimSet = ClaimSetBackend(self)
+        self.claim_set = ClaimSetBackend(self)
         self.visualizer = Visualizer()
         self.loaders: List[EvidenceLoader] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
@@ -118,8 +124,8 @@ class SystemBackend(SystemBuilder):
         return el
 
     def claims(self, base_label="explain") -> 'ClaimSetBackend':
-        self.claimSet.base_label = base_label
-        return self.claimSet
+        self.claim_set.base_label = base_label
+        return self.claim_set
 
     ### Backend methods
 
@@ -172,6 +178,7 @@ class SystemBackend(SystemBuilder):
 
 
 class NodeBackend(NodeManipulator):
+    """Node building backend"""
     def __init__(self, entity: Addressable, system: SystemBackend):
         self.system = system
         self.entity = entity
@@ -251,7 +258,8 @@ class NodeBackend(NodeManipulator):
         return self.entity.__repr__()
 
 
-class ServiceBackend(NodeBackend,ServiceBuilder):
+class ServiceBackend(NodeBackend, ServiceBuilder):
+    """Service builder backend"""
     def __init__(self, host: 'HostBackend', service: Service):
         NodeBackend.__init__(self, service, host.system)
         self.entity = service
@@ -277,6 +285,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
     ### Backend methods
 
     def connection_(self, source: 'NodeBackend') -> 'ConnectionBackend':
+        """Create connection from source to this service"""
         s = source
         if self.source_fixer:
             assert isinstance(s, HostBackend)
@@ -296,6 +305,7 @@ class ServiceBackend(NodeBackend,ServiceBuilder):
 
 
 class ServiceGroupBackend(ServiceGroupBuilder):
+    """Service group builder backend"""
     def __init__(self, services: List[ServiceBackend]):
         assert len(services) > 0, "Empty list of services"
         self.services = services
@@ -318,7 +328,8 @@ class ServiceGroupBackend(ServiceGroupBuilder):
         return " / ".join([f"{s.entity.name}" for s in self.services])
 
 
-class HostBackend(NodeBackend,HostBuilder):
+class HostBackend(NodeBackend, HostBuilder):
+    """Host builder backend"""
     def __init__(self, entity: Host, system: SystemBackend):
         NodeBackend.__init__(self, entity, system)
         self.entity = entity
@@ -375,6 +386,7 @@ class HostBackend(NodeBackend,HostBuilder):
 
 
 class SensitiveDataBackend(SensitiveDataBuilder):
+    """Sensitive data builder backend"""
     def __init__(self, parent: SystemBackend, data: List[SensitiveData]):
         self.parent = parent
         self.data = data
@@ -388,18 +400,9 @@ class SensitiveDataBackend(SensitiveDataBuilder):
             h.use_data(self)
         return self
 
-    def authorize(self, *service: ServiceBackend) -> Self:
-        for s in service:
-            s.parent.use_data(self)
-            for d in self.data:
-                d.authenticator_for.append(s.entity)
-                # property to link from service to authentication
-                prop_v = Properties.AUTHENTICATION_DATA.value(explanation=d.name)
-                prop_v[0].set(s.entity.properties, prop_v[1])
-        return self
-
 
 class ConnectionBackend(ConnectionBuilder):
+    """Connection builder backendq"""
     def __init__(self, connection: Connection, ends: Tuple[NodeBackend, ServiceBackend]):
         self.connection = connection
         self.ends = ends
@@ -414,6 +417,7 @@ class ConnectionBackend(ConnectionBuilder):
 
 
 class SoftwareBackend(SoftwareBuilder):
+    """Software builder backend"""
     def __init__(self, parent: NodeBackend, software_name: str):
         self.sw: Software = Software.get_software(parent.entity, software_name)
         if self.sw is None:
@@ -456,11 +460,12 @@ class SoftwareBackend(SoftwareBuilder):
 
     ### Backend methods
 
-    def get_software(self, name: Optional[str] = None) -> Software:
+    def get_software(self, _name: Optional[str] = None) -> Software:
         return self.sw
 
 
 class CookieBackend(CookieBuilder):
+    """Cookie builder backend"""
     def __init__(self, builder: HostBackend):
         self.builder = builder
         self.component = Cookies.cookies_for(builder.entity)
@@ -471,6 +476,7 @@ class CookieBackend(CookieBuilder):
 
 
 class NodeVisualBackend(NodeVisualBuilder):
+    """Node visual builder backend"""
     def __init__(self, entity: NodeBackend):
         self.entity = entity
         self.image_url: Optional[str] = None
@@ -487,7 +493,7 @@ class NodeVisualBackend(NodeVisualBuilder):
 
 
 class VisualizerBackend(VisualizerBuilder):
-    """Visual builder"""
+    """Visual builder backend"""
     def __init__(self, visualizer: Visualizer):
         self.visualizer = visualizer
 
@@ -511,10 +517,11 @@ class ProtocolBackend:
     """Protocol configurer backend"""
     @classmethod
     def new(cls, configurer: ProtocolConfigurer) -> 'ProtocolBackend':
+        """New backend for the configurer"""
         pt = configurer.__class__
         pt_cre = ProtocolConfigurers.Constructors.get(pt)
         if pt_cre is None:
-            raise NotImplemented(f"No backend mapped for {pt}")
+            raise ValueError(f"No backend mapped for {pt}")
         be = pt_cre(configurer)
         return be
 
@@ -568,6 +575,7 @@ class ProtocolBackend:
 
 
 class ARPBackend(ProtocolBackend):
+    """ARP protocol backend"""
     def __init__(self, configurer: ARP, broadcast_endpoint=False):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
@@ -605,6 +613,7 @@ class ARPBackend(ProtocolBackend):
 
 
 class DHCPBackend(ProtocolBackend):
+    """DHCP protocol backend"""
     def __init__(self, configurer: DHCP):
         super().__init__(Protocol.UDP, port=configurer.port, name="DHCP")
         # DHCP requests go to broadcast, thus the reply looks like request
@@ -628,6 +637,7 @@ class DHCPBackend(ProtocolBackend):
 
 
 class DNSBackend(ProtocolBackend):
+    """DNS protocol backend"""
     def __init__(self, configurer: DNS):
         super().__init__(Protocol.UDP, port=configurer.port, name="DNS")
         self.external_activity = ExternalActivity.OPEN
@@ -642,6 +652,7 @@ class DNSBackend(ProtocolBackend):
 
 
 class EAPOLBackend(ProtocolBackend):
+    """EAPOL protocol backend"""
     def __init__(self, configurer: EAPOL):
         super().__init__(Protocol.ETHERNET, port=0x888e, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
@@ -651,6 +662,7 @@ class EAPOLBackend(ProtocolBackend):
 
 
 class HTTPBackend(ProtocolBackend):
+    """HTTP protocol backend"""
     def __init__(self, configurer: HTTP):
         super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.HTTP, name=configurer.name)
         self.authentication = configurer.auth
@@ -665,6 +677,7 @@ class HTTPBackend(ProtocolBackend):
 
 
 class ICMPBackend(ProtocolBackend):
+    """ICMP protocol backend"""
     def __init__(self, configurer: ICMP):
         super().__init__(Protocol.IP, port=1, name=configurer.name)
         self.external_activity = ExternalActivity.OPEN
@@ -681,6 +694,7 @@ class ICMPBackend(ProtocolBackend):
 
 
 class IPBackend(ProtocolBackend):
+    """IP protocol backend"""
     def __init__(self, configurer: IP):
         super().__init__(Protocol.IP, name=configurer.name)
         if configurer.administration:
@@ -689,6 +703,7 @@ class IPBackend(ProtocolBackend):
 
 
 class TLSBackend(ProtocolBackend):
+    """TLS protocol backend"""
     def __init__(self, configurer: TLS):
         super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.TLS, name=configurer.name)
         self.authentication = configurer.auth
@@ -697,6 +712,7 @@ class TLSBackend(ProtocolBackend):
 
 
 class NTPBackend(ProtocolBackend):
+    """NTP protocol backend"""
     def __init__(self, configurer: NTP):
         super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
@@ -705,6 +721,7 @@ class NTPBackend(ProtocolBackend):
 
 
 class SSHBackend(ProtocolBackend):
+    """SSH protocol backend"""
     def __init__(self, configurer: SSH):
         super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.SSH, name=configurer.name)
         self.authentication = True
@@ -713,6 +730,7 @@ class SSHBackend(ProtocolBackend):
 
 
 class TCPBackend(ProtocolBackend):
+    """TCP protocol backend"""
     def __init__(self, configurer: TCP):
         super().__init__(Protocol.TCP, port=configurer.port, name=configurer.name)
         if configurer.administrative:
@@ -721,6 +739,7 @@ class TCPBackend(ProtocolBackend):
 
 
 class UDPBackend(ProtocolBackend):
+    """UDP protocol backend"""
     def __init__(self, configurer: UDP):
         super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
         if configurer.administrative:
@@ -738,6 +757,7 @@ class UDPBackend(ProtocolBackend):
 
 
 class BLEAdvertisementBackend(ProtocolBackend):
+    """BLE advertisement backend"""
     def __init__(self, configurer: BLEAdvertisement):
         super().__init__(Protocol.BLE, port=configurer.event_type, name=configurer.name, protocol=Protocol.BLE)
 
@@ -911,11 +931,6 @@ class ClaimSetBackend(ClaimSetBuilder):
 
 class SystemBackendRunner(SystemBackend):
     """Backend for system builder"""
-    def __init__(self, name: str):
-        super().__init__(name)
-
-
-    """Model builder and runner"""
     def __init__(self, name="Unnamed system"):
         super().__init__(name)
         parser = argparse.ArgumentParser()
@@ -964,7 +979,7 @@ class SystemBackendRunner(SystemBackend):
         db_conn = self.args.db
         if db_conn:
             # connect to SQL database
-            registry.logger.info(f"Connecting to database {db_conn}")
+            registry.logger.info("Connecting to database %s", db_conn)
             registry.database = SQLDatabase(db_conn)
         # finish loading after DB connection
         registry.finish_model_load()
@@ -992,7 +1007,7 @@ class SystemBackendRunner(SystemBackend):
             return
 
         # load product claims, then explicit loaders (if any)
-        for sub in self.claimSet.finish_loaders():
+        for sub in self.claim_set.finish_loaders():
             sub.load(registry, cc, filter=label_filter)
         for ln in self.loaders:
             for sub in ln.subs:

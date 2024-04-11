@@ -13,6 +13,7 @@ from tcsfw.property import PropertyKey
 from tcsfw.registry import Registry
 from tcsfw.traffic import NO_EVIDENCE, Evidence, EvidenceSource, Flow, IPFlow, Tool
 
+
 class NodeManipulator:
     """Interface to interact with other backend"""
     def get_node(self) -> NodeBuilder:

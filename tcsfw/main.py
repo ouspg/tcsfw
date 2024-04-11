@@ -1,4 +1,6 @@
-from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Type, Union
+"""Model builder"""
+
+from typing import Dict, List, Optional, Self, Tuple, Type, Union
 from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
 from tcsfw.selector import RequirementSelector
 from tcsfw.basics import ConnectionType, HostType, Verdict, ExternalActivity
@@ -11,6 +13,7 @@ ServiceOrGroup = Union['ServiceBuilder', 'ServiceGroupBuilder']
 class SystemBuilder:
     """System model builder"""
     def network(self, mask: str) -> Self:
+        """Configure network mask"""
         raise NotImplementedError()
 
     def device(self, name="") -> 'HostBuilder':
@@ -54,16 +57,20 @@ class SystemBuilder:
         raise NotImplementedError()
 
     def visualize(self) -> 'VisualizerBuilder':
+        """Model visualization"""
         raise NotImplementedError()
 
     def load(self) -> 'EvidenceBuilder':
+        """Load built-in evidence"""
         raise NotImplementedError()
 
     def claims(self, base_label="explain") -> 'ClaimSetBuilder':
+        """Make claims"""
         raise NotImplementedError()
 
 
 class NodeBuilder:
+    """Node builder base class"""
     def __init__(self, system: SystemBuilder):
         # NOTE: This is not called from subclasses, necessarily
         self.system = system
@@ -81,9 +88,11 @@ class NodeBuilder:
         raise NotImplementedError()
 
     def external_activity(self, value: ExternalActivity) -> Self:
+        """Define external activity"""
         raise NotImplementedError()
 
     def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
+        """Define software running here"""
         raise NotImplementedError()
 
     def visual(self) -> 'NodeVisualBuilder':
@@ -96,9 +105,6 @@ class NodeBuilder:
 
 class ServiceBuilder(NodeBuilder):
     """Service builder"""
-    def __init__(self, system: SystemBuilder):
-        super().__init__(system)
-
     def type(self, value: ConnectionType) -> Self:
         """Configure connection type"""
         raise NotImplementedError()
@@ -169,10 +175,6 @@ class SensitiveDataBuilder:
         """This data used/stored in a host"""
         raise NotImplementedError()
 
-    def authorize(self, *service: ServiceBuilder) -> Self:
-        """This data is used for service authentication"""
-        raise NotImplementedError()
-
 
 class ConnectionBuilder:
     """Connection builder"""
@@ -210,9 +212,11 @@ class CookieBuilder:
 class NodeVisualBuilder:
     """Visual builder for a network node"""
     def hide(self) -> Self:
+        """Hide this node from visualization"""
         raise NotImplementedError()
 
     def image(self, url: str, scale=100) -> Self:
+        """Set URL to node image"""
         raise NotImplementedError()
 
 
@@ -237,28 +241,34 @@ class ProtocolConfigurer:
 
 
 class ARP(ProtocolConfigurer):
+    """ARP configurer"""
     def __init__(self):
         ProtocolConfigurer.__init__(self, "ARP")
 
 
 class DHCP(ProtocolConfigurer):
+    """DHCP configurer"""
     def __init__(self, port=67):
         ProtocolConfigurer.__init__(self, "DHCP")
         self.port = port
 
 
 class DNS(ProtocolConfigurer):
+    """DNS configurer"""
     def __init__(self, port=53, captive=False):
         ProtocolConfigurer.__init__(self, "DNS")
         self.port = port
         self.captive = captive
 
+
 class EAPOL(ProtocolConfigurer):
+    """EAPOL configurer"""
     def __init__(self):
         ProtocolConfigurer.__init__(self, "EAPOL")
 
 
 class HTTP(ProtocolConfigurer):
+    """HTTP configurer"""
     def __init__(self, port=80, auth: Optional[bool] = None):
         ProtocolConfigurer.__init__(self, "HTTP")
         self.port = port
@@ -272,17 +282,20 @@ class HTTP(ProtocolConfigurer):
 
 
 class ICMP(ProtocolConfigurer):
+    """ICMP configurer"""
     def __init__(self):
         ProtocolConfigurer.__init__(self, "ICMP")
 
 
 class IP(ProtocolConfigurer):
+    """IPv4 or v6 configurer"""
     def __init__(self, name="IP", administration=False):
         ProtocolConfigurer.__init__(self, name)
         self.administration = administration
 
 
 class TLS(ProtocolConfigurer):
+    """TLS configurer"""
     def __init__(self, port=443, auth: Optional[bool] = None):
         ProtocolConfigurer.__init__(self, "TLS")
         self.port = port
@@ -290,18 +303,21 @@ class TLS(ProtocolConfigurer):
 
 
 class NTP(ProtocolConfigurer):
+    """NTP configurer"""
     def __init__(self, port=123):
         ProtocolConfigurer.__init__(self, "NTP")
         self.port = port
 
 
 class SSH(ProtocolConfigurer):
+    """SSH configurer"""
     def __init__(self, port=22):
         ProtocolConfigurer.__init__(self, "SSH")
         self.port = port
 
 
 class TCP(ProtocolConfigurer):
+    """TCP configurer"""
     def __init__(self, port: int, name="TCP", administrative=False):
         ProtocolConfigurer.__init__(self, name)
         self.port = port
@@ -310,6 +326,7 @@ class TCP(ProtocolConfigurer):
 
 
 class UDP(ProtocolConfigurer):
+    """UDP configurer"""
     def __init__(self, port: int, name="UDP", administrative=False):
         ProtocolConfigurer.__init__(self, name)
         self.port = port
@@ -318,6 +335,7 @@ class UDP(ProtocolConfigurer):
 
 
 class BLEAdvertisement(ProtocolConfigurer):
+    """BLE advertisement configurer"""
     def __init__(self, event_type: int):
         ProtocolConfigurer.__init__(self, "BLE Ad")
         self.event_type = event_type
@@ -438,6 +456,7 @@ class Builder:
     def TCP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':
         """Create a new TCP flow"""
         return FlowBuilder("TCP", (HWAddress.new(source_hw), IPAddress.new(source_ip), port))
+
 
 if __name__ == "__main__":
     Builder.new().run()
