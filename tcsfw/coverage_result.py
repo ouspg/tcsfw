@@ -52,6 +52,8 @@ class CoverageReport:
             raise ValueError(f"No such coverage info '{name}'")
 
     def _print_source_coverage(self, writer: TextIO, specification: Specification):
+        # pylint: disable=too-many-nested-blocks
+
         mapping = self._get_mappings(specification)
         sources = self.logging.get_all_property_sources()
 

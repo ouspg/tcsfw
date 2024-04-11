@@ -66,4 +66,4 @@ if __name__ == "__main__":
     f_name = arg_parser.parse_args().file
     reader = TSharkReader(IoTSystem())
     reader.read(pathlib.Path(f_name), Inspector(reader.system), EvidenceSource(reader.tool.name))
-    print(reader.interface)
+    print(reader.system)

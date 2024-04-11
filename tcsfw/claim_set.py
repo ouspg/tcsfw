@@ -49,7 +49,7 @@ class ClaimContext:
         v = entity.properties.get(key)
         if v is None:
             self.properties.setdefault((entity, claim), {})[key] = None
-            return
+            return None
         if isinstance(v, Verdictable):
             ver = v.get_verdict()
         elif isinstance(v, PropertySetValue):
@@ -186,7 +186,6 @@ class ConnectionClaim(RequirementClaim):
 
     def check(self, entity: Entity, _context: ClaimContext) -> Optional[ClaimStatus]:
         assert isinstance(entity, Connection)
-        return None
 
 
 class HostClaim(RequirementClaim):
@@ -196,7 +195,6 @@ class HostClaim(RequirementClaim):
 
     def check(self, entity: Entity, _context: ClaimContext) -> Optional[ClaimStatus]:
         self.assert_host(entity)
-        return None
 
 
 class PropertyClaim(RequirementClaim):
@@ -333,7 +331,6 @@ class ServiceClaim(RequirementClaim):
 
     def check(self, entity: Entity, _context: ClaimContext) -> Optional[ClaimStatus]:
         assert isinstance(entity, Service)
-        return None
 
 
 class ConnectionAsServiceClaim(RequirementClaim):
@@ -398,7 +395,6 @@ class SoftwareClaim(RequirementClaim):
 
     def check(self, entity: Entity, _context: ClaimContext) -> Optional[ClaimStatus]:
         assert isinstance(entity, Software)
-        return None
 
 
 class AvailabilityClaim(PropertyClaim):
@@ -416,7 +412,7 @@ class AvailabilityClaim(PropertyClaim):
 
     def resources(self, *key: str) -> RequirementClaim:
         """Create new claim"""
-        return AggregateClaim(claims=tuple([self.resource(k) for k in key]))
+        return AggregateClaim(claims=tuple(self.resource(k) for k in key))
 
     def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         spec_key = self.property_key.append_key(self.resource_key)
@@ -648,7 +644,7 @@ class EncryptionClaim(PropertyClaim):
         super().__init__(description, key=Properties.ENCRYPTION)
 
     def pre_filter(self, entity: Entity, _context: ClaimContext) -> bool:
-        return (isinstance(entity, NetworkNode) or isinstance(entity, Connection)) and entity.is_encrypted()
+        return isinstance(entity, (NetworkNode, Connection)) and entity.is_encrypted()
 
     def do_check(self, key: PropertyKey, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
         if isinstance(entity, Connection):
@@ -714,12 +710,12 @@ class ReleaseClaim(SoftwareClaim):
 
 
 class SystemClaim(RequirementClaim):
+    """Claim about the whole system"""
     def __init__(self, description="System"):
         super().__init__(description)
 
     def check(self, entity: Entity, _context: ClaimContext) -> Optional[ClaimStatus]:
         assert isinstance(entity, IoTSystem)
-        return None
 
 
 class UserInterfaceClaim(PropertyClaim):
@@ -805,7 +801,7 @@ class Claim:
         return PermissionClaim(name)
 
     @classmethod
-    def name(self, value: str, claim: RequirementClaim) -> RequirementClaim:
+    def name(cls, value: str, claim: RequirementClaim) -> RequirementClaim:
         """Give claim a name"""
         return NamedClaim(value, claim)
 

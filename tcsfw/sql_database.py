@@ -99,13 +99,15 @@ class SQLDatabase(EntityDatabase, ModelListener):
             with ses.begin():
                 # collect source_ids of model sources
                 ids = set()
-                sel = select(TableEvidenceSource.id).where(TableEvidenceSource.model == True)
+                sel = select(TableEvidenceSource.id).where(
+                    TableEvidenceSource.model == True)  # pylint: disable=singleton-comparison
                 ids.update(ses.execute(sel).scalars())
                 # select evets with these sources and delete them
                 dele = delete(TableEvent).where(TableEvent.source_id.in_(ids))
                 ses.execute(dele)
                 # finally, delete the sources
-                dele = delete(TableEvidenceSource).where(TableEvidenceSource.model == True)
+                dele = delete(TableEvidenceSource).where(
+                    TableEvidenceSource.model == True)  # pylint: disable=singleton-comparison
                 ses.execute(dele)
                 ses.commit()
 
@@ -126,7 +128,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
     def service_change(self, service: Service):
         self.get_id(Service)  # learn new services
 
-    def read_events(self, interface: EventInterface) -> Iterator[Event]:
+    def read_events(self, _interface: EventInterface) -> Iterator[Event]:
         """Real all events from database"""
         # read rows in batches, as event handling may cause DB operations
         offset = 0
@@ -190,7 +192,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
         self.pending_offset = 0
         self.pending_batch = []
         # Filter which sources are included
-        labels = set([f for f, v in source_filter.items() if v])
+        labels = set(f for f, v in source_filter.items() if v)
         ids = set()
         with Session(self.engine) as ses:
             with ses.begin():
@@ -293,7 +295,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
                     source_id = self.free_source_id
                     self.free_source_id += 1
                     data_js = source.get_data_json(self.get_id)
-                    src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, 
+                    src = TableEvidenceSource(id=source_id, name=source.name, label=source.label,
                                               base_ref=source.base_ref,
                                               model=source.model_override, data=json.dumps(data_js))
                     ses.add(src)
