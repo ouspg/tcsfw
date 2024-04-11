@@ -858,17 +858,17 @@ class ClaimBackend(ClaimBuilder):
             self.source = EvidenceSource(f"Claims '{label}'", label=label)
             self.source.model_override = True  # sent by model, override from DB
             builder.sources[label] = self.source
-        self._explanation = explanation
-        self._keys: List[PropertyKey] = []
-        self._locations: List[Entity] = []
-        self._verdict = verdict
+        self.explanation = explanation
+        self.keys: List[PropertyKey] = []
+        self.locations: List[Entity] = []
+        self.verdict = verdict
         builder.claim_builders.append(self)
 
     def key(self, *segments: str) -> Self:
         key = PropertyKey.create(segments)
         if key.is_protected():
             key = key.prefix_key(Properties.PREFIX_MANUAL)
-        self._keys.append(key)
+        self.keys.append(key)
         return self
 
     def keys(self, *key: Tuple[str, ...]) -> Self:
@@ -877,15 +877,15 @@ class ClaimBackend(ClaimBuilder):
             k = PropertyKey.create(seg)
             if k.is_protected():
                 k = k.prefix_key(Properties.PREFIX_MANUAL)
-            self._keys.append(k)
+            self.keys.append(k)
         return self
 
     def verdict_ignore(self) -> Self:
-        self._verdict = Verdict.IGNORE
+        self.verdict = Verdict.IGNORE
         return self
 
     def verdict_pass(self) -> Self:
-        self._verdict = Verdict.PASS
+        self.verdict = Verdict.PASS
         return self
 
     def at(self, *locations: Union[SystemBackend, NodeBackend, ConnectionBackend]) -> 'Self':
@@ -896,18 +896,18 @@ class ClaimBackend(ClaimBuilder):
                 loc = lo.entity
             else:
                 loc = lo.connection
-            self._locations.append(loc)
+            self.locations.append(loc)
         return self
 
     def software(self, *locations: NodeBackend) -> 'Self':
         for lo in locations:
             for sw in Software.list_software(lo.entity):
-                self._locations.append(sw)
+                self.locations.append(sw)
         return self
 
     def vulnerabilities(self, *entry: Tuple[str, str]) -> Self:
         for com, cve in entry:
-            self._keys.append(PropertyKey("vulnz", com, cve.lower()))
+            self.keys.append(PropertyKey("vulnz", com, cve.lower()))
         return self
 
     # Backend methods
@@ -915,8 +915,8 @@ class ClaimBackend(ClaimBuilder):
     def finish_loaders(self) -> SubLoader:
         """Finish by returning the loader to use"""
         this = self
-        locations = self._locations
-        keys = self._keys
+        locations = self.locations
+        keys = self.keys
 
         class ClaimLoader(SubLoader):
             """Loader for the claims here"""
@@ -933,7 +933,7 @@ class ClaimBackend(ClaimBuilder):
                 for loc in locations:
                     for key in keys:
                         kv = PropertyKey.create(key.segments).verdict(
-                            this._verdict, explanation=this._explanation)
+                            this.verdict, explanation=this.explanation)
                         ev = PropertyEvent(evidence, loc, kv)
                         registry.property_update(ev)
         return ClaimLoader()
@@ -1083,16 +1083,13 @@ class SystemBackendRunner(SystemBackend):
                 sub.load(registry, cc, filter=label_filter)
 
         api = VisualizerAPI(registry, cc, self.visualizer)
-        dump_report = True
         if self.args.test_post:
             res, data = self.args.test_post
             resp = api.api_post(APIRequest(res), io.BytesIO(data.encode()))
             print(json.dumps(resp, indent=4))
-            dump_report = False
         if self.args.test_get:
             for res in self.args.test_get:
                 print(json.dumps(api.api_get(APIRequest.parse(res)), indent=4))
-                dump_report = False
 
         out_form = self.args.output
         if not out_form:
