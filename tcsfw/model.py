@@ -1,4 +1,5 @@
-import datetime
+"""Model classes"""
+
 import ipaddress
 import itertools
 import re
@@ -71,8 +72,6 @@ class SensitiveData:
         self.name = name
         self.personal = personal
         self.password = password
-        # FIXME: Nuke - list of services the data is authenticator for
-        self.authenticator_for: List[Service] = []
 
     def __repr__(self):
         return self.name
@@ -311,7 +310,6 @@ class Addressable(NetworkNode):
 
     def new_connection(self, connection: Connection, flow: Flow, target: bool):
         """New connection with this entity either as source or target"""
-        pass
 
     def set_seen_now(self, changes: List[Entity] = None) -> bool:
         r = super().set_seen_now(changes)
@@ -422,10 +420,6 @@ class Service(Addressable):
         return f"{self.status_string()} {self.parent.long_name()} {self.name}"
 
 
-# Source and target, optional
-Source_Target_Optional = Tuple[Optional[Addressable], Optional[Addressable]]
-
-
 class IoTSystem(NetworkNode):
     """An IoT system"""
     def __init__(self, name="IoT system"):
@@ -501,7 +495,7 @@ class IoTSystem(NetworkNode):
                 named = h
             elif address and address in h.addresses:
                 by_ip.append(h)
-        assert len(by_ip) < 2, "Multiple hosts with address {}".format(address)
+        assert len(by_ip) < 2, f"Multiple hosts with address {address}"
         add = by_ip[0] if by_ip else None
 
         if not named and add:
@@ -550,7 +544,7 @@ class IoTSystem(NetworkNode):
         for h in self.get_hosts():
             if h != host:
                 h.addresses.discard(ip_address)
-                self.call_listeners(lambda ln: ln.address_change(h))
+                self.call_listeners(lambda ln: ln.address_change(h))  # pylint: disable=cell-var-from-loop
 
     def get_system(self) -> 'IoTSystem':
         return self
@@ -598,6 +592,9 @@ class IoTSystem(NetworkNode):
             c.get_addresses(ads)
         return ads
 
+    def create_service(self, address: EndpointAddress) -> Service:
+        return NotImplementedError()
+
     def reset(self):
         super().reset()
         for h in self.get_hosts():
@@ -615,7 +612,7 @@ class IoTSystem(NetworkNode):
         u = urlparse(url)
         proto = Protocol.TLS if u.scheme == "https" else Protocol.get_protocol(u.scheme)
         if proto is None:
-            raise Exception(f"Unsupported scheme: {u.scheme}")
+            raise ValueError(f"Unsupported scheme: {u.scheme}")
         if u.port is None:
             port = 80 if proto == Protocol.HTTP else 443
         else:
@@ -643,23 +640,18 @@ class ModelListener:
     """Listener for model changes"""
     def connection_change(self, connection: Connection):
         """Connection created or changed"""
-        pass
 
     def host_change(self, host: Host):
         """Host created or changed"""
-        pass
 
     def address_change(self, host: Host):
         """Host addresses have changed"""
-        pass
 
     def service_change(self, service: Service):
         """Service created or changed"""
-        pass
 
     def property_change(self, entity: Entity, value: Tuple[PropertyKey, Any]):
         """Property changed. Not all changes create events, just the 'important' ones"""
-        pass
 
 
 class EvidenceNetworkSource(EvidenceSource):

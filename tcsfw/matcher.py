@@ -33,7 +33,7 @@ class SystemMatcher(ModelListener):
         self.host_addresses[host] = host.addresses.copy()
 
         for eng in self.engines.values():
-            eng.updateAddresses(host, ads)
+            eng.update_addresses(host, ads)
 
     def connection(self, flow: Flow) -> Connection:
         """Find the connection matching the given flow"""
@@ -171,7 +171,7 @@ class MatchEngine:
                 if fs is not None:
                     me.external_activity = fs
 
-    def updateAddresses(self, host: Host, old: Set[AnyAddress]):
+    def update_addresses(self, host: Host, old: Set[AnyAddress]):
         """Update addresses for a host"""
         # remove old mappings for the addresses
         for ad in old:
