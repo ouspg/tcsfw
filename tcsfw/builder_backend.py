@@ -21,7 +21,6 @@ from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
 from tcsfw.release_info import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
-from tcsfw.latex_output import LaTeXGenerator
 from tcsfw.main import (ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS,
                         BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder,
                         CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder,
@@ -1096,28 +1095,19 @@ class SystemBackendRunner(SystemBackend):
                 dump_report = False
 
         out_form = self.args.output
-        if out_form and out_form.startswith("coverage"):
+        if not out_form:
+            # default text output
+            report = Report(registry)
+            report.print_report(sys.stdout)
+        elif out_form and out_form.startswith("coverage"):
+            # coverage report in text
             cmd, _, spec_id = out_form.partition(":")
             cmd = cmd[8:]
             report = CoverageReport(registry.logging, cc)
             spec = Specifications.get_specification(spec_id)
             report.print_summary(sys.stdout, spec, cmd.strip("- "))
-        elif out_form and out_form.startswith("latex"):
-            cmd, _, spec_id = out_form.partition(":")
-            cmd = cmd[5:]
-            spec = Specifications.get_specification(spec_id)
-            report = LaTeXGenerator(self.system, spec, cc)
-            report.generate(sys.stdout, cmd.strip(" -"))
-        elif dump_report or out_form:
-            report = Report(registry)
-            if out_form in {'text', '', None}:
-                report.print_report(sys.stdout)
-            elif out_form == 'table-csv':
-                report.tabular(sys.stdout)
-            elif out_form == 'table-latex':
-                report.tabular(sys.stdout, latex=True)
-            else:
-                raise ConfigurationException(f"Unknown output format '{out_form}'")
+        else:
+            raise ConfigurationException(f"Unknown output format '{out_form}'")
 
         if self.args.prompt:
             prompt = ClientPrompt(api)
