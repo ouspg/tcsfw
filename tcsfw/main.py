@@ -453,7 +453,7 @@ class Builder:
     def new(cls, name="Unnamed system") -> SystemBuilder:
         """Create a new system builder"""
         # avoid circular import
-        from tcsfw.builder_backend import SystemBackendRunner  # pylint: disable=import-outside-toplevel,circular
+        from tcsfw.builder_backend import SystemBackendRunner  # pylint: disable=import-outside-toplevel
         return SystemBackendRunner(name)
 
     @classmethod
