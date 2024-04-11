@@ -4,11 +4,11 @@ import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
 from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName
-from tcsfw.basics import ExternalActivity, Verdict
+from tcsfw.basics import ExternalActivity, Status
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
 from tcsfw.traffic import Flow, EvidenceSource, IPFlow
-from tcsfw.verdict import Status
+from tcsfw.verdict import Verdict
 
 
 class SystemMatcher(ModelListener):

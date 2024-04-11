@@ -3,7 +3,7 @@
 from typing import Dict, Optional, Type, Callable, Any, Tuple
 
 from tcsfw.address import Addresses, AnyAddress
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 from tcsfw.entity import Entity
 from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey

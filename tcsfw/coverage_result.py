@@ -10,7 +10,7 @@ from tcsfw.event_logger import EventLogger
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.requirement import Specification, Requirement
 from tcsfw.traffic import EvidenceSource
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class CoverageReport:

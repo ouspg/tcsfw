@@ -3,7 +3,8 @@
 from typing import Dict, List, Optional, Self, Tuple, Type, Union
 from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
 from tcsfw.selector import RequirementSelector
-from tcsfw.basics import ConnectionType, HostType, Verdict, ExternalActivity
+from tcsfw.basics import ConnectionType, HostType, ExternalActivity
+from tcsfw.verdict import Verdict
 
 
 ProtocolType = Union['ProtocolConfigurer', Type['ProtocolConfigurer']]

@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Set
 
 from tcsfw.address import DNSName, AnyAddress
-from tcsfw.basics import ExternalActivity, Verdict
+from tcsfw.basics import ExternalActivity, Status
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent, PropertyEvent
 from tcsfw.matcher import SystemMatcher
@@ -12,7 +12,7 @@ from tcsfw.model import IoTSystem, Connection, Service, Host, Addressable
 from tcsfw.property import Properties
 from tcsfw.services import NameEvent
 from tcsfw.traffic import ServiceScan, HostScan, Flow, IPFlow
-from tcsfw.verdict import Status
+from tcsfw.verdict import Verdict
 
 
 class Inspector(EventInterface):

@@ -9,7 +9,7 @@ from tcsfw.entity import Entity, ExplainableClaim
 from tcsfw.model import Host, IoTSystem, NetworkNode, Service, Connection
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.requirement import Requirement, EntitySelector, SelectorContext
-from tcsfw.verdict import Status
+from tcsfw.basics import Status
 
 S = TypeVar("S", bound='EntitySelector')
 

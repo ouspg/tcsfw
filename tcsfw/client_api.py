@@ -13,7 +13,8 @@ from prompt_toolkit.history import FileHistory
 
 from framing.raw_data import Raw
 
-from tcsfw.basics import Verdict
+from tcsfw.basics import Status
+from tcsfw.verdict import Verdict
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import Entity
@@ -24,7 +25,7 @@ from tcsfw.property import Properties, PropertyKey, PropertySetValue, PropertyVe
 from tcsfw.registry import Registry
 from tcsfw.specifications import Specifications
 from tcsfw.traffic import NO_EVIDENCE
-from tcsfw.verdict import Status, Verdictable
+from tcsfw.verdict import Verdictable
 
 # format strings
 FORMAT_YEAR_MONTH_DAY = "%Y-%m-%d"

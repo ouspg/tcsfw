@@ -10,7 +10,7 @@ from tcsfw.model import Service, IoTSystem, NetworkNode
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.tools import EndpointCheckTool
 from tcsfw.traffic import Evidence, EvidenceSource
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class SSHAuditScan(EndpointCheckTool):

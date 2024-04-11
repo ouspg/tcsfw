@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Set, Dict, Any, Optional, Tuple, Self
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 from tcsfw.verdict import Verdictable
 

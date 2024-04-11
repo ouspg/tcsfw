@@ -10,7 +10,7 @@ from tcsfw.entity import ClaimAuthority
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import NetworkNode, Addressable, IoTSystem, NodeComponent
 from tcsfw.traffic import Evidence, EvidenceSource, Tool, IPFlow
-from tcsfw.verdict import Status
+from tcsfw.basics import Status
 
 
 class CheckTool:

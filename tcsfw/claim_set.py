@@ -3,7 +3,7 @@
 from typing import List, Optional, Tuple, Self, Dict, Set, Callable, Iterable, Union, Any
 
 from tcsfw.address import Protocol
-from tcsfw.basics import HostType, Verdict
+from tcsfw.basics import HostType
 from tcsfw.claim import AbstractClaim
 from tcsfw.components import DataReference, Software
 from tcsfw.entity import Entity, ClaimStatus, ExplainableClaim, ClaimAuthority
@@ -11,7 +11,7 @@ from tcsfw.release_info import ReleaseInfo
 from tcsfw.model import IoTSystem, Connection, Host, Service, NetworkNode
 from tcsfw.property import Properties, PropertyKey, PropertyVerdictValue, \
     PropertySetValue
-from tcsfw.verdict import Verdictable
+from tcsfw.verdict import Verdict, Verdictable
 
 
 class ClaimContext:

@@ -7,11 +7,11 @@ from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Sel
 from urllib.parse import urlparse
 
 from tcsfw.address import AnyAddress, Addresses, EndpointAddress, Protocol, IPAddress, HWAddress, DNSName
-from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
+from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
 from tcsfw.property import PropertyKey
 from tcsfw.traffic import Flow, EvidenceSource
-from tcsfw.verdict import Status
+from tcsfw.verdict import Verdict
 
 
 class Connection(Entity):

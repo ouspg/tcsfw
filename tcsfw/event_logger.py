@@ -4,7 +4,7 @@ from logging import Logger
 import logging
 from typing import Any, List, Set, Tuple, Dict, Optional, cast
 from tcsfw.address import AnyAddress
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyEvent, PropertyAddressEvent

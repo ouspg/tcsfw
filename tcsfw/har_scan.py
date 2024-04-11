@@ -13,7 +13,7 @@ from tcsfw.model import Host, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.tools import NodeCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class HARScan(NodeCheckTool):

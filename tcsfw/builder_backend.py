@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
 from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress,
                            HWAddresses, IPAddress, IPAddresses, Protocol)
-from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Verdict
+from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest, ClientPrompt
@@ -38,7 +38,7 @@ from tcsfw.services import DHCPService, DNSService
 from tcsfw.specifications import Specifications
 from tcsfw.sql_database import SQLDatabase
 from tcsfw.traffic import Evidence, EvidenceSource
-from tcsfw.verdict import Status
+from tcsfw.verdict import Verdict
 from tcsfw.visualizer import Visualizer, VisualizerAPI
 
 

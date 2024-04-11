@@ -10,7 +10,7 @@ from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey
 from tcsfw.requirement import Specification, Requirement, SelectorContext
 from tcsfw.traffic import Tool
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class RequirementStatus:
