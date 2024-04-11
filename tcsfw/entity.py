@@ -1,5 +1,7 @@
+"""Base entity class and related classes"""
+
 import enum
-from typing import Dict, Optional, Self, List, Any, Tuple, Iterable, Callable, Iterator, TypeVar
+from typing import Dict, Optional, Self, List, Any, Tuple, Iterable, Iterator
 from tcsfw.basics import Verdict
 
 from tcsfw.claim import AbstractClaim
@@ -15,6 +17,7 @@ class Entity:
         self.properties: Dict[PropertyKey, Any] = {}
 
     def long_name(self) -> str:
+        """Get long name, possibly with spaces"""
         return self.concept_name
 
     def reset(self):
@@ -34,7 +37,7 @@ class Entity:
     def set_seen_now(self, changes: List['Entity'] = None) -> bool:
         """The entity is seen now, update and return if changes"""
         v = Properties.EXPECTED.get_verdict(self.properties)
-        if self.status == Status.EXPECTED: 
+        if self.status == Status.EXPECTED:
             if v == Verdict.PASS:
                 return False  # already ok
             v = Verdict.PASS
@@ -105,6 +108,7 @@ class Entity:
         s = f"{self.status_string()} {self.long_name()}"
         return s
 
+
 class ClaimAuthority(enum.Enum):
     """Claim or claim status authority"""
     MODEL = "Model"          # Model claim, inferred from model
@@ -113,6 +117,7 @@ class ClaimAuthority(enum.Enum):
 
 
 class ClaimStatus:
+    """Status of a claim"""
     def __init__(self, claim: AbstractClaim, explanation="", verdict=Verdict.INCON, authority=ClaimAuthority.MODEL):
         assert claim is not None and verdict is not None
         self.claim = claim
@@ -138,5 +143,4 @@ class ExplainableClaim(AbstractClaim):
         """Explain the claim and status. Status can be null"""
         if status and status.explanation:
             return status.explanation
-        return self.__repr__()
-
+        return str(self)
