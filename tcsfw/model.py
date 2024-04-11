@@ -30,7 +30,7 @@ class Connection(Entity):
 
     def is_relevant(self, ignore_ends=False) -> bool:
         """Is this connection relevant, i.e. not placeholder or external?"""
-        if self.status == Status.EXPECTED or self.status == Status.UNEXPECTED:
+        if self.status in {Status.EXPECTED, Status.UNEXPECTED}:
             return True
         if self.status == Status.PLACEHOLDER:
             return False  # placeholder is never relevant
@@ -49,7 +49,7 @@ class Connection(Entity):
 
     def is_end(self, entity: 'NetworkNode') -> bool:
         """Is given entity either end of the connection?"""
-        return entity == self.source or entity == self.target
+        return entity in {self.source, self.target}
 
     def reset_connection(self, system: 'IoTSystem'):
         """Reset this connection"""
@@ -158,7 +158,7 @@ class NetworkNode(Entity):
         return False
 
     def is_relevant(self) -> bool:
-        return self.status == Status.EXPECTED or self.status == Status.UNEXPECTED
+        return self.status in {Status.EXPECTED, Status.UNEXPECTED}
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""

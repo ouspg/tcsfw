@@ -199,8 +199,7 @@ class HTTPServerRunner:
                 if msg.type == WSMsgType.CLOSE:
                     self.logger.info("WS close")
                     break
-                else:
-                    self.logger.warning("Unexpected WS type %d", msg.type)
+                self.logger.warning("Unexpected WS type %d", msg.type)
         try:
             await receive_loop()
         finally:

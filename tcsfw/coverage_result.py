@@ -28,7 +28,7 @@ class CoverageReport:
         r = {}
         for ps in status.context.properties.values():
             for p, v in ps.items():
-                r[p] = True if v else False  # boolean mapping
+                r[p] = bool(v)  # boolean mapping
         return r
 
     def _get_mappings(self, specification: Specification) -> ClaimMapping:
@@ -101,7 +101,7 @@ class CoverageReport:
             return s
 
         if by_targets:
-            targets = sorted(set([r.target_name for r in specification.requirement_map.values()]))
+            targets = sorted(set(r.target_name for r in specification.requirement_map.values()))
             for tar in targets:
                 writer.write(f"== {tar} ==\n")
                 requirements = mapping.get_by_requirements()
@@ -168,7 +168,7 @@ class CoverageReport:
             writer.write(f"{s}\n")
 
         # group by targets?
-        use_targets = any([r.target_name for r in specification.requirement_map.values()])
+        use_targets = any(r.target_name for r in specification.requirement_map.values())
         if use_targets:
             writer.write("\n== Targets ==\n")
             for t, (all_c, passed) in target_verdicts.items():
@@ -204,10 +204,9 @@ class CoverageReport:
         """Update aggregate verdict"""
         if verdict is None:
             return base
-        if base == Verdict.INCON or verdict == Verdict.INCON:
+        if Verdict.INCON in {base, verdict}:
             return Verdict.INCON
-        else:
-            return Verdict.aggregate(base, verdict)
+        return Verdict.aggregate(base, verdict)
 
     def _get_properties(self, status: RequirementStatus) -> Dict[PropertyKey, Dict]:
         """Get properties resolved for a claim"""
@@ -218,7 +217,7 @@ class CoverageReport:
             for p, s in sources.items():
                 v = ps.get(p)
                 r[p] = {
-                    "value": True if v else False,  # boolean value
+                    "value": bool(v),  # boolean value
                     "tools": [s.name],  # NOTE: perhaps we have many later
                 }
             # show properties without known sources, as well
@@ -226,7 +225,7 @@ class CoverageReport:
                 if p in sources:
                     continue
                 r[p] = {
-                    "value": True if v else False,  # boolean value
+                    "value": bool(v),  # boolean value
                     "tools": [],  # no source
                 }
         return r
@@ -359,7 +358,7 @@ class CoverageReport:
             sec["section_light"] = self._light(sec_verdict)
 
         legend_c[req_legend] = req_count
-        legend_c[cov_legend] = sum([s for n, s in legend_c.items() if n != ignore_len_name])
+        legend_c[cov_legend] = sum(s for n, s in legend_c.items() if n != ignore_len_name)
         leg = root["legend"] = {}
         for leg_name, leg_c in legend_c.items():
             leg[leg_name] = {

@@ -293,8 +293,9 @@ class SQLDatabase(EntityDatabase, ModelListener):
                     source_id = self.free_source_id
                     self.free_source_id += 1
                     data_js = source.get_data_json(self.get_id)
-                    src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, base_ref=source.base_ref,
-                                            model=source.model_override, data=json.dumps(data_js))
+                    src = TableEvidenceSource(id=source_id, name=source.name, label=source.label, 
+                                              base_ref=source.base_ref,
+                                              model=source.model_override, data=json.dumps(data_js))
                     ses.add(src)
                     self.source_cache[source] = source_id
                 js = event.get_data_json(self.get_id)

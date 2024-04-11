@@ -1070,7 +1070,7 @@ class SystemBackendRunner(SystemBackend):
         if self.args.help_tools:
             # print help and exit
             for label, sl in sorted(batch_import.evidence.items()):
-                sl_s = ", ".join(sorted(set([s.name for s in sl])))
+                sl_s = ", ".join(sorted(set(s.name for s in sl)))
                 print(f"{label:<20} {sl_s}")
             return
 

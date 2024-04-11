@@ -47,7 +47,7 @@ class LoggingEvent:
         if self.property:
             r.add(self.property[0])
         ev = self.event
-        if isinstance(ev, PropertyEvent) or isinstance(ev, PropertyAddressEvent):
+        if isinstance(ev, (PropertyEvent, PropertyAddressEvent)):
             r.add(ev.key_value[0])
         return r
 

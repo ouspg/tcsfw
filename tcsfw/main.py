@@ -454,12 +454,12 @@ class Builder:
         return SystemBackendRunner(name)
 
     @classmethod
-    def UDP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':
+    def UDP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':  # pylint: disable=invalid-name
         """Create a new UDP flow"""
         return FlowBuilder("UDP", (HWAddress.new(source_hw), IPAddress.new(source_ip), port))
 
     @classmethod
-    def TCP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder':
+    def TCP(cls, source_hw: str, source_ip: str, port: int) -> 'FlowBuilder': # pylint: disable=invalid-name
         """Create a new TCP flow"""
         return FlowBuilder("TCP", (HWAddress.new(source_hw), IPAddress.new(source_ip), port))
 
