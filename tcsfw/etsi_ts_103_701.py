@@ -445,7 +445,7 @@ class EtsiTs103701(Specification):
             parts = [int(part) if part.isdigit() else part for part in parts]
             return parts
 
-        new_r: Dict[str, Requirement] = {k:v for k, v in sorted(self.requirement_map.items(), key=req_sort_key)}
+        new_r: Dict[str, Requirement] = dict(sorted(self.requirement_map.items(), key=req_sort_key))
         self.requirement_map = new_r
 
     def make(self, identifier: str, ixit: IXIT_Section,
@@ -681,8 +681,8 @@ def verify_ixit_data(specification: EtsiTs103701, path=pathlib.Path("etsi/ixit_t
         if not line or line.startswith("#"):
             continue
         sid, _, name_s = line.partition(" ")
-        names1 = set([n.partition("-")[2].strip() for n in name_s.split(",") if n])
-        names2 = set([r.selector.get_name() for r in rs[sid]])
+        names1 = set(n.partition("-")[2].strip() for n in name_s.split(",") if n)
+        names2 = set(r.selector.get_name() for r in rs[sid])
         names2.discard(IXIT.Generic.name)
         if names1 != names2:
             print(f"MISMATCH {sid}")

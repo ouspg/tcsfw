@@ -67,7 +67,7 @@ class PropertyKey:
         """Get explanation for value, if any"""
         if isinstance(value, PropertyVerdictValue):
             return value.explanation
-        elif isinstance(value, PropertySetValue):
+        if isinstance(value, PropertySetValue):
             return value.explanation
         return ""
 

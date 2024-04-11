@@ -147,7 +147,7 @@ class Addresses:
             return HWAddress.new(v)
         if t == "name":
             return DNSName(v)
-        raise Exception(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
+        raise ValueError(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
 
     @classmethod
     def parse_endpoint(cls, value: str) -> AnyAddress:
@@ -173,7 +173,7 @@ class HWAddress(AnyAddress):
         """New address, check something about the format"""
         p = list(data.split(":"))
         if len(p) != 6:
-            raise Exception(f"Bad HW address '{data}'")
+            raise ValueError(f"Bad HW address '{data}'")
         for i in range(6):
             if len(p[i]) != 2:
                 p[i] = f"0{p[i]}"  # zero-prefix
@@ -321,7 +321,7 @@ class DNSName(AnyAddress):
         if '.' not in name:
             return False
         for c in name:
-            if c != '.' and c != ':' and not ('0' <= c <= '9'):
+            if c != '.' and c != ':' and not ('0' <= c <= '9'):  # pylint: disable=superfluous-parens
                 return True  # nost just numbers, good enough for this check
         return False  # only numbers and dots
 

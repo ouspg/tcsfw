@@ -242,8 +242,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
             for t in target.services:
                 c = t.connection_(self)
             return c
-        else:
-            return target.connection_(self)
+        return target.connection_(self)
 
     # Backend methods
 
@@ -265,6 +264,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
         return Service(Service.make_name(name, port), self.entity)
 
     def get_software(self) -> Software:
+        """Get the software entity"""
         return self.software().sw
 
     def __repr__(self):
@@ -645,8 +645,7 @@ class ARPBackend(ProtocolBackend):
             bc_s.entity.con_type = ConnectionType.ADMINISTRATIVE
             bc_s.entity.external_activity = bc_node.entity.external_activity
             host_s.entity.external_activity = self.external_activity
-        c_ok = any(
-            [c.source == host_s.entity for c in host_s.entity.get_parent_host().connections])
+        c_ok = any(c.source == host_s.entity for c in host_s.entity.get_parent_host().connections)
         if not c_ok:
             host_s >> bc_s  # # pylint: disable=pointless-statement
         return bc_s  # NOTE: the broadcast
@@ -925,7 +924,7 @@ class ClaimBackend(ClaimBuilder):
                 super().__init__("Manual checks")
                 self.source_label = this.source.label
 
-            def load(self, registry: Registry, coverage: RequirementClaimMapper, 
+            def load(self, registry: Registry, coverage: RequirementClaimMapper,
                      filter: LabelFilter):
                 if not filter.filter(self.source_label):
                     return

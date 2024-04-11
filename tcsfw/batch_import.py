@@ -8,7 +8,6 @@ import io
 from typing import Dict, List, Optional, Type
 from enum import StrEnum
 
-from framing.raw_data import Raw
 from tcsfw.address import Addresses
 from tcsfw.android_manifest_scan import AndroidManifestScan
 from tcsfw.basics import ExternalActivity
@@ -59,7 +58,7 @@ class BatchImporter:
         """Import a batch of files from a directory or zip file recursively."""
         if file.is_file() and file.suffix.lower() == ".zip":
             raise NotImplementedError("Zip file import is not implemented yet.")
-        elif file.is_dir:
+        if file.is_dir:
             self._import_batch(file)
         else:
             raise ValueError(f"Expected directory or ZIP as : {file.as_posix()}")
@@ -170,7 +169,8 @@ class BatchImporter:
                     self.logger.info("skipping (%s) %s", info.label, file_path.as_posix())
                     return
                 reader.load_baseline = info.load_baseline
-                return reader.process_file(stream, file_name, self.interface, ev)
+                reader.process_file(stream, file_name, self.interface, ev)
+                return
 
         except Exception as e:
             raise ValueError(f"Error in {file_name}") from e
@@ -248,17 +248,17 @@ class FileMetaInfo:
         return cls.parse_from_json(json.load(stream), directory_name, system)
 
     @classmethod
-    def parse_from_json(cls, json: Dict, directory_name: str, system: IoTSystem) -> 'FileMetaInfo':
+    def parse_from_json(cls, json_data: Dict, directory_name: str, system: IoTSystem) -> 'FileMetaInfo':
         """Parse from JSON"""
-        label = str(json.get("label", directory_name))
-        file_type = BatchFileType.parse(json.get("file_type")).value
+        label = str(json_data.get("label", directory_name))
+        file_type = BatchFileType.parse(json_data.get("file_type")).value
         r = cls(label, file_type)
-        r.load_baseline = bool(json.get("load_baseline", False))
-        r.file_load_order = json.get("file_order", [])
-        r.default_include = bool(json.get("include", True))
+        r.load_baseline = bool(json_data.get("load_baseline", False))
+        r.file_load_order = json_data.get("file_order", [])
+        r.default_include = bool(json_data.get("include", True))
 
         # read batch-specific addresses
-        for add, ent in json.get("addresses", {}).items():
+        for add, ent in json_data.get("addresses", {}).items():
             address = Addresses.parse_address(add)
             entity = system.get_entity(ent)
             if not entity:
@@ -266,7 +266,7 @@ class FileMetaInfo:
             r.source.address_map[address] = entity
 
         # read batch-specific external activity policies
-        for n, policy_n in json.get("external_activity", {}).items():
+        for n, policy_n in json_data.get("external_activity", {}).items():
             node = system.get_entity(n)
             if not node:
                 raise ValueError(f"Unknown entity '{n}'")
