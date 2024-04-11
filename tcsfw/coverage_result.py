@@ -171,9 +171,9 @@ class CoverageReport:
         use_targets = any([r.target_name for r in specification.requirement_map.values()])
         if use_targets:
             writer.write("\n== Targets ==\n")
-            for t, (all, passed) in target_verdicts.items():
+            for t, (all_c, passed) in target_verdicts.items():
                 r_all, r_pass = target_reqs[t]
-                writer.write(f"{t:<40} {passed:>3}/{all:<3} pass/reqs={r_pass}/{r_all}\n")
+                writer.write(f"{t:<40} {passed:>3}/{all_c:<3} pass/reqs={r_pass}/{r_all}\n")
 
     @classmethod
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
