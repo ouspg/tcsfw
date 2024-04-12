@@ -1,6 +1,7 @@
 """Batch tool-data import"""
 
 from ast import Set
+from datetime import datetime
 import json
 import logging
 import pathlib
@@ -164,6 +165,8 @@ class BatchImporter:
 
             if reader:
                 ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix())
+                # tool-specific code can override, if knows better
+                ev.timestamp = datetime.fromtimestamp(file_path.stat().st_mtime)
                 self.evidence.setdefault(info.label, []).append(ev)
                 if skip_processing:
                     self.logger.info("skipping (%s) %s", info.label, file_path.as_posix())
@@ -194,6 +197,8 @@ class BatchImporter:
             ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix())
             self.evidence.setdefault(info.label, []).append(ev)
             with fn.open("rb") as f:
+                # tool-specific code can override, if knows better
+                ev.timestamp = datetime.fromtimestamp(fn.stat().st_mtime)
                 done = tool.process_file(f, fn.name, self.interface, ev)
             if done:
                 unmapped.remove(fn.name)

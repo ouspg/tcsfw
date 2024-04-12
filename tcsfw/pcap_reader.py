@@ -1,6 +1,6 @@
 """PCAP tool"""
 
-import datetime
+from datetime import datetime
 from io import BytesIO
 import pathlib
 from typing import Optional, Dict, Self, Tuple
@@ -35,7 +35,7 @@ class PCAPReader(BaseFileCheckTool):
         self.source: Optional[EvidenceSource] = None
         self.interface: Optional[EventInterface] = None
         self.frame_number = 0
-        self.timestamp = datetime.datetime.fromtimestamp(0)
+        self.timestamp = datetime.fromtimestamp(0)
         self.ip_reassembler = IPReassembler()
         self.flows: Dict[Tuple, Flow] = {}
         self.dns_names = {}  # report one just once
@@ -45,7 +45,10 @@ class PCAPReader(BaseFileCheckTool):
         """Inspect PCAP file and send events to the given interface"""
         r = PCAPReader(interface.get_system())
         with pcap_file.open("rb") as f:
-            r.process_file(f, pcap_file.name, interface, EvidenceSource(pcap_file.name))
+            ev = EvidenceSource(pcap_file.name)
+            # tool-specific code can override, if knows better
+            ev.timestamp = datetime.fromtimestamp(f.stat().st_mtime)
+            r.process_file(f, pcap_file.name, interface, ev)
         return r
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> Self:
@@ -69,7 +72,7 @@ class PCAPReader(BaseFileCheckTool):
         for rec in PCAPFile.Packet_Records.iterate(pcap):
             self.frame_number = count + 1
             try:
-                self.timestamp = datetime.datetime.fromtimestamp(PacketRecord.Timestamp[rec])
+                self.timestamp = datetime.fromtimestamp(PacketRecord.Timestamp[rec])
                 self.source.timestamp = self.timestamp  # recent
                 PacketRecord.Packet_Data.process_frame(rec, {
                     EthernetII: self._ethernet_frame
