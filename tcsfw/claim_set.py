@@ -333,24 +333,6 @@ class ServiceClaim(RequirementClaim):
         assert isinstance(entity, Service)
 
 
-class ConnectionAsServiceClaim(RequirementClaim):
-    """Service claim applied to a connection target"""
-    def __init__(self, service_claim: ServiceClaim):
-        super().__init__(service_claim.description)
-        self.sub = service_claim
-
-    def check(self, entity: Entity, context: ClaimContext) -> Optional[ClaimStatus]:
-        assert isinstance(entity, Connection)
-        target = entity.target
-        cl = self.sub.check(target, context)
-        if cl is not None:
-            cl.claim = self  # FIXME: Factory method for ClaimStatus to change the claim
-        return cl
-
-    def get_sub_claims(self) -> Tuple[RequirementClaim]:
-        return (self.sub, )
-
-
 class SensitiveDataClaim(PropertyClaim):
     """Sensitive data claim, possible filtering by private info"""
     def __init__(self, private: Optional[bool] = None, pass_no_data=False, description="Information"):
