@@ -201,8 +201,8 @@ class ClientAPI(ModelListener):
                 "ref": ev.evidence.get_reference(),
                 "entity": ent.long_name() if ent else "",
             }
-            if lo.property:
-                ls["property"] = f"{lo.property[0]}"
+            if lo.property_value:
+                ls["property"] = f"{lo.property_value[0]}"
             lo_v = ev.get_verdict() if isinstance(ev, Verdictable) else Verdict.INCON
             if lo_v != Verdict.INCON:
                 ls["verdict"] = ev.get_verdict().value

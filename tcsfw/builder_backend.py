@@ -925,8 +925,8 @@ class ClaimBackend(ClaimBuilder):
                 self.source_label = this.source.label
 
             def load(self, registry: Registry, coverage: RequirementClaimMapper,
-                     filter: LabelFilter):
-                if not filter.filter(self.source_label):
+                     label_filter: LabelFilter):
+                if not label_filter.filter(self.source_label):
                     return
                 evidence = Evidence(this.source)
                 for loc in locations:
@@ -1063,7 +1063,7 @@ class SystemBackendRunner(SystemBackend):
         label_filter = LabelFilter(self.args.def_loads or "")
 
         # load file batches, if defined
-        batch_import = BatchImporter(registry, filter=label_filter)
+        batch_import = BatchImporter(registry, label_filter=label_filter)
         for in_file in self.args.read or []:
             batch_import.import_batch(pathlib.Path(in_file))
 
@@ -1076,10 +1076,10 @@ class SystemBackendRunner(SystemBackend):
 
         # load product claims, then explicit loaders (if any)
         for sub in self.claim_set.finish_loaders():
-            sub.load(registry, cc, filter=label_filter)
+            sub.load(registry, cc, label_filter=label_filter)
         for ln in self.loaders:
             for sub in ln.subs:
-                sub.load(registry, cc, filter=label_filter)
+                sub.load(registry, cc, label_filter=label_filter)
 
         api = VisualizerAPI(registry, cc, self.visualizer)
         if self.args.test_post:

@@ -33,10 +33,10 @@ from tcsfw.zed_reader import ZEDReader
 
 class BatchImporter:
     """Batch importer for importing a batch of files from a directory."""
-    def __init__(self, interface: EventInterface, filter: 'LabelFilter' = None):
+    def __init__(self, interface: EventInterface, label_filter: 'LabelFilter' = None):
         self.interface = interface
         self.system = interface.get_system()
-        self.filter = filter or LabelFilter()
+        self.label_filter = label_filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
 
         # map file types into batch tools
@@ -108,7 +108,7 @@ class BatchImporter:
                 proc_list = sorted_files
 
             # filter by label
-            skip_processing = not self.filter.filter(info.label)
+            skip_processing = not self.label_filter.filter(info.label)
 
             # process the files in a batch?
             as_batch = info.file_type in self.batch_tools
@@ -124,7 +124,7 @@ class BatchImporter:
                     if as_batch or not info.label:
                         continue
                     # process the files individually
-                    if not info.default_include and info.label not in self.filter.included:
+                    if not info.default_include and info.label not in self.label_filter.included:
                         self.logger.debug("skipping (default=False) %s", child.as_posix())
                         continue # skip file if not explicitly included
                     with child.open("rb") as f:
