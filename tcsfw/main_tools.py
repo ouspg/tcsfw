@@ -132,7 +132,7 @@ class ToolPlanLoader(SubLoader):
             if g in label_filter.included:
                 break  # explicitly included
         else:
-           return  # plans must be explicitly included
+            return  # plans must be explicitly included
 
         evidence = Evidence(self.get_source())
         for p, v in self.properties.items():
