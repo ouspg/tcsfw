@@ -1,6 +1,5 @@
 """Check precense of saved web pages"""
 
-from datetime import datetime
 from io import BytesIO, TextIOWrapper
 import re
 import urllib

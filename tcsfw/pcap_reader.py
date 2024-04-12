@@ -47,7 +47,7 @@ class PCAPReader(BaseFileCheckTool):
         with pcap_file.open("rb") as f:
             ev = EvidenceSource(pcap_file.name)
             # tool-specific code can override, if knows better
-            ev.timestamp = datetime.fromtimestamp(f.stat().st_mtime)
+            ev.timestamp = datetime.fromtimestamp(pcap_file.stat().st_mtime)
             r.process_file(f, pcap_file.name, interface, ev)
         return r
 
