@@ -281,8 +281,7 @@ class SQLDatabase(EntityDatabase, ModelListener):
         return self.entity_cache.get(id_value)
 
     def put_event(self, event: Event):
-        # store event to database
-        # FIXME: Slow, should use bulk insert
+        # store event to database - NOTE: Slow, should use bulk insert
         type_s = self.event_names.get(type(event))
         if type_s is None:
             return

@@ -477,8 +477,6 @@ class NoUnexpectedServices(RequirementClaim):
             ver = Verdict.INCON  # not all non-admin services seen
         else:
             ver = Verdict.PASS
-        # FIXME: Nuke the property?
-        # context.mark_coverage(entity, self, Properties.EXPECTED_SERVICES, value=ver == Verdict.PASS)
         return ClaimStatus(self, verdict=ver, authority=ClaimAuthority.TOOL, explanation=exp)
 
 
@@ -686,7 +684,7 @@ class ReleaseClaim(SoftwareClaim):
         assert isinstance(entity, Software)
         info = context.get_property_value(entity, self, ReleaseInfo.PROPERTY_KEY)
         if isinstance(info, ReleaseInfo):
-            # FIXME: Check the data!
+            # NOTE: We do not really check anything, should improve as part of making release checking real
             return ClaimStatus(self, verdict=Verdict.PASS, authority=ClaimAuthority.TOOL, explanation=f"{info}")
         return None
 

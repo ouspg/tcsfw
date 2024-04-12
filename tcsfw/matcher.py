@@ -416,7 +416,7 @@ class MatchEngine:
         target_act = target.endpoint.external_activity
         if source_act > ExternalActivity.BANNED and target_act > ExternalActivity.BANNED:
             # unexpected connections may be allowed
-            reply = c.source == target.endpoint.entity # FIXME: This is weak?
+            reply = c.source == target.endpoint.entity
             if source_act >= ExternalActivity.UNLIMITED:
                 # source is free to make connections
                 c.status = Status.EXTERNAL

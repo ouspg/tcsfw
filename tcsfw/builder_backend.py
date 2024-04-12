@@ -286,7 +286,6 @@ class ServiceBackend(NodeBackend, ServiceBuilder):
             'HostBackend'], 'ServiceBackend']] = None
 
     def type(self, value: ConnectionType) -> 'ServiceBackend':
-        # FIXME: We should block defining plaintext connection as admin?
         self.entity.con_type = value
         return self
 
@@ -475,7 +474,7 @@ class SoftwareBackend(SoftwareBuilder):
 
     def supported_until(self, date: str) -> Self:
         """Support end time YYYY-MM-DD"""
-        # FIXME EndOfSupport(ReleaseInfo.parse_time(date))
+        # EndOfSupport(ReleaseInfo.parse_time(date)) - not implemented
         return self
 
     def update_frequency(self, days: float) -> Self:
