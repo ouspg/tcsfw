@@ -1,19 +1,16 @@
+"""Base classes for tool integration"""
+
 from io import BytesIO
 import json
 import logging
-import os.path
-import pathlib
-from datetime import datetime
-from typing import BinaryIO, Optional, List, Dict, Iterable, Tuple, Set, Self
+from typing import Optional, Dict
 
-from tcsfw.address import DNSName, IPAddress, AnyAddress, Addresses
-from tcsfw.basics import Verdict
-from tcsfw.entity import ClaimAuthority, Entity
+from tcsfw.address import DNSName, IPAddress, AnyAddress
+from tcsfw.entity import ClaimAuthority
 from tcsfw.event_interface import EventInterface
-from tcsfw.model import NetworkNode, Addressable, IoTSystem, NodeComponent, Connection, Host
-from tcsfw.property import PropertyKey
-from tcsfw.traffic import Evidence, EvidenceSource, Tool, Flow, IPFlow
-from tcsfw.verdict import Status
+from tcsfw.model import NetworkNode, Addressable, IoTSystem, NodeComponent
+from tcsfw.traffic import Evidence, EvidenceSource, Tool, IPFlow
+from tcsfw.basics import Status
 
 
 class CheckTool:
@@ -29,15 +26,16 @@ class CheckTool:
         self.load_baseline = False  # True to load baseline, false to check it
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
+        """Process a tool result file or stream"""
         # Read a data file
         raise NotImplementedError(f"In {self.__class__.__name__}")
 
-    def _get_file_by_name(self, name: str) -> str:
+    def get_file_by_name(self, name: str) -> str:
         """Get data file by name"""
-        assert self.data_file_suffix, f"Data file suffix not set"
-        return f"{name}{self.data_file_suffix}" 
+        assert self.data_file_suffix, "Data file suffix not set"
+        return f"{name}{self.data_file_suffix}"
 
-    def _get_file_by_endpoint(self, address: AnyAddress) -> Optional[str]:
+    def get_file_by_endpoint(self, address: AnyAddress) -> Optional[str]:
         """Get data file by endpoint address"""
         assert self.data_file_suffix, f"Data file suffix not set for {self}"
         host = address.get_host()
@@ -48,10 +46,12 @@ class CheckTool:
             n = f"{host}.{pp[0].value.lower()}.{pp[1]}{self.data_file_suffix}"
         return n
 
+
 class BaseFileCheckTool(CheckTool):
     """Check tool which scans set of files, no way to specify entries directly"""
-    def __init__(self, tool_label: str, system: IoTSystem):
-        super().__init__(tool_label, system)
+
+    def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
+        raise NotImplementedError()
 
 
 class EndpointCheckTool(CheckTool):
@@ -61,43 +61,43 @@ class EndpointCheckTool(CheckTool):
         # map from file names into addressable entities
         self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, Addressable] = {}
-        self._create_file_name_map()
+        self.create_file_name_map()
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
-            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.logger.info("processing (%s) %s", source.label, file_name)
             self.process_stream(key, data, interface, source)
             return True
         return False
 
-    def _create_file_name_map(self):
+    def create_file_name_map(self):
         """Create file name map"""
         for host in self.system.get_hosts(include_external=False):
             if host.status != Status.EXPECTED:
                 continue
-            if self._filter_node(host):
+            if self.filter_node(host):
                 # scan hosts
-                self._map_addressable(host)
+                self.map_addressable(host)
                 continue
             for s in host.children:
                 if s.status != Status.EXPECTED:
                     continue
-                if self._filter_node(s):
-                    self._map_addressable(s)
+                if self.filter_node(s):
+                    self.map_addressable(s)
 
-    def _map_addressable(self, entity: Addressable):
+    def map_addressable(self, entity: Addressable):
         """Map addressable entity to file names"""
         # First pass is DNS names, then IP addresses
         addresses = entity.get_addresses()
         ads_sorted = [a for a in addresses if isinstance(a.get_host(), DNSName)]
         ads_sorted.extend([a for a in addresses if isinstance(a.get_host(), IPAddress)])
         for a in ads_sorted:
-            a_file_name = self._get_file_by_endpoint(a) 
+            a_file_name = self.get_file_by_endpoint(a)
             if a_file_name not in self.file_name_map:
                 self.file_name_map[a_file_name] = a
 
-    def _filter_node(self, node: NetworkNode) -> bool:
+    def filter_node(self, _node: NetworkNode) -> bool:
         """Filter checked entities"""
         return True
 
@@ -112,25 +112,25 @@ class NodeCheckTool(CheckTool):
         super().__init__(tool_label, system)
         self.data_file_suffix = data_file_suffix
         self.file_name_map: Dict[str, NetworkNode] = {}
-        self._create_file_name_map()
+        self.create_file_name_map()
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
-            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.logger.info("processing (%s) %s", source.label, file_name)
             self.process_stream(key, data, interface, source)
             return True
         return False
 
-    def _create_file_name_map(self):
+    def create_file_name_map(self):
         """Create file name map"""
         tool = self
 
         def check_component(node: NetworkNode):
             for c in node.children:
-                if not tool._filter_component(c):
+                if not tool.filter_component(c):
                     continue
-                self.file_name_map[tool._get_file_by_name(c.name)] = c
+                self.file_name_map[tool.get_file_by_name(c.name)] = c
                 check_component(c)
         check_component(self.system)
 
@@ -139,7 +139,7 @@ class NodeCheckTool(CheckTool):
         """Check entity with data"""
         raise NotImplementedError()
 
-    def _filter_component(self, node: NetworkNode) -> bool:
+    def filter_component(self, _node: NetworkNode) -> bool:
         """Filter checked entities"""
         return True
 
@@ -155,7 +155,7 @@ class ComponentCheckTool(CheckTool):
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
-            self.logger.info(f"processing ({source.label}) {file_name}")
+            self.logger.info("processing (%s) %s", source.label, file_name)
             self.process_stream(key, data, interface, source)
             return True
         return False
@@ -166,21 +166,22 @@ class ComponentCheckTool(CheckTool):
 
         def check_component(node: NetworkNode):
             for c in node.components:
-                if not tool._filter_component(c):
+                if not tool.filter_component(c):
                     continue
-                self.file_name_map[tool._get_file_by_name(c.name)] = c
+                self.file_name_map[tool.get_file_by_name(c.name)] = c
             for c in node.children:
                 check_component(c)
         check_component(self.system)
 
-    def _filter_component(self, component: NodeComponent) -> bool:
+    def filter_component(self, _component: NodeComponent) -> bool:
         """Filter checked entities"""
         return True
 
-    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface, 
+    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
                        source: EvidenceSource):
         """Check entity with data"""
         raise NotImplementedError()
+
 
 class SimpleFlowTool(BaseFileCheckTool):
     """Simple flow tool powered by list of flows"""

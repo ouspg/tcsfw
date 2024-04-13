@@ -1,19 +1,16 @@
+"""Coverage report generation"""
+
 import logging
-import os
 import textwrap
-from typing import TextIO, Tuple, Dict, Optional, List, Set, Callable, Iterator
+from typing import TextIO, Tuple, Dict, Optional, List
 
 from tcsfw.claim_coverage import RequirementClaimMapper, ClaimMapping, RequirementStatus
-from tcsfw.claim_set import ClaimContext
-from tcsfw.default_requirements import DEFAULT
 from tcsfw.entity import Entity, ClaimStatus, ClaimAuthority
-from tcsfw.etsi_ts_103_701 import ETSI_TS_103_701, ETSI_TS_103_701_FIN
 from tcsfw.event_logger import EventLogger
-from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.requirement import Specification, Requirement
 from tcsfw.traffic import EvidenceSource
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class CoverageReport:
@@ -31,7 +28,7 @@ class CoverageReport:
         r = {}
         for ps in status.context.properties.values():
             for p, v in ps.items():
-                r[p] = True if v else False  # boolean mapping
+                r[p] = bool(v)  # boolean mapping
         return r
 
     def _get_mappings(self, specification: Specification) -> ClaimMapping:
@@ -39,10 +36,8 @@ class CoverageReport:
 
     def print_summary(self, writer: TextIO, specification: Specification, name: str):
         """Print coverage summary"""
-        pri = specification.cutoff_priority
         if "-" in name:
-            name, _, ps= name.rpartition("-")
-            pri = int(ps)
+            name, _, _ = name.rpartition("-")
         if name == "stats":
             self._print_statistics(writer, specification)
         elif name == "tars":
@@ -54,9 +49,11 @@ class CoverageReport:
         elif not name:
             self._print_coverage(writer, specification)
         else:
-            raise Exception(f"No such coverage info '{name}'")
+            raise ValueError(f"No such coverage info '{name}'")
 
     def _print_source_coverage(self, writer: TextIO, specification: Specification):
+        # pylint: disable=too-many-nested-blocks
+
         mapping = self._get_mappings(specification)
         sources = self.logging.get_all_property_sources()
 
@@ -102,11 +99,11 @@ class CoverageReport:
             for k, v in props.items():
                 prop_s.append(("[x] " if v else "[ ] ") + f"{k}")
             if prop_s:
-                s += f"\n    " + " ".join(prop_s)
+                s += "\n    " + " ".join(prop_s)
             return s
 
         if by_targets:
-            targets = sorted(set([r.target_name for r in specification.requirement_map.values()]))
+            targets = sorted(set(r.target_name for r in specification.requirement_map.values()))
             for tar in targets:
                 writer.write(f"== {tar} ==\n")
                 requirements = mapping.get_by_requirements()
@@ -173,28 +170,30 @@ class CoverageReport:
             writer.write(f"{s}\n")
 
         # group by targets?
-        use_targets = any([r.target_name for r in specification.requirement_map.values()])
+        use_targets = any(r.target_name for r in specification.requirement_map.values())
         if use_targets:
             writer.write("\n== Targets ==\n")
-            for t, (all, passed) in target_verdicts.items():
+            for t, (all_c, passed) in target_verdicts.items():
                 r_all, r_pass = target_reqs[t]
-                writer.write(f"{t:<40} {passed:>3}/{all:<3} pass/reqs={r_pass}/{r_all}\n")
+                writer.write(f"{t:<40} {passed:>3}/{all_c:<3} pass/reqs={r_pass}/{r_all}\n")
 
+    @classmethod
     def _status_marker(cls, status: Optional[ClaimStatus]) -> str:
+        """Marger chacater for status"""
         if status is None or status.verdict == Verdict.INCON:
             return " "
         if status.verdict == Verdict.IGNORE:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "-"
             return "."
-        if stGatewayatus.verdict == Verdict.PASS:
+        if status.verdict == Verdict.PASS:
             if status.authority in {ClaimAuthority.MODEL, ClaimAuthority.TOOL}:
                 return "X"
             return "x"
-        raise Exception(f"Unknown verdict {status.verdict}")
+        raise ValueError(f"Unknown verdict {status.verdict}")
 
     @classmethod
-    def _light(self, verdict: Verdict) -> str:
+    def _light(cls, verdict: Verdict) -> str:
         """Verdict traffic light"""
         if verdict in {Verdict.IGNORE, Verdict.INCON}:
             return "yellow"
@@ -203,14 +202,13 @@ class CoverageReport:
         return "red"
 
     @classmethod
-    def _update_verdict(self, base: Verdict, verdict: Optional[Verdict]) -> Verdict:
+    def _update_verdict(cls, base: Verdict, verdict: Optional[Verdict]) -> Verdict:
         """Update aggregate verdict"""
         if verdict is None:
             return base
-        if base == Verdict.INCON or verdict == Verdict.INCON:
+        if Verdict.INCON in {base, verdict}:
             return Verdict.INCON
-        else:
-            return Verdict.aggregate(base, verdict)
+        return Verdict.aggregate(base, verdict)
 
     def _get_properties(self, status: RequirementStatus) -> Dict[PropertyKey, Dict]:
         """Get properties resolved for a claim"""
@@ -221,7 +219,7 @@ class CoverageReport:
             for p, s in sources.items():
                 v = ps.get(p)
                 r[p] = {
-                    "value": True if v else False,  # boolean value
+                    "value": bool(v),  # boolean value
                     "tools": [s.name],  # NOTE: perhaps we have many later
                 }
             # show properties without known sources, as well
@@ -229,7 +227,7 @@ class CoverageReport:
                 if p in sources:
                     continue
                 r[p] = {
-                    "value": True if v else False,  # boolean value
+                    "value": bool(v),  # boolean value
                     "tools": [],  # no source
                 }
         return r
@@ -262,7 +260,7 @@ class CoverageReport:
         legend = {
             req_legend: "Requirements",
             cov_legend: "Coverage items",
-            f"": "Coverage items",
+            "": "Coverage items",
             f"Tool {Verdict.PASS.value}": "Verification pass",
             f"Tool {Verdict.FAIL.value}": "Verification fail",
             ignore_len_name: "Not relevant",
@@ -270,7 +268,7 @@ class CoverageReport:
             f"Manual {Verdict.PASS.value}": "Explained pass",
             f"Manual {Verdict.IGNORE.value}": "Explained not relevant",
         }
-        legend_c = {n: 0 for n in legend.keys()}
+        legend_c = {n: 0 for n in legend}
 
         req_count = 0
         for sec_title, req_map in sec_map.items():
@@ -300,7 +298,8 @@ class CoverageReport:
             sec_verdict = Verdict.PASS  # section verdict
             col_verdict = [Verdict.PASS] * len(cols)  # column (concept) verdicts
             rows = sec["rows"] = []
-            for req, req_stats in sorted(req_map.items(), key=lambda kv: req_sorter(kv[0])):
+            for req, req_stats in sorted(req_map.items(),
+                                         key=lambda kv: req_sorter(kv[0])):  # pylint: disable=cell-var-from-loop
                 if req.priority < specification.cutoff_priority:
                     continue  # quick hack
                 if not col_set.intersection(req_stats.keys()):
@@ -362,7 +361,7 @@ class CoverageReport:
             sec["section_light"] = self._light(sec_verdict)
 
         legend_c[req_legend] = req_count
-        legend_c[cov_legend] = sum([s for n, s in legend_c.items() if n != ignore_len_name])
+        legend_c[cov_legend] = sum(s for n, s in legend_c.items() if n != ignore_len_name)
         leg = root["legend"] = {}
         for leg_name, leg_c in legend_c.items():
             leg[leg_name] = {

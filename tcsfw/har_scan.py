@@ -1,6 +1,7 @@
+"""HAR JSON tool"""
+
 from io import BytesIO
 import json
-import pathlib
 import urllib.parse
 from datetime import datetime
 from typing import cast
@@ -12,15 +13,16 @@ from tcsfw.model import Host, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey, Properties
 from tcsfw.tools import NodeCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class HARScan(NodeCheckTool):
+    """HAR JSON tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("har", ".json", system)
         self.tool.name = "HAR"
 
-    def _filter_component(self, node: NetworkNode) -> bool:
+    def filter_component(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)
 
     def process_stream(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):

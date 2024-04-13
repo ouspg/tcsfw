@@ -1,15 +1,14 @@
-import dataclasses
+"""Match events into system model"""
+
 import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
-from tcsfw.address import AnyAddress, EndpointAddress, HWAddress, IPAddress, Addresses, IPAddresses, Protocol, \
-    DNSName
-from tcsfw.basics import ExternalActivity, Verdict
+from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName
+from tcsfw.basics import ExternalActivity, Status
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
-from tcsfw.services import DHCPService
 from tcsfw.traffic import Flow, EvidenceSource, IPFlow
-from tcsfw.verdict import Status
+from tcsfw.verdict import Verdict
 
 
 class SystemMatcher(ModelListener):
@@ -34,7 +33,7 @@ class SystemMatcher(ModelListener):
         self.host_addresses[host] = host.addresses.copy()
 
         for eng in self.engines.values():
-            eng.updateAddresses(host, ads)
+            eng.update_addresses(host, ads)
 
     def connection(self, flow: Flow) -> Connection:
         """Find the connection matching the given flow"""
@@ -131,7 +130,6 @@ class ConnectionFinder:
 
     def end_for_new_connection(self, target: bool, other_end: Optional[AddressMatch] = None) -> Optional[AddressMatch]:
         """Pick best source or target for new connection"""
-        system = self.system.system
         end = None
         for ms in (self.targets if target else self.sources).values():
             if other_end and ms.endpoint.is_same_host(other_end.endpoint):
@@ -173,7 +171,8 @@ class MatchEngine:
                 if fs is not None:
                     me.external_activity = fs
 
-    def updateAddresses(self, host: Host, old: Set[AnyAddress]):
+    def update_addresses(self, host: Host, old: Set[AnyAddress]):
+        """Update addresses for a host"""
         # remove old mappings for the addresses
         for ad in old:
             ends = self.endpoints.get(ad, [])
@@ -417,7 +416,7 @@ class MatchEngine:
         target_act = target.endpoint.external_activity
         if source_act > ExternalActivity.BANNED and target_act > ExternalActivity.BANNED:
             # unexpected connections may be allowed
-            reply = c.source == target.endpoint.entity # FIXME: This is weak?
+            reply = c.source == target.endpoint.entity
             if source_act >= ExternalActivity.UNLIMITED:
                 # source is free to make connections
                 c.status = Status.EXTERNAL
@@ -448,7 +447,7 @@ class MatchEndpoint:
         self.system = entity.get_system()
         self.services: Dict[EndpointAddress, List[MatchEndpoint]] = {}
         for s in entity.children:
-            assert isinstance(s, Service), "Non-service {}".format(s)
+            assert isinstance(s, Service), f"Non-service {s}"
             self.add_service(s, priority_services)
         self.external_activity = entity.external_activity
 
@@ -468,7 +467,7 @@ class MatchEndpoint:
     def add_service(self, service: Service, priority_services=True):
         """Add service matching to endpoint"""
         for a in service.addresses:
-            assert isinstance(a, EndpointAddress), "Non-endpoint address {}".format(a)
+            assert isinstance(a, EndpointAddress), f"Non-endpoint address {a}"
             me = MatchEndpoint(service, match_no_service=False)
             if priority_services:
                 me.match_priority = 1001  # the MAX

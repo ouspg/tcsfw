@@ -1,22 +1,19 @@
-from datetime import datetime
+"""Check precense of saved web pages"""
+
 from io import BytesIO, TextIOWrapper
 import re
-from typing import Tuple, List
-
-import requests
 import urllib
 
-from tcsfw.entity import Entity
 from tcsfw.event_interface import PropertyEvent, EventInterface
-from tcsfw.model import IoTSystem, NetworkNode
-from tcsfw.property import Properties, PropertyKey
-from tcsfw.tools import BaseFileCheckTool, NodeCheckTool
+from tcsfw.model import IoTSystem
+from tcsfw.property import Properties
+from tcsfw.tools import BaseFileCheckTool
 from tcsfw.traffic import EvidenceSource, Evidence
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 
 class WebChecker(BaseFileCheckTool):
-    """Check web pages"""
+    """Check web pages tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("web", system)  # no extension really
         self.data_file_suffix = ".http"
@@ -38,8 +35,8 @@ class WebChecker(BaseFileCheckTool):
             if f_url != url:
                 continue
             self.logger.info("web link %s: %s", url, status_text)
-            kv = Properties.DOCUMENT_AVAILABILITY.append_key(key).verdict(Verdict.PASS if ok else Verdict.FAIL, status_text)
-            source.timestamp = datetime.now()  # FIXME: get timestamp from the file
+            kv = Properties.DOCUMENT_AVAILABILITY.append_key(key).verdict(
+                Verdict.PASS if ok else Verdict.FAIL, status_text)
             evidence = Evidence(source, url)
             ev = PropertyEvent(evidence, self.system, kv)
             interface.property_update(ev)

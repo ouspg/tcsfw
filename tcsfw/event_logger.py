@@ -1,23 +1,25 @@
+"""Intercept events and create a log of them"""
+
 from logging import Logger
-from typing import Any, List, Set, TextIO, Tuple, Dict, Optional, cast
+import logging
+from typing import Any, List, Set, Tuple, Dict, Optional, cast
 from tcsfw.address import AnyAddress
-from tcsfw.basics import Verdict
+from tcsfw.verdict import Verdict
 
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventInterface, PropertyEvent, PropertyAddressEvent
 from tcsfw.inspector import Inspector
-from tcsfw.model import IoTSystem, Connection, Host, ModelListener, Service, NetworkNode
+from tcsfw.model import IoTSystem, Connection, Host, ModelListener, Service
 from tcsfw.property import Properties, PropertyKey
 from tcsfw.services import NameEvent
 from tcsfw.traffic import EvidenceSource, HostScan, ServiceScan, Flow, Event
-from tcsfw.verdict import Status
 
 
 class LoggingEvent:
-    """Event with logging"""
-    def __init__(self, event: Event, entity: Optional[Entity] = None, property: Tuple[PropertyKey, Any] = None):
+    """Stored logging event"""
+    def __init__(self, event: Event, entity: Optional[Entity] = None, property_value: Tuple[PropertyKey, Any] = None):
         self.event = event
-        self.property = property  # implicit property set
+        self.property_value = property_value  # implicit property set
         self.entity = entity
         self.verdict = Verdict.INCON
 
@@ -30,22 +32,22 @@ class LoggingEvent:
     def get_value_string(self) -> str:
         """Get value as string"""
         v = self.event.get_value_string()
-        if self.property is None:
+        if self.property_value is None:
             if self.entity:
                 st = f"{self.entity.status.value}/{self.verdict.value}" if self.verdict != Verdict.INCON  \
                     else self.entity.status.value
                 v += f" [{st}]" if v else st
         else:
-            v += (" " if v else "") + self.property[0].get_value_string(self.property[1])
+            v += (" " if v else "") + self.property_value[0].get_value_string(self.property_value[1])
         return v
 
     def get_properties(self) -> Set[PropertyKey]:
         """Get implicit and explicit properties"""
         r = set()
-        if self.property:
-            r.add(self.property[0])
+        if self.property_value:
+            r.add(self.property_value[0])
         ev = self.event
-        if isinstance(ev, PropertyEvent) or isinstance(ev, PropertyAddressEvent):
+        if isinstance(ev, (PropertyEvent, PropertyAddressEvent)):
             r.add(ev.key_value[0])
         return r
 
@@ -58,12 +60,14 @@ class LoggingEvent:
 
 
 class EventLogger(EventInterface, ModelListener):
+    """Event logger implementation"""
     def __init__(self, inspector: Inspector):
         self.inspector = inspector
         self.logs: List[LoggingEvent] = []
         self.current: Optional[LoggingEvent] = None  # current event
         inspector.system.model_listeners.append(self) # subscribe property events
         self.event_logger: Optional[Logger] = None
+        self.logger = logging.getLogger("events")
 
     def print_event(self, log: LoggingEvent):
         """Print event for debugging"""
@@ -77,10 +81,10 @@ class EventLogger(EventInterface, ModelListener):
             s += f" {com}"
         self.event_logger.info(s)
 
-    def _add(self, event: Event, entity: Optional[Entity] = None, 
-             property: Tuple[PropertyKey, Any] = None) -> LoggingEvent:
+    def _add(self, event: Event, entity: Optional[Entity] = None,
+             property_value: Tuple[PropertyKey, Any] = None) -> LoggingEvent:
         """Add new current log entry"""
-        ev = LoggingEvent(event, entity, property)
+        ev = LoggingEvent(event, entity, property_value)
         self.logs.append(ev)
         self.current = ev
         return ev
@@ -98,7 +102,7 @@ class EventLogger(EventInterface, ModelListener):
             self.logger.warning("Property change without event to assign it: %s", value[0])
             return
         # assign all property changes during an event
-        ev = LoggingEvent(self.current.event, entity=entity, property=value)
+        ev = LoggingEvent(self.current.event, entity=entity, property_value=value)
         self.logs.append(ev)
         if self.event_logger:
             self.print_event(ev)
@@ -166,7 +170,7 @@ class EventLogger(EventInterface, ModelListener):
             r[c] = []  # expected connections without flows
         for lo in self.logs:
             event = lo.event
-            if not isinstance(event, Flow) or lo.property:
+            if not isinstance(event, Flow) or lo.property_value:
                 continue  # only collect pure flows, not property updates
             c = cast(Connection, lo.entity)
             cs = r.setdefault(c, [])

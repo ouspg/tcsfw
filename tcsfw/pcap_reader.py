@@ -1,7 +1,9 @@
-import datetime
+"""PCAP tool"""
+
+from datetime import datetime
 from io import BytesIO
 import pathlib
-from typing import Optional, Dict, Self, Tuple, List
+from typing import Optional, Dict, Self, Tuple
 
 from framing.backends import RawFrame
 from framing.frame_types import dns_frames
@@ -14,20 +16,16 @@ from framing.frame_types.udp_frames import UDP
 from framing.frames import Frames
 from framing.raw_data import Raw, RawData
 
-from tcsfw.address import EndpointAddress, HWAddress, Protocol, IPAddress
-from tcsfw.components import Software
-from tcsfw.entity import Entity
+from tcsfw.address import HWAddress, Protocol, IPAddress
 from tcsfw.event_interface import EventInterface
-from tcsfw.inspector import Inspector
-from tcsfw.model import Connection, IoTSystem, Addressable
-from tcsfw.property import PropertyKey, Properties
-from tcsfw.registry import Registry
+from tcsfw.model import Connection, IoTSystem
 from tcsfw.services import NameEvent, DNSService
 from tcsfw.tools import BaseFileCheckTool
-from tcsfw.traffic import IPFlow, EvidenceSource, Evidence, EthernetFlow, Flow, Tool
+from tcsfw.traffic import IPFlow, EvidenceSource, Evidence, EthernetFlow, Flow
 
 
 class PCAPReader(BaseFileCheckTool):
+    """PCAP reading tool"""
     def __init__(self, system: IoTSystem, name="PCAP reader"):
         super().__init__("pcap", system)
         self.data_file_suffix = ".pcap"
@@ -37,16 +35,20 @@ class PCAPReader(BaseFileCheckTool):
         self.source: Optional[EvidenceSource] = None
         self.interface: Optional[EventInterface] = None
         self.frame_number = 0
-        self.timestamp = datetime.datetime.fromtimestamp(0)
+        self.timestamp = datetime.fromtimestamp(0)
         self.ip_reassembler = IPReassembler()
         self.flows: Dict[Tuple, Flow] = {}
         self.dns_names = {}  # report one just once
 
     @classmethod
     def inspect(cls, pcap_file: pathlib.Path, interface: EventInterface) -> 'PCAPReader':
+        """Inspect PCAP file and send events to the given interface"""
         r = PCAPReader(interface.get_system())
         with pcap_file.open("rb") as f:
-            r.process_file(f, pcap_file.name, interface, EvidenceSource(pcap_file.name))
+            ev = EvidenceSource(pcap_file.name)
+            # tool-specific code can override, if knows better
+            ev.timestamp = datetime.fromtimestamp(pcap_file.stat().st_mtime)
+            r.process_file(f, pcap_file.name, interface, ev)
         return r
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> Self:
@@ -70,20 +72,20 @@ class PCAPReader(BaseFileCheckTool):
         for rec in PCAPFile.Packet_Records.iterate(pcap):
             self.frame_number = count + 1
             try:
-                self.timestamp = datetime.datetime.fromtimestamp(PacketRecord.Timestamp[rec])
+                self.timestamp = datetime.fromtimestamp(PacketRecord.Timestamp[rec])
                 self.source.timestamp = self.timestamp  # recent
                 PacketRecord.Packet_Data.process_frame(rec, {
-                    EthernetII: lambda f: self._ethernet_frame(f)
+                    EthernetII: self._ethernet_frame
                 })
             except ValueError as e:
                 # seen with DNS traffic
-                self.logger.warning(f"Frame {self.frame_number}: {e}")
+                self.logger.warning("Frame %s: %s", self.frame_number, e)
             count += 1
         return count
 
     def _ethernet_frame(self, frame: EthernetII):
         """Parse ethernet frame"""
-        self.logger.debug(f"Parse PCAP frame {self.frame_number}")
+        self.logger.debug("Parse PCAP frame %s", self.frame_number)
         EthernetII.data.process_frame(frame, {
             IPv4: lambda f: self._ipv4_frame(frame, f),
             RawFrame: lambda _: self._other_ethernet_frame(frame),
@@ -184,8 +186,10 @@ class PCAPReader(BaseFileCheckTool):
         for rd in rd_frames:
             name = dns_frames.DNSName.string(rd, dns_frames.DNSResource.NAME)
             proc_rd = {
-                dns_frames.RDATA.A: lambda r: learn_name(name, r.as_ip_address()),
-                dns_frames.RDATA.AAAA: lambda r: learn_name(name, r.as_ip_address()),
+                dns_frames.RDATA.A: lambda r:
+                    learn_name(name, r.as_ip_address()),  # pylint: disable=cell-var-from-loop
+                dns_frames.RDATA.AAAA: lambda r:
+                    learn_name(name, r.as_ip_address()),  # pylint: disable=cell-var-from-loop
             }
             dns_frames.DNSResource.RDATA.process_frame(rd, proc_rd)
 
