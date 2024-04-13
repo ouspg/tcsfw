@@ -137,8 +137,7 @@ class ClientAPI(ModelListener):
         r = {}
         if path == "reset":
             param = json.load(data) if data else {}
-            self.post_evidence_filter(param.get("evidence", {}), include_all=param.get("include_all", False))
-            self.system_reset()
+            self.system_reset(param.get("evidence", {}), include_all=param.get("include_all", False))
             if param.get("dump_all", False):
                 r = {"events": list(self.api_iterate_all(request.change_path(".")))}
         elif path.startswith("event/"):
@@ -157,8 +156,8 @@ class ClientAPI(ModelListener):
             raise NotImplementedError("Bad API request")
         return r
 
-    def post_evidence_filter(self, filter_list: Dict, include_all: bool = False):
-        """Post new evidence filter and reset the model"""
+    def system_reset(self, filter_list: Dict, include_all: bool = False):
+        """Reset, set new evidence filter and reset the model"""
         fs = {ev.label: ev for ev in self.registry.all_evidence}
         e_filter = {}
         for fn, sel in filter_list.items():
@@ -166,10 +165,8 @@ class ClientAPI(ModelListener):
             if ev:
                 e_filter[ev] = sel
         self.registry.reset(e_filter, include_all)
-
-    def system_reset(self):
-        """Do system reset with listener calls"""
         self.verdict_cache.clear()
+        # API reset event
         for ln, req in self.api_listener:
             context = RequestContext(req, self)
             d = self.get_system_info(context)
