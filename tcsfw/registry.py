@@ -43,23 +43,6 @@ class Registry(EventInterface):
         """Get entity by id, if any"""
         return self.database.get_entity(id_value)
 
-    def do_task(self) -> bool:
-        """Perform registry task"""
-        e = self.database.next_pending()
-        if e is not None:
-            self.logging.consume(e)
-            return True
-        return False
-
-    def do_all_tasks(self) -> Self:
-        """Do all tasks at once"""
-        while True:
-            e = self.database.next_pending()
-            if e is None:
-                break
-            self.logging.consume(e)
-        return self
-
     def _new_event(self, event: Event):
         """Handle new event"""
         self.database.put_event(event)
@@ -80,6 +63,15 @@ class Registry(EventInterface):
             self.logger.info("filter: %s", " ".join([f"{e.name}={v}" for e, v in evidence_filter.items()]))
         # must call logging reset _after_ database reset, as system events are send with logging reset
         self.logging.reset()
+        return self
+
+    def apply_all_events(self) -> Self:
+        """Apply all stored events, after reset"""
+        while True:
+            e = self.database.next_pending()
+            if e is None:
+                break
+            self.logging.consume(e)
         return self
 
     def get_system(self) -> IoTSystem:

@@ -174,6 +174,8 @@ class ClientAPI(ModelListener):
             context = RequestContext(req, self)
             d = self.get_system_info(context)
             ln.note_system_reset({"system": d}, self.registry.system)
+        # reapply all events after reset
+        self.registry.apply_all_events()
 
     def get_log(self, entity="", key="") -> Dict:
         """Get log"""

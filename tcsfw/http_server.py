@@ -58,12 +58,10 @@ class HTTPServerRunner:
         self.loop = asyncio.get_event_loop()
         self.send_queue: asyncio.Queue[Tuple[Session, Dict]] = asyncio.Queue()
         self.send_queue_target_size = 10
-        self.process_tasks = asyncio.Event()
 
     def run(self):
         """Start sync loop and run the server"""
         self.loop.run_until_complete(self.start_server())
-        self.loop.create_task(self.registry_worker())
         self.loop.create_task(self.send_worker())
         self.loop.run_forever()
         # registry must be indirect
@@ -83,17 +81,6 @@ class HTTPServerRunner:
         self.logger.info("HTTP server running at %s:%s...", self.host, self.port)
         await site.start()
 
-    async def registry_worker(self):
-        """A worker for registry tasks"""
-        while True:
-            await self.process_tasks.wait()
-            if self.send_queue.qsize() > self.send_queue_target_size:
-                more = False  # wait more stuff to be sent
-            else:
-                more = self.registry.do_task()
-            if not more:
-                self.process_tasks.clear()
-
     async def send_worker(self):
         """A worker to send data to websockets"""
         while True:
@@ -105,11 +92,6 @@ class HTTPServerRunner:
             if self.component_delay > 0:
                 # artificial delay for testing
                 await asyncio.sleep(self.component_delay)
-            self.process_tasks.set()
-
-    async def update_registry(self):
-        """More tasks have been added"""
-        self.process_tasks.set()
 
     def check_permission(self, request):
         """Check permissions"""
@@ -150,7 +132,6 @@ class HTTPServerRunner:
 
             else:
                 raise NotImplementedError("Unexpected method/path")
-            await self.update_registry()
             return web.Response(text=json.dumps(res))
         except NotImplementedError:
             return web.Response(status=400)
