@@ -55,7 +55,7 @@ class Inspector(EventInterface):
     def get_system(self) -> IoTSystem:
         return self.system
 
-    def connection(self, flow: Flow) -> Connection:
+    def connection(self, flow: Flow) -> Optional[Connection]:
         self.logger.debug("inspect flow %s", flow)
         key = self.matcher.connection_w_ends(flow)
         conn, _, _, reply = key
@@ -72,6 +72,9 @@ class Inspector(EventInterface):
         new_direction = conn_dir is None  # new direction?
         if new_direction:
             self.direction[flow] = not reply
+
+        if not (new_conn or new_direction):
+            return None  # old connection, old direction -> discard
 
         updated = set()   # entity which status updated
         send = set()      # force to send entity update

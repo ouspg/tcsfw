@@ -107,9 +107,11 @@ class EventLogger(EventInterface, ModelListener):
         if self.event_logger:
             self.print_event(ev)
 
-    def connection(self, flow: Flow) -> Connection:
+    def connection(self, flow: Flow) -> Optional[Connection]:
         lo = self._add(flow)
         e = self.inspector.connection(flow)
+        if e is None:
+            return None
         lo.pick_status_verdict(e)
         if self.event_logger:
             self.print_event(lo)

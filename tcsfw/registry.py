@@ -78,8 +78,10 @@ class Registry(EventInterface):
         return self.system
 
     def connection(self, flow: Flow) -> Optional[Connection]:
-        self._new_event(flow)
-        return self.logging.connection(flow)
+        e = self.logging.connection(flow)
+        if e is not None:
+            self._new_event(flow)
+        return e
 
     def name(self, event: NameEvent) -> Optional[Host]:
         self._new_event(event)
