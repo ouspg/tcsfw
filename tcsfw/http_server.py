@@ -55,6 +55,8 @@ class HTTPServerRunner:
         self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
         if not self.auth_token and not no_auth_ok:
             raise ValueError("No environment variable TCSFW_SERVER_API_KEY (use --no-auth-ok to skip check)")
+        if self.auth_token:
+            self.host = None  # allow all hosts, when token is present
         self.component_delay = 0
         self.sessions: List[Session] = []
         self.loop = asyncio.get_event_loop()
@@ -80,7 +82,7 @@ class HTTPServerRunner:
         rr = web.AppRunner(app)
         await rr.setup()
         site = web.TCPSite(rr, self.host, self.port)
-        self.logger.info("HTTP server running at %s:%s...", self.host, self.port)
+        self.logger.info("HTTP server running at %s:%s...", self.host or "*", self.port)
         await site.start()
 
     async def send_worker(self):
