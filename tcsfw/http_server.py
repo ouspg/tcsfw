@@ -127,12 +127,11 @@ class HTTPServerRunner:
                     with tempfile.TemporaryFile() as tmp:
                         data = await self.read_stream_to_file(request, tmp)
                         res = self.api.api_post(req, data)
-                        return res
                 elif request.content_type == "application/zip":
                     # ZIP file
                     res = await self.api_post_zip(req, request)
-                    return res
-                raise ValueError("Unexpected content-type")
+                else:
+                    raise ValueError("Unexpected content-type")
             else:
                 raise NotImplementedError("Unexpected method/path")
             return web.Response(text=json.dumps(res))

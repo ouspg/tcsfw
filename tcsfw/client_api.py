@@ -12,8 +12,6 @@ from typing import Dict, List, Tuple, Any, Iterable, BinaryIO, Optional
 import prompt_toolkit
 from prompt_toolkit.history import FileHistory
 
-from framing.raw_data import Raw
-
 from tcsfw.basics import Status
 from tcsfw.batch_import import BatchImporter
 from tcsfw.verdict import Verdict
@@ -22,7 +20,6 @@ from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import Entity
 from tcsfw.event_interface import EventMap
 from tcsfw.model import Addressable, NetworkNode, Connection, Host, Service, ModelListener, IoTSystem, NodeComponent
-from tcsfw.pcap_reader import PCAPReader
 from tcsfw.property import Properties, PropertyKey, PropertySetValue, PropertyVerdictValue
 from tcsfw.registry import Registry
 from tcsfw.specifications import Specifications
