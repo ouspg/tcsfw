@@ -120,16 +120,9 @@ class HTTPServerRunner:
                 res = self.api.api_get(req)
             elif request.method == "POST":
                 # read all data as easy solution to async problem
-                r_size = 0
-                with tempfile.TemporaryFile() as tmp:
-                    b = await request.content.read(1024)
-                    while b:
-                        tmp.write(b)
-                        r_size += len(b)
-                        b = await request.content.read(1024)
-                    tmp.seek(0)
-                    res = self.api.api_post(req, tmp if r_size > 0 else None)
-
+                if request.content_type == "application/json" or not request.content_type:
+                    await self.api_post_stream(req, request)
+                raise ValueError("Unexpected content-type")
             else:
                 raise NotImplementedError("Unexpected method/path")
             return web.Response(text=json.dumps(res))
@@ -142,6 +135,19 @@ class HTTPServerRunner:
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             return web.Response(status=500)
+
+    async def api_post_stream(self, api_request: APIRequest, request):
+        """Handle POST request with stream"""
+        r_size = 0
+        with tempfile.TemporaryFile() as tmp:
+            b = await request.content.read(1024)
+            while b:
+                tmp.write(b)
+                r_size += len(b)
+                b = await request.content.read(1024)
+            tmp.seek(0)
+            res = self.api.api_post(api_request, tmp if r_size > 0 else None)
+        return res
 
     async def handle_ws(self, request):
         """Handle websocket HTTP request"""
