@@ -470,6 +470,8 @@ class IoTSystem(NetworkNode):
 
     def learn_named_address(self, name: DNSName, address: Optional[AnyAddress]) -> Tuple[Host, bool]:
         """Learn DNS named addresses, return named host and if any changes"""
+        # pylint: disable=too-many-return-statements
+
         # check for reverse DNS
         if name.name.endswith(".arpa") and len(name.name) > 5:
             # reverse DNS from IP addresss to name
