@@ -87,6 +87,10 @@ class APIListener:
         """Property change event"""
         self.note_event(data)
 
+    def note_evidence_change(self, data: Dict):
+        """Evidence change event"""
+        self.note_event(data)
+
     def note_event(self, _data: Dict):
         """Any API event"""
 
@@ -159,8 +163,14 @@ class ClientAPI(ModelListener):
         path = request.path
         if path != "batch":
             raise FileNotFoundError("Unknown API endpoint")
+        old_evidence = self.registry.all_evidence.copy()
         importer = BatchImporter(self.registry)
         importer.import_batch(data_file)
+        if old_evidence != self.registry.all_evidence:
+            # batch import can bring new evdence sources, send evidence change event
+            change_event = {"evidence": self.get_evidence_filter()}
+            for ln, _ in self.api_listener:
+                ln.note_evidence_change(change_event)
         return {}
 
     def system_reset(self, filter_list: Dict, include_all: bool = False):
