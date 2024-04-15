@@ -2,13 +2,15 @@
 
 import asyncio
 import hmac
+from io import BytesIO
 import json
 import logging
 import os
 import pathlib
 import tempfile
 import traceback
-from typing import Dict, Tuple, List
+from typing import Dict, Optional, Tuple, List
+import zipfile
 
 from aiohttp import web, WSMsgType
 
@@ -121,7 +123,15 @@ class HTTPServerRunner:
             elif request.method == "POST":
                 # read all data as easy solution to async problem
                 if request.content_type == "application/json" or not request.content_type:
-                    await self.api_post_stream(req, request)
+                    # JSON data
+                    with tempfile.TemporaryFile() as tmp:
+                        data = await self.read_stream_to_file(request, tmp)
+                        res = self.api.api_post(req, data)
+                        return res
+                elif request.content_type == "application/zip":
+                    # ZIP file
+                    res = await self.api_post_zip(req, request)
+                    return res
                 raise ValueError("Unexpected content-type")
             else:
                 raise NotImplementedError("Unexpected method/path")
@@ -136,17 +146,28 @@ class HTTPServerRunner:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def api_post_stream(self, api_request: APIRequest, request):
-        """Handle POST request with stream"""
+    async def read_stream_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
+        """Read stream to a file, return data or None if no data"""
         r_size = 0
-        with tempfile.TemporaryFile() as tmp:
+        b = await request.content.read(1024)
+        while b:
+            r_size += len(b)
+            file.write(b)
             b = await request.content.read(1024)
-            while b:
-                tmp.write(b)
-                r_size += len(b)
-                b = await request.content.read(1024)
-            tmp.seek(0)
-            res = self.api.api_post(api_request, tmp if r_size > 0 else None)
+        file.seek(0)
+        return file if r_size > 0 else None
+
+    async def api_post_zip(self, api_request: APIRequest, request):
+        """Handle POST request with zip file"""
+        # unzip stream to temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # create temporary file, extract to directory, delete the temporary file
+            with tempfile.TemporaryFile() as tmp_file:
+                await self.read_stream_to_file(request, tmp_file)
+                with zipfile.ZipFile(tmp_file, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+            self.logger.info("Unzipped to %s", temp_dir)
+            res = self.api.api_post_file(api_request, pathlib.Path(temp_dir))
         return res
 
     async def handle_ws(self, request):

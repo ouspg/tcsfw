@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import os
+import pathlib
 import shutil
 import traceback
 import urllib
@@ -14,6 +15,7 @@ from prompt_toolkit.history import FileHistory
 from framing.raw_data import Raw
 
 from tcsfw.basics import Status
+from tcsfw.batch_import import BatchImporter
 from tcsfw.verdict import Verdict
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.coverage_result import CoverageReport
@@ -148,13 +150,18 @@ class ClientAPI(ModelListener):
             js = json.load(data) if data else {}
             e = e_type.decode_data_json(NO_EVIDENCE, js, self.get_by_id)
             self.registry.consume(e)
-        elif path == "capture":
-            raw = Raw.stream(data)
-            count = PCAPReader(self.registry.system).parse(raw)
-            r = {"frames": count, "bytes": raw.bytes_available()}
         else:
-            raise NotImplementedError("Bad API request")
+            raise FileNotFoundError("Unknown API endpoint")
         return r
+
+    def api_post_file(self, request: APIRequest, data_file: pathlib.Path) -> Dict:
+        """Post API data in ZIP file"""
+        path = request.path
+        if path != "batch":
+            raise FileNotFoundError("Unknown API endpoint")
+        importer = BatchImporter(self.registry)
+        importer.import_batch(data_file)
+        return {}
 
     def system_reset(self, filter_list: Dict, include_all: bool = False):
         """Reset, set new evidence filter and reset the model"""
