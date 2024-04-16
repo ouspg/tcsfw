@@ -59,7 +59,7 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/launch/{tail:.+}', self.handle_http),
+            web.get('/connect/{tail:.+}', self.handle_http),
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -86,10 +86,14 @@ class Launcher:
         """Handle normal HTTP GET or POST request"""
         try:
             self.check_permission(request)
-            self.logger.info("API: %s %s", request.method, request.path)
-            # if request.method != "POST":
-            raise NotImplementedError("Unexpected method/path")
-            # return web.Response(text=json.dumps(res))
+            if request.method != "GET":
+                raise NotImplementedError("Unexpected method")
+            assert request.path.startswith("/connect/")
+            req_js = {
+                "app": request.path[9:] + ".py"
+            }
+            resp = await self.run_process(req_js)
+            return web.json_response(resp)
         except NotImplementedError:
             return web.Response(status=400)
         except FileNotFoundError:
