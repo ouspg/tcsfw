@@ -18,8 +18,8 @@ from tcsfw.client_api import ClientAPI, APIRequest, APIListener
 from tcsfw.model import IoTSystem
 
 
-class Session(APIListener):
-    """A session per web socket"""
+class WebsocketChannel(APIListener):
+    """A channel per web socket"""
     def __init__(self, server: 'HTTPServerRunner', socket: web.WebSocketResponse, request: APIRequest):
         self.server = server
         self.socket = socket
@@ -36,7 +36,7 @@ class Session(APIListener):
             self.server.send_queue.put_nowait((self, data))
 
     def close(self):
-        """Close the session"""
+        """Close the channel"""
         self.subscribed = False
         self.server.api.api_listener.remove((self, self.original_request))
 
@@ -58,9 +58,9 @@ class HTTPServerRunner:
         if self.auth_token:
             self.host = None  # allow all hosts, when token is present
         self.component_delay = 0
-        self.sessions: List[Session] = []
+        self.channels: List[WebsocketChannel] = []
         self.loop = asyncio.get_event_loop()
-        self.send_queue: asyncio.Queue[Tuple[Session, Dict]] = asyncio.Queue()
+        self.send_queue: asyncio.Queue[Tuple[WebsocketChannel, Dict]] = asyncio.Queue()
         self.send_queue_target_size = 10
 
     def run(self):
@@ -77,8 +77,7 @@ class HTTPServerRunner:
         app.add_routes([
             web.get('/api1/ws/{tail:.+}', self.handle_ws),  # must be first
             web.get('/api1/{tail:.+}', self.handle_http),
-            web.post('/api1/{tail:.+}', self.handle_http),
-            web.get('/connect/{tail:.+}', self.handle_connect),
+            web.post('/api1/{tail:.+}', self.handle_http)
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -89,10 +88,10 @@ class HTTPServerRunner:
     async def send_worker(self):
         """A worker to send data to websockets"""
         while True:
-            session, d = await self.send_queue.get()
-            if session.subscribed:
+            channel, d = await self.send_queue.get()
+            if channel.subscribed:
                 self.logger.info("send %s", d)
-                await session.socket.send_json(d)
+                await channel.socket.send_json(d)
             self.send_queue.task_done()
             if self.component_delay > 0:
                 # artificial delay for testing
@@ -148,13 +147,6 @@ class HTTPServerRunner:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def handle_connect(self, request):
-        """Handle connect request, intended for launcher, but in testing can be used directly"""
-        # simply return pointer to itself
-        host = request.headers.get("Host", "localhost")
-        res = {"host": host}
-        return web.Response(text=json.dumps(res))
-
     async def read_stream_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
         """Read stream to a file, return data or None if no data"""
         r_size = 0
@@ -201,13 +193,13 @@ class HTTPServerRunner:
 
         self.logger.info('WS loop started')
 
-        session = Session(self, ws, req)
+        channel = WebsocketChannel(self, ws, req)
         # initial model
         # do not async so that no updates between getting model and putting it to the queue
-        session.subscribed = True
+        channel.subscribed = True
         if req.parameters.get("load_all", "").lower() != "false":  # can avoid JSON dump for debugging
-            self.dump_model(session)
-        self.sessions.append(session)
+            self.dump_model(channel)
+        self.channels.append(channel)
 
         async def receive_loop():
             # we expect nothing from client
@@ -220,13 +212,13 @@ class HTTPServerRunner:
         try:
             await receive_loop()
         finally:
-            session.close()  # drop remaining sends
-            self.sessions.remove(session)
+            channel.close()  # drop remaining sends
+            self.channels.remove(channel)
         return ws
 
-    def dump_model(self, session: Session):
-        """Dump the whole model into a session"""
-        if not session.subscribed:
+    def dump_model(self, channel: WebsocketChannel):
+        """Dump the whole model into channel"""
+        if not channel.subscribed:
             return
-        for d in self.api.api_iterate_all(session.original_request):
-            self.send_queue.put_nowait((session, d))
+        for d in self.api.api_iterate_all(channel.original_request):
+            self.send_queue.put_nowait((channel, d))
