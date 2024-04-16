@@ -33,6 +33,7 @@ class Launcher:
 
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
+        self.connected: Dict[str, int] = {}
 
         self.host = None
         self.port = int(args.listen_port or 20211)
@@ -106,7 +107,11 @@ class Launcher:
 
     async def run_process(self, request_json: Dict) -> Dict:
         """Run process by request"""
-        client_port = -1
+        cmd_name = request_json.get("app")
+        client_port = self.connected.get(cmd_name)
+        if client_port is not None:
+            return {"port": client_port}  # already running
+
         for port in range(*self.client_port_range):
             if port not in self.clients:
                 client_port = port
@@ -114,9 +119,9 @@ class Launcher:
         else:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
+        self.connected[cmd_name] = client_port
 
         # schedule process execution by asyncio and return the port
-        cmd_name = request_json.get("app")
         process = await asyncio.create_subprocess_exec(
             sys.executable,  cmd_name, "--http-server", f"{client_port}",
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
