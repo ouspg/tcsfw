@@ -148,10 +148,11 @@ class HTTPServerRunner:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def handle_connect(self, _request):
+    async def handle_connect(self, request):
         """Handle connect request, intended for launcher, but in testing can be used directly"""
-        # simply return the same port
-        res = {"port": self.port}
+        # simply return pointer to itself
+        host = request.headers.get("Host", "localhost")
+        res = {"host": host}
         return web.Response(text=json.dumps(res))
 
     async def read_stream_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:

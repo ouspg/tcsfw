@@ -33,7 +33,7 @@ class Launcher:
 
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
-        self.connected: Dict[str, int] = {}
+        self.connected: Dict[str, Dict] = {}
 
         self.host = None
         self.port = int(args.listen_port or 8180)  # match http server default port
@@ -42,7 +42,7 @@ class Launcher:
             # test launch
             self.loop = asyncio.get_event_loop()
             for app in launch_apps:
-                js_out = self.loop.run_until_complete(self.run_process({"app": app}))
+                js_out = self.loop.run_until_complete(self.run_process("localhost", app))
                 self.logger.info(json.dumps(js_out))
             self.loop.run_forever()
             return
@@ -90,11 +90,11 @@ class Launcher:
             if request.method != "GET":
                 raise NotImplementedError("Unexpected method")
             assert request.path.startswith("/connect/")
-            req_js = {
-                "app": request.path[9:] + ".py"
-            }
-            resp = await self.run_process(req_js)
-            return web.json_response(resp)
+            host = request.headers.get("Host", "localhost")
+            host = host.split(":")[0]
+            app = request.path[9:] + ".py"
+            res = await self.run_process(host, app)
+            return web.json_response(res)
         except NotImplementedError:
             return web.Response(status=400)
         except FileNotFoundError:
@@ -105,13 +105,13 @@ class Launcher:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def run_process(self, request_json: Dict) -> Dict:
+    async def run_process(self, host: str, app: str) -> Dict:
         """Run process by request"""
-        cmd_name = request_json.get("app")
-        client_port = self.connected.get(cmd_name)
-        if client_port is not None:
-            return {"port": client_port}  # already running
+        known = self.connected.get(app)
+        if known:
+            return known  # already running
 
+        client_port = None
         for port in range(*self.client_port_range):
             if port not in self.clients:
                 client_port = port
@@ -119,11 +119,11 @@ class Launcher:
         else:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
-        self.connected[cmd_name] = client_port
+        res = self.connected[app] = {"host": f"{host}:{client_port}"}
 
         # schedule process execution by asyncio and return the port
         process = await asyncio.create_subprocess_exec(
-            sys.executable,  cmd_name, "--http-server", f"{client_port}",
+            sys.executable, app, "--http-server", f"{client_port}",
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout_file = f'stdout-{client_port}.log'
         stderr_file = f'stderr-{client_port}.log'
@@ -135,15 +135,16 @@ class Launcher:
             await stdout_task
             await stderr_task
             self.clients.remove(client_port)
-            self.logger.info("Exit code %s from %s at port %s", process.returncode, cmd_name, client_port)
+            self.connected.pop(app)
+            self.logger.info("Exit code %s from %s at port %s", process.returncode, app, client_port)
             # remove log files
             os.remove(stdout_file)
             os.remove(stderr_file)
 
         asyncio.create_task(wait_process())
 
-        self.logger.info("Launched %s at port %s", cmd_name, client_port)
-        return {"port": client_port}
+        self.logger.info("Launched %s at port %s", app, client_port)
+        return res
 
     async def save_stream_to_file(self, stream, file_path):
         """Save data from stream to a file asynchronously"""
