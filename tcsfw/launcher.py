@@ -14,13 +14,15 @@ from typing import Dict, Set
 import aiofiles
 from aiohttp import web
 
+# pylint: disable=duplicate-code  # web server code is similar in two places
+
 class Launcher:
     """Lister for requests and launch models as separate processes"""
     def __init__(self):
         parser = argparse.ArgumentParser(description='Launcher script')
         parser.add_argument("--listen-port", "-p", type=int,
                             help="Listen HTTP requests at port")
-        parser.add_argument("--launch", "-L", action="append", 
+        parser.add_argument("--launch", "-L", action="append",
                             help="Launch applications instantly without starting service")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
