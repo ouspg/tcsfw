@@ -47,7 +47,6 @@ class HTTPServerRunner:
 
     def __init__(self, api: ClientAPI, base_directory=pathlib.Path("."), port=8180, no_auth_ok=False):
         self.api = api
-        self.registry = api.registry
         self.logger = logging.getLogger("server")
         self.sample_path = base_directory / "sample"
         self.host = "127.0.0.1"
@@ -68,8 +67,6 @@ class HTTPServerRunner:
         self.loop.run_until_complete(self.start_server())
         self.loop.create_task(self.send_worker())
         self.loop.run_forever()
-        # registry must be indirect
-        self.registry.fallthrough = False
 
     async def start_server(self):
         """Start the Web server"""
