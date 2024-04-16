@@ -78,6 +78,7 @@ class HTTPServerRunner:
             web.get('/api1/ws/{tail:.+}', self.handle_ws),  # must be first
             web.get('/api1/{tail:.+}', self.handle_http),
             web.post('/api1/{tail:.+}', self.handle_http),
+            web.get('/connect/{tail:.+}', self.handle_connect),
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -146,6 +147,12 @@ class HTTPServerRunner:
         except Exception:  # pylint: disable=broad-except
             traceback.print_exc()
             return web.Response(status=500)
+
+    async def handle_connect(self, _request):
+        """Handle connect request, intended for launcher, but in testing can be used directly"""
+        # simply return the same port
+        res = {"port": self.port}
+        return web.Response(text=json.dumps(res))
 
     async def read_stream_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
         """Read stream to a file, return data or None if no data"""

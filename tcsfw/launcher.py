@@ -36,7 +36,7 @@ class Launcher:
         self.connected: Dict[str, int] = {}
 
         self.host = None
-        self.port = int(args.listen_port or 20211)
+        self.port = int(args.listen_port or 8180)  # match http server default port
         self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
         if launch_apps:
             # test launch
