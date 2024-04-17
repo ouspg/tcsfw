@@ -2,7 +2,6 @@
 
 import asyncio
 import hmac
-import json
 import logging
 import os
 import argparse
@@ -83,9 +82,7 @@ class Launcher:
             if not request.path.startswith("/api1/endpoint/statement/"):
                 raise FileNotFoundError("Unexpected statement path")
             app = request.path[25:] + ".py"
-            host = request.headers.get("Host", "localhost")
-            host = host.split(":")[0]
-            res = await self.run_process(host, app)
+            res = await self.run_process(app)
             return web.json_response(res)
         except NotImplementedError:
             return web.Response(status=400)
@@ -97,7 +94,7 @@ class Launcher:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def run_process(self, host: str, app: str) -> Dict:
+    async def run_process(self, app: str) -> Dict:
         """Run process by request"""
         known = self.connected.get(app)
         if known:
