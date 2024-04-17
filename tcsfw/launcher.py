@@ -1,7 +1,6 @@
 """Lauch model given from command-line"""
 
 import asyncio
-import hashlib
 import hmac
 import logging
 import os
