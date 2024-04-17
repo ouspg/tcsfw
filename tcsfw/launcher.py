@@ -1,10 +1,13 @@
 """Lauch model given from command-line"""
 
 import asyncio
+import hashlib
 import hmac
 import logging
 import os
 import argparse
+import pathlib
+import re
 import subprocess
 import sys
 import traceback
@@ -23,6 +26,8 @@ class Launcher:
                             help="Listen HTTP requests at port")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
+        parser.add_argument("--no-db", action="store_true",
+                            help="Do not use DB storage", default=None)
         args = parser.parse_args()
 
         self.logger = logging.getLogger("launcher")
@@ -32,6 +37,8 @@ class Launcher:
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
         self.connected: Dict[str, Dict] = {}
+
+        self.db_base_dir = None if args.no_db else pathlib.Path("app-dbs")  # create sqlite DBs here
 
         self.host = None
         self.port = int(args.listen_port or 8180)  # match http server default port
@@ -81,7 +88,7 @@ class Launcher:
                 raise NotImplementedError("Unexpected method")
             if not request.path.startswith("/api1/endpoint/statement/"):
                 raise FileNotFoundError("Unexpected statement path")
-            app = request.path[25:] + ".py"
+            app = request.path[25:]
             res = await self.run_process(app)
             return web.json_response(res)
         except NotImplementedError:
@@ -96,6 +103,14 @@ class Launcher:
 
     async def run_process(self, app: str) -> Dict:
         """Run process by request"""
+
+        # detect bad characters in the app name
+        pattern = re.compile(r"[^-a-zA-Z0-9._/ ]")
+        if pattern.findall(app):
+            raise FileNotFoundError("Bad name")
+        if ".." in app:
+            raise FileNotFoundError("Bad name")
+
         known = self.connected.get(app)
         if known:
             return known  # already running
@@ -112,9 +127,16 @@ class Launcher:
             "port": f"{client_port}",
         }
 
+        python_app = f"{app}.py"
+        args = [sys.executable, python_app, "--http-server", f"{client_port}"]
+        if self.db_base_dir:
+            # use sqlite DB for the app
+            db_file = (self.db_base_dir / app).with_suffix(".sqlite")
+            db_file.parent.mkdir(parents=True, exist_ok=True)
+            args.extend(["--db", f"sqlite:///{db_file.as_posix()}"])
+
         # schedule process execution by asyncio and return the port
-        process = await asyncio.create_subprocess_exec(
-            sys.executable, app, "--http-server", f"{client_port}",
+        process = await asyncio.create_subprocess_exec(*args,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout_file = f'stdout-{client_port}.log'
         stderr_file = f'stderr-{client_port}.log'
