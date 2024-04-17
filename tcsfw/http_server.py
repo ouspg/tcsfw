@@ -72,9 +72,10 @@ class HTTPServerRunner:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/api1/ws/{tail:.+}', self.handle_ws),  # must be first
+            web.get('/api1/endpoint/{tail:.+}', self.handle_endpoint),  # only during development
+            web.get('/api1/ws/{tail:.+}', self.handle_ws),  # must be before /api1/
             web.get('/api1/{tail:.+}', self.handle_http),
-            web.post('/api1/{tail:.+}', self.handle_http)
+            web.post('/api1/{tail:.+}', self.handle_http),
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -238,6 +239,19 @@ class HTTPServerRunner:
             channel.close()  # drop remaining sends
             self.channels.remove(channel)
         return ws
+
+    async def handle_endpoint(self, request):
+        """Handle endpoint intended for launcher, but this is nice for development"""
+        try:
+            self.check_permission(request)
+            assert request.path_qs.startswith("/api1/endpoint/")
+            res =  { } ## empty response
+            return web.Response(text=json.dumps(res))
+        except PermissionError:
+            return web.Response(status=401)
+        except Exception:  # pylint: disable=broad-except
+            traceback.print_exc()
+            return web.Response(status=500)
 
     def dump_model(self, channel: WebsocketChannel):
         """Dump the whole model into channel"""

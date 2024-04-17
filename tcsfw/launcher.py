@@ -129,7 +129,8 @@ class Launcher:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
         res = self.connected[key] = {
-            "port": f"{client_port}",
+            "path": f"/proxy/{client_port}",
+            "path_ws": f"/proxy/ws/{client_port}",
         }
 
         python_app = f"{app}.py"
