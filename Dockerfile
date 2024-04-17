@@ -11,9 +11,9 @@ COPY tcsfw /app/tcsfw
 COPY setup.py /app
 RUN pip install --no-cache-dir -e .
 
-# copy the model
-COPY samples/ruuvi/* /app
+# copy samples in
+COPY samples /app/samples
 
 # run the entry point
 # ENV TCSFW_SERVER_API_KEY= # set in compose etc.
-CMD ["python", "ruuvi.py", "--http-server", "8180"]
+CMD ["python", "tcsfw/launcher.py", "--listen-port", "8180"]
