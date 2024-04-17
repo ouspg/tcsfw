@@ -15,6 +15,8 @@ from typing import Dict, Set
 import aiofiles
 from aiohttp import web
 
+from tcsfw.client_api import APIRequest
+
 # pylint: disable=duplicate-code  # web server code is similar in two places
 
 class Launcher:
@@ -88,7 +90,10 @@ class Launcher:
             if not request.path.startswith("/api1/endpoint/statement/"):
                 raise FileNotFoundError("Unexpected statement path")
             app = request.path[25:]
-            res = await self.run_process(app)
+            api_req = APIRequest(request).parse(request.path_qs)
+            explicit_key = api_req.parameters.get("instance-key")
+            app_key = f"{app}/{explicit_key}" if explicit_key else app
+            res = await self.run_process(app_key, app)
             return web.json_response(res)
         except NotImplementedError:
             return web.Response(status=400)
@@ -100,17 +105,18 @@ class Launcher:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def run_process(self, app: str) -> Dict:
+    async def run_process(self, key: str, app: str) -> Dict:
         """Run process by request"""
 
-        # detect bad characters in the app name
+        # detect bad characters in the app name or key
         pattern = re.compile(r"[^-a-zA-Z0-9._/ ]")
-        if pattern.findall(app):
-            raise FileNotFoundError("Bad name")
-        if ".." in app:
-            raise FileNotFoundError("Bad name")
+        for n in (key, app):
+            if pattern.findall(n):
+                raise FileNotFoundError("Bad name")
+            if ".." in n:
+                raise FileNotFoundError("Bad name")
 
-        known = self.connected.get(app)
+        known = self.connected.get(key)
         if known:
             return known  # already running
 
@@ -122,7 +128,7 @@ class Launcher:
         else:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
-        res = self.connected[app] = {
+        res = self.connected[key] = {
             "port": f"{client_port}",
         }
 
@@ -130,7 +136,7 @@ class Launcher:
         args = [sys.executable, python_app, "--http-server", f"{client_port}"]
         if self.db_base_dir:
             # use sqlite DB for the app
-            db_file = (self.db_base_dir / app).with_suffix(".sqlite")
+            db_file = (self.db_base_dir / key).with_suffix(".sqlite")
             db_file.parent.mkdir(parents=True, exist_ok=True)
             args.extend(["--db", f"sqlite:///{db_file.as_posix()}"])
 
@@ -147,15 +153,15 @@ class Launcher:
             await stdout_task
             await stderr_task
             self.clients.remove(client_port)
-            self.connected.pop(app)
-            self.logger.info("Exit code %s from %s at port %s", process.returncode, app, client_port)
+            self.connected.pop(key, None)
+            self.logger.info("Exit code %s from %s at port %s", process.returncode, key, client_port)
             # remove log files
             os.remove(stdout_file)
             os.remove(stderr_file)
 
         asyncio.create_task(wait_process())
 
-        self.logger.info("Launched %s at port %s", app, client_port)
+        self.logger.info("Launched %s at port %s", key, client_port)
         return res
 
     async def save_stream_to_file(self, stream, file_path):
