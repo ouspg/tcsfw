@@ -29,6 +29,7 @@ class Launcher:
         self.logger = logging.getLogger("launcher")
         logging.basicConfig(format='%(message)s', level=getattr(logging, args.log_level or 'INFO'))
 
+        # NOTE: Nginx accepts port range 10000-19999
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
         self.connected: Dict[str, Dict] = {}
@@ -50,7 +51,7 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/connect/{tail:.+}', self.handle_http),
+            web.get('/api1/endpoint/{tail:.+}', self.handle_http),
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -79,10 +80,11 @@ class Launcher:
             self.check_permission(request)
             if request.method != "GET":
                 raise NotImplementedError("Unexpected method")
-            assert request.path.startswith("/connect/")
+            if not request.path.startswith("/api1/endpoint/statement/"):
+                raise FileNotFoundError("Unexpected statement path")
+            app = request.path[25:] + ".py"
             host = request.headers.get("Host", "localhost")
             host = host.split(":")[0]
-            app = request.path[9:] + ".py"
             res = await self.run_process(host, app)
             return web.json_response(res)
         except NotImplementedError:
@@ -109,7 +111,9 @@ class Launcher:
         else:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
-        res = self.connected[app] = {"host": f"{host}:{client_port}"}
+        res = self.connected[app] = {
+            "port": f"{client_port}",
+        }
 
         # schedule process execution by asyncio and return the port
         process = await asyncio.create_subprocess_exec(
