@@ -126,7 +126,7 @@ class HTTPServerRunner:
                     with tempfile.TemporaryFile() as tmp:
                         data = await self.read_stream_to_file(request, tmp)
                         res = self.api.api_post(req, data)
-                elif request.content_type == "application/zip":
+                elif request.content_type in {"application/zip", "multipart/form-data"}:
                     # ZIP file
                     res = await self.api_post_zip(req, request)
                 else:
@@ -155,13 +155,39 @@ class HTTPServerRunner:
         file.seek(0)
         return file if r_size > 0 else None
 
+    async def read_multipart_form_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
+        """Read multipart form to a file, return data or None if no data"""
+        reader = await request.multipart()
+        r_size = 0
+        part = await reader.next()
+        while part:
+            f_name = part.filename
+            if not f_name:
+                continue  # not sure what to do with non-file parts
+            if not f_name.lower().endswith(".zip"):
+                raise ValueError("Only ZIP files suupported in multipart form")
+            content_type = part.headers.get("Content-Type")
+            if content_type and content_type != "application/octet-stream":
+                raise ValueError("In multipart form, only application/octet-stream is allowed")
+            chunk = await part.read_chunk()
+            while chunk:
+                file.write(chunk)
+                r_size += len(chunk)
+                chunk = await part.read_chunk()
+            part = await reader.next()
+        file.seek(0)
+        return file if r_size > 0 else None
+
     async def api_post_zip(self, api_request: APIRequest, request):
         """Handle POST request with zip file"""
         # unzip stream to temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             # create temporary file, extract to directory, delete the temporary file
             with tempfile.TemporaryFile() as tmp_file:
-                await self.read_stream_to_file(request, tmp_file)
+                if request.content_type == "multipart/form-data":
+                    await self.read_multipart_form_to_file(request, tmp_file)
+                else:
+                    await self.read_stream_to_file(request, tmp_file)
                 with zipfile.ZipFile(tmp_file, 'r') as zip_ref:
                     zip_ref.extractall(temp_dir)
             self.logger.info("Unzipped to %s", temp_dir)
