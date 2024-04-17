@@ -203,7 +203,7 @@ class HTTPServerRunner:
             return web.Response(status=404)
         req = req.change_path(".")  # we can only subscribe all
 
-        ws = web.WebSocketResponse()
+        ws = web.WebSocketResponse(heartbeat=10)
         await ws.prepare(request)
 
         try:
