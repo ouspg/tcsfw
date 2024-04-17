@@ -22,16 +22,12 @@ class Launcher:
         parser = argparse.ArgumentParser(description='Launcher script')
         parser.add_argument("--listen-port", "-p", type=int,
                             help="Listen HTTP requests at port")
-        parser.add_argument("--launch", "-L", action="append",
-                            help="Launch applications instantly without starting service")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
         args = parser.parse_args()
 
         self.logger = logging.getLogger("launcher")
         logging.basicConfig(format='%(message)s', level=getattr(logging, args.log_level or 'INFO'))
-
-        launch_apps = args.launch or []
 
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
@@ -40,14 +36,6 @@ class Launcher:
         self.host = None
         self.port = int(args.listen_port or 8180)  # match http server default port
         self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
-        if launch_apps:
-            # test launch
-            self.loop = asyncio.get_event_loop()
-            for app in launch_apps:
-                js_out = self.loop.run_until_complete(self.run_process("localhost", app))
-                self.logger.info(json.dumps(js_out))
-            self.loop.run_forever()
-            return
         if not self.auth_token:
             raise ValueError("No environment variable TCSFW_SERVER_API_KEY")
         self.loop = asyncio.get_event_loop()
