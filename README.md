@@ -64,6 +64,12 @@ $ curl -v -X POST --data-binary @<batch-file>.zip  \
    http://localhost:8180/api1/batch
 ```
 
+## Docker container
+
+You can build a docker container with the security statement and run it stand-alone or in a simple deployment, see [tcsfw UI](https://github.com/ouspg/tcsfw-ui) documentation.
+
+However, there are no ready-made `Dockerfile`, but you can copy and modify the one in the Tcsfw.
+
 ## More options
 
 The framework has additional [command-line options](CommandLine.md).
