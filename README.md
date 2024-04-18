@@ -23,23 +23,26 @@ Check the [roadmap](Roadmap.md) for upcoming features.
 
 ## Usage
 
-Before use, you must [install](Install.md) the framework from _Github_.
+Security statement are created by Python [Domain Specific Language (DSL)](DSLIntro.md). 
+The idea is that security statement are created as Python applications, with one or several statements per application.
+Thus, the first thing is to create a Python application project. I recommend creating a _virtual environment_ for the project (there are many guides in the Internet). For example
 
-The framework comes with sample security stateuments in directory `samples/`. The security statements descriptin are in a [Domain Specific Language (DSL)](DSLIntro.md).
-The description of the claims also employs [a DSL](ClaimIntro.md), but that is very much unmature at the moment.
+    $ mkdir my_ss
+    $ cd my_ss
+    $ python 3.11 -m venv create .venv
+    $ source .venv/bin/activate
 
-The security statement used in the research is the statement for _Ruuvi gateway and tags_ (https://ruuvi.com/) which is used in the research. The statement is in directory `samples/ruuvi/`. The data for verifying the security statement is available for academic research, please request it from Rauli. Remember to tell the goals of the research and the organization performing it. Right to refuse requests is reserved.
+After that, you must [install](Install.md) the framework from _Github_.
+Then you can start working with you security statement using your favorite editor or IDE.
+The framework comes with sample security statements in directory `samples/`. The security statements description are in a [Domain Specific Language (DSL)](DSLIntro.md).
 
-Security statements are described by Python-based DSLs. A description is executable Python script. The security statement for Ruuvi is executed like this, assuming working directory is the project root:
-```
-$ python samples/ruuvi/ruuvi.py
-```
-The command dumps some basic information about the security statement.
+Assuming your security statement is `statement.py`, you execute it as follows:
+
+    $ python statement.py
 
 Security statement can be rendered into visual description using [tcsfw UI](https://github.com/ouspg/tcsfw-ui). The UI is simple Vue-project. The UI uses API provided by the framwork. The API is activated in following manner, with access token `xxx`. See UI documentation how it is set up.
 ```
-$ TCSFW_SERVER_API_KEY=xxx python samples/ruuvi/ruuvi.py \
-    --http-server 8180
+$ TCSFW_SERVER_API_KEY=xxx python statement.py --http-server 8180
 ```
 
 ## Providing tool data
@@ -47,7 +50,7 @@ $ TCSFW_SERVER_API_KEY=xxx python samples/ruuvi/ruuvi.py \
 Once the security statement is defined, it can be verified.
 The verification is tool-driven based on output from the tools. Tool results must be stored in a [batch directory](Tools.md) structure, which is specified by `--read` argument, e.g.
 ```
-$ python samples/ruuvi/ruuvi.py --read <batch-dir>
+$ python statement.py --read <batch-dir>
 ```
 
 The `--read` and `--http-server` arguments can be combined to inspecft the verification results using the UI.
@@ -64,6 +67,16 @@ $ curl -v -X POST --data-binary @<batch-file>.zip  \
 ## More options
 
 The framework has additional [command-line options](CommandLine.md).
+
+## Sample security statements
+
+A security statement for _Ruuvi gateway and tags_ (https://ruuvi.com/) was developed during research. The statement is in directory `samples/ruuvi/`. The data for verifying the security statement is available for academic research, please request it from Rauli. Remember to tell the goals of the research and the organization performing it. Right to refuse requests is reserved.
+
+The security statement for Ruuvi is executed like this, assuming working directory is the Tcsfw root:
+```
+$ python samples/ruuvi/ruuvi.py
+```
+The command dumps some basic information about the security statement.
 
 ## License
 

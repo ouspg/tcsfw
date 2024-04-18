@@ -19,6 +19,7 @@ $ python tcsfw/main.py --help
 ## Requirement coverage
 
 Coverage for default requirements (called _claims_ or _tests_ in research papers) can be checked like this:
+Please note, requirement coverage if very much in prototype phase.
 
 ```
 $ python samples/basic-a/system.py --output coverage
