@@ -58,6 +58,7 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
+            web.get('/login{tail:.+}', self.handle_login),
             web.get('/api1/endpoint/{tail:.+}', self.handle_http),
         ])
         rr = web.AppRunner(app)
@@ -81,8 +82,32 @@ class Launcher:
             if not hmac.compare_digest(token_1, token_2):
                 raise PermissionError("Invalid API key")
 
+    async def handle_login(self, request):
+        """Handle login request and return the token"""
+        try:
+            # self.check_permission(request)  # NO permission check
+            if request.method != "GET":
+                raise NotImplementedError("Unexpected method")
+            if request.path not in {"/login", "/login/"}:
+                raise FileNotFoundError("Unexpected endpoint")
+            user_name = request.headers.get("x-user", "").strip()
+            res = {
+                "user": user_name,
+                "api_key": self.auth_token  # FIXME: hardcoded token
+            }
+            return web.json_response(res)
+        except NotImplementedError:
+            return web.Response(status=400)
+        except FileNotFoundError:
+            return web.Response(status=404)
+        except PermissionError:
+            return web.Response(status=401)
+        except Exception:  # pylint: disable=broad-except
+            traceback.print_exc()
+            return web.Response(status=500)
+
     async def handle_http(self, request):
-        """Handle normal HTTP GET or POST request"""
+        """Handle GET to load or access a model"""
         try:
             self.check_permission(request)
             if request.method != "GET":
