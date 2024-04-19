@@ -58,8 +58,7 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/login{tail:.+}', self.handle_login),
-            web.get('/api1/endpoint/{tail:.+}', self.handle_http),
+            web.get('/login/{tail:.+}', self.handle_login),
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -83,42 +82,31 @@ class Launcher:
                 raise PermissionError("Invalid API key")
 
     async def handle_login(self, request):
-        """Handle login request and return the token"""
+        """Handle login and loading new endpoint"""
         try:
-            # self.check_permission(request)  # NO permission check
             if request.method != "GET":
                 raise NotImplementedError("Unexpected method")
-            if request.path not in {"/login", "/login/"}:
-                raise FileNotFoundError("Unexpected endpoint")
-            user_name = request.headers.get("x-user", "").strip()
-            res = {
-                "user": user_name,
-                "api_key": self.auth_token  # FIXME: hardcoded token
-            }
-            return web.json_response(res)
-        except NotImplementedError:
-            return web.Response(status=400)
-        except FileNotFoundError:
-            return web.Response(status=404)
-        except PermissionError:
-            return web.Response(status=401)
-        except Exception:  # pylint: disable=broad-except
-            traceback.print_exc()
-            return web.Response(status=500)
-
-    async def handle_http(self, request):
-        """Handle GET to load or access a model"""
-        try:
-            self.check_permission(request)
-            if request.method != "GET":
-                raise NotImplementedError("Unexpected method")
-            if not request.path.startswith("/api1/endpoint/statement/"):
+            if not request.path.startswith("/login/statement/"):
                 raise FileNotFoundError("Unexpected statement path")
-            app = request.path[25:]
+            user_name = request.headers.get("x-user", "").strip()
+            if not user_name:
+                raise PermissionError("No authenticated user name")
+            app = request.path[17:]
             api_req = APIRequest(request).parse(request.path_qs)
             explicit_key = api_req.parameters.get("instance-key")
             app_key = f"{app}/{explicit_key}" if explicit_key else app
             res = await self.run_process(app_key, app)
+
+            try:
+                # API proxy should authenticate access to this endpoint, create a new API key, unless
+                # there is a valid one already
+                self.check_permission(request)
+            except PermissionError:
+                self.logger.info("Providing api_key for %s", user_name)
+                res.update({
+                    "user": user_name,
+                    "api_key": self.auth_token  # FIXME: hardcoded token
+                })
             return web.json_response(res)
         except NotImplementedError:
             return web.Response(status=400)
