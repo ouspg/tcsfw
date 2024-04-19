@@ -1,7 +1,6 @@
 """Lauch model given from command-line"""
 
 import asyncio
-import hmac
 import logging
 import os
 import argparse
@@ -11,7 +10,7 @@ import secrets
 import subprocess
 import sys
 import traceback
-from typing import Dict, Set
+from typing import Dict, Set, Tuple
 
 import aiofiles
 from aiohttp import web
@@ -38,7 +37,7 @@ class Launcher:
         # NOTE: Nginx accepts port range 10000-19999
         self.client_port_range = (10000, 11000)
         self.clients: Set[int] = set()
-        self.connected: Dict[str, Dict] = {}
+        self.connected: Dict[Tuple[str, str], int] = {}  # key: user, app
         self.api_keys: Dict[str, str] = {}
 
         self.db_base_dir = None if args.no_db else pathlib.Path("app-dbs")  # create sqlite DBs here
@@ -87,7 +86,9 @@ class Launcher:
             api_req = APIRequest(request).parse(request.path_qs)
             explicit_key = api_req.parameters.get("instance-key")
             app_key = f"{app}/{explicit_key}" if explicit_key else app
-            res = await self.run_process(app_key, app, api_key=api_key)
+            key = user_name, app_key
+            api_port = await self.run_process(key, app, api_key=api_key)
+            res = {"api_proxy": api_port}
 
             auth_t = request.cookies.get("authorization", "").strip()
             if auth_t != api_key:
@@ -105,20 +106,21 @@ class Launcher:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def run_process(self, key: str, app: str, api_key: str) -> Dict:
-        """Run process by request"""
+    async def run_process(self, key: Tuple[str, str], app: str, api_key: str) -> int:
+        """Run process by request, key: user, application"""
 
         # detect bad characters in the app name or key
         pattern = re.compile(r"[^-a-zA-Z0-9._/ ]")
-        for n in (key, app):
+        for n in (key[0], key[1], app):
             if pattern.findall(n):
                 raise FileNotFoundError("Bad name")
             if ".." in n:
                 raise FileNotFoundError("Bad name")
+        key_str = "#".join(key)
 
-        known = self.connected.get(key)
-        if known:
-            return known  # already running
+        known_port = self.connected.get(key)
+        if known_port:
+            return known_port  # already running
 
         client_port = None
         for port in range(*self.client_port_range):
@@ -128,16 +130,13 @@ class Launcher:
         else:
             raise FileNotFoundError("No free ports available")
         self.clients.add(client_port)
-        res = self.connected[key] = {
-            "path": f"/proxy/{client_port}",
-            "path_ws": f"/proxy/ws/{client_port}",
-        }
+        self.connected[key] = client_port
 
         python_app = f"{app}.py"
         args = [sys.executable, python_app, "--http-server", f"{client_port}"]
         if self.db_base_dir:
             # use sqlite DB for the app
-            db_file = (self.db_base_dir / key).with_suffix(".sqlite")
+            db_file = (self.db_base_dir / key[1] / key[0]).with_suffix(".sqlite")
             db_file.parent.mkdir(parents=True, exist_ok=True)
             args.extend(["--db", f"sqlite:///{db_file.as_posix()}"])
 
@@ -158,15 +157,15 @@ class Launcher:
             await stderr_task
             self.clients.remove(client_port)
             self.connected.pop(key, None)
-            self.logger.info("Exit code %s from %s at port %s", process.returncode, key, client_port)
+            self.logger.info("Exit code %s from %s at port %s", process.returncode, key_str, client_port)
             # remove log files
             os.remove(stdout_file)
             os.remove(stderr_file)
 
         asyncio.create_task(wait_process())
 
-        self.logger.info("Launched %s at port %s", key, client_port)
-        return res
+        self.logger.info("Launched %s at port %s", key_str, client_port)
+        return client_port
 
     async def save_stream_to_file(self, stream, file_path):
         """Save data from stream to a file asynchronously"""

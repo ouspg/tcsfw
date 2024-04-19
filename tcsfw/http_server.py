@@ -95,9 +95,11 @@ class HTTPServerRunner:
                 # artificial delay for testing
                 await asyncio.sleep(self.component_delay)
 
-    def check_permission(self, request):
+    def check_permission(self, request, from_query=""):
         """Check permissions"""
-        auth_t = request.headers.get("x-authorization", "").strip()
+        auth_t = from_query
+        if not auth_t:
+            auth_t = request.headers.get("x-authorization", "").strip()
         if not auth_t:
             auth_t = request.cookies.get("authorization", "").strip()
         if not auth_t:
