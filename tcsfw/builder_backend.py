@@ -610,7 +610,7 @@ class ProtocolBackend:
 class ARPBackend(ProtocolBackend):
     """ARP protocol backend"""
 
-    def __init__(self, _configurer: ARP, broadcast_endpoint=False):
+    def __init__(self, _configurer: ARP, protocol=Protocol.ARP, broadcast_endpoint=False):
         super().__init__(Protocol.ARP, name="ARP")
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
@@ -654,7 +654,7 @@ class DHCPBackend(ProtocolBackend):
     """DHCP protocol backend"""
 
     def __init__(self, configurer: DHCP):
-        super().__init__(Protocol.UDP, port=configurer.port, name="DHCP")
+        super().__init__(Protocol.UDP, port=configurer.port, protocol=Protocol.DHCP, name="DHCP")
         # DHCP requests go to broadcast, thus the reply looks like request
         self.external_activity = ExternalActivity.UNLIMITED
 
@@ -679,7 +679,7 @@ class DNSBackend(ProtocolBackend):
     """DNS protocol backend"""
 
     def __init__(self, configurer: DNS):
-        super().__init__(Protocol.UDP, port=configurer.port, name="DNS")
+        super().__init__(Protocol.UDP, port=configurer.port, protocol=Protocol.DNS, name="DNS")
         self.external_activity = ExternalActivity.OPEN
         self.captive_portal = configurer.captive
 
@@ -695,7 +695,7 @@ class EAPOLBackend(ProtocolBackend):
     """EAPOL protocol backend"""
 
     def __init__(self, configurer: EAPOL):
-        super().__init__(Protocol.ETHERNET, port=0x888e, name=configurer.name)
+        super().__init__(Protocol.ETHERNET, port=0x888e, protocol=Protocol.EAPOL, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
         self.external_activity = ExternalActivity.OPEN
@@ -706,8 +706,7 @@ class HTTPBackend(ProtocolBackend):
     """HTTP protocol backend"""
 
     def __init__(self, configurer: HTTP):
-        super().__init__(Protocol.TCP, port=configurer.port,
-                         protocol=Protocol.HTTP, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.HTTP, name=configurer.name)
         self.authentication = configurer.auth
         self.redirect_only = False
 
@@ -724,7 +723,7 @@ class ICMPBackend(ProtocolBackend):
     """ICMP protocol backend"""
 
     def __init__(self, configurer: ICMP):
-        super().__init__(Protocol.IP, port=1, name=configurer.name)
+        super().__init__(Protocol.IP, port=1, protocol=Protocol.ICMP, name=configurer.name)
         self.external_activity = ExternalActivity.OPEN
         self.port_to_name = False
 
@@ -753,8 +752,7 @@ class TLSBackend(ProtocolBackend):
     """TLS protocol backend"""
 
     def __init__(self, configurer: TLS):
-        super().__init__(Protocol.TCP, port=configurer.port,
-                         protocol=Protocol.TLS, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.TLS, name=configurer.name)
         self.authentication = configurer.auth
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("TLS-creds"))
@@ -764,7 +762,7 @@ class NTPBackend(ProtocolBackend):
     """NTP protocol backend"""
 
     def __init__(self, configurer: NTP):
-        super().__init__(Protocol.UDP, port=configurer.port, name=configurer.name)
+        super().__init__(Protocol.UDP, port=configurer.port, protocol=Protocol.NTP, name=configurer.name)
         self.host_type = HostType.ADMINISTRATIVE
         self.con_type = ConnectionType.ADMINISTRATIVE
         self.external_activity = ExternalActivity.OPEN
@@ -774,8 +772,7 @@ class SSHBackend(ProtocolBackend):
     """SSH protocol backend"""
 
     def __init__(self, configurer: SSH):
-        super().__init__(Protocol.TCP, port=configurer.port,
-                         protocol=Protocol.SSH, name=configurer.name)
+        super().__init__(Protocol.TCP, port=configurer.port, protocol=Protocol.SSH, name=configurer.name)
         self.authentication = True
         self.con_type = ConnectionType.ENCRYPTED
         # self.critical_parameter.append(PieceOfData("SSH-creds"))

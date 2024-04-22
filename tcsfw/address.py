@@ -12,6 +12,8 @@ class Protocol(enum.Enum):
 
     ARP = "arp"
     DNS = "dns"
+    DHCP = "dhcp"
+    EAPOL = "eapol"
     ETHERNET = "eth"
     HTTP = "http"
     ICMP = "icmp"
@@ -20,6 +22,7 @@ class Protocol(enum.Enum):
     SSH = "ssh"
     TLS = "tls"  # or SSL
     UDP = "udp"
+    NTP = "ntp"
 
     BLE = "ble"
 
