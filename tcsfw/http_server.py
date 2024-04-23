@@ -73,6 +73,7 @@ class HTTPServerRunner:
         app.add_routes([
             web.get('/login/{tail:.+}', self.handle_login),  # only during development
             web.get('/api1/ws/{tail:.+}', self.handle_ws),  # must be before /api1/
+            web.get('/api1/ping', self.handle_ping),  # ping for health check
             web.get('/api1/{tail:.+}', self.handle_http),
             web.post('/api1/{tail:.+}', self.handle_http),
         ])
@@ -108,6 +109,10 @@ class HTTPServerRunner:
             token_2 = self.auth_token.encode("utf-8")
             if not hmac.compare_digest(token_1, token_2):
                 raise PermissionError("Invalid API key")
+
+    async def handle_ping(self, _request: web.Request):
+        """Handle ping request"""
+        return web.Response(text="{}")
 
     async def handle_http(self, request):
         """Handle normal HTTP GET or POST request"""

@@ -58,6 +58,7 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
+            web.get('/api1/ping', self.handle_ping),  # ping for health check
             web.get('/login/{tail:.+}', self.handle_login),
         ])
         rr = web.AppRunner(app)
@@ -65,6 +66,10 @@ class Launcher:
         site = web.TCPSite(rr, self.host, self.port)
         self.logger.info("HTTP server running at %s:%s...", self.host or "*", self.port)
         await site.start()
+
+    async def handle_ping(self, _request: web.Request):
+        """Handle ping request"""
+        return web.Response(text="{}")
 
     async def handle_login(self, request: web.Request):
         """Handle login and loading new endpoint"""
