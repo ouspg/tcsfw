@@ -4,6 +4,7 @@ import argparse
 from io import BytesIO
 import json
 import logging
+import os
 import pathlib
 import sys
 from typing import BinaryIO, Dict
@@ -32,28 +33,36 @@ class ClientTool:
         upload_parser.add_argument("--url", "-u", default="https://localhost:5173", help="Server URL")
 
         args = parser.parse_args()
-
-        args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
+
+        self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
 
         # if args.command == 'upload':
         self.run_upload(args)
 
     def run_upload(self, args: argparse.Namespace):
         """Run upload subcommand"""
-        if args.meta:
-            meta_json = json.loads(args.meta)
-        else:
-            raise ValueError("Missing upload meta-data")
+        meta_json = json.loads(args.meta) if args.meta else {}
 
         url = args.url
         if args.read:
             read_file = pathlib.Path(args.read)
-            self.logger.info("Uploading %s to %s...", read_file.as_posix(), url)
-            with read_file.open('rb') as f:
-                self.upload_file(url, f, meta_json)
+            if read_file.is_dir():
+                # uploading data from directory with meta-files in place
+                self.upload_directory(url, read_file)
+            else:
+                # uploading single file
+                if not meta_json:
+                    raise ValueError("Missing upload meta-data")
+                self.logger.info("Uploading %s to %s...", read_file.as_posix(), url)
+                with read_file.open('rb') as f:
+                    self.upload_file(url, f, meta_json)
+
         else:
+            # uploading from stdin
+            if not meta_json:
+                raise ValueError("Missing upload meta-data")
             self.logger.info("Uploading to %s...", url)
             self.upload_file(url, f, sys.stdin.buffer)
         self.logger.info("upload complete")
@@ -64,6 +73,15 @@ class ClientTool:
         with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
             self.create_zipfile(file_data, meta_json, temp_file)
             self.upload_file_data(url, temp_file)
+
+    def upload_directory(self, url: str, path: pathlib.Path):
+        """Upload directory"""
+        if (path / "00meta.json").exists():
+            # meta file exists -> upload files from here
+            self.logger.info("Uploading directory %s", path.as_posix())
+            with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
+                self.copy_to_zipfile(path, temp_file)
+                self.upload_file_data(url, temp_file)
 
     def create_zipfile(self, file_data: BinaryIO, meta_json: Dict, temp_file: BinaryIO):
         """Create zip file"""
@@ -80,13 +98,33 @@ class ClientTool:
                     chunk = file_data.read(chunk_size)
         temp_file.seek(0)
 
+    def copy_to_zipfile(self, path: pathlib.Path, temp_file: BinaryIO):
+        """Copy files from directory into zipfile"""
+        chunk_size = 256 * 1024
+        with zipfile.ZipFile(temp_file.name, 'w') as zip_file:
+            for file in path.iterdir():
+                if not file.is_file():
+                    continue
+                # write content
+                zip_info = zipfile.ZipInfo(file.name)
+                with file.open("rb") as file_data:
+                    with zip_file.open(zip_info, "w") as of:
+                        chunk = file_data.read(chunk_size)
+                        while chunk:
+                            of.write(chunk)
+                            chunk = file_data.read(chunk_size)
+        temp_file.seek(0)
+
     def upload_file_data(self, base_url: str, temp_file: BinaryIO):
         """Upload content zip file into the server"""
-        full_url = f"{base_url}/ap1/batch"
-        # headers = {
-        #     "Content-Type": "application/octet-stream",
-        # }
-        resp = requests.post(full_url, data=temp_file, timeout=60)
+        full_url = f"{base_url}/api1/batch"
+        headers = {
+            "Content-Type": "application/zip",
+        }
+        if self.auth_token:
+            headers["X-Authorization"] = self.auth_token
+        resp = requests.post(full_url, data=temp_file, headers=headers, timeout=60)
+        resp.raise_for_status()
         return resp
 
 if __name__ == "__main__":
