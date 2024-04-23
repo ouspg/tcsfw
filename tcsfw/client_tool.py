@@ -20,6 +20,7 @@ class ClientTool:
         self.logger = logging.getLogger(__name__)
         self.auth_token = get_api_key()
         self.timeout = -1
+        self.secure = True
 
     def run(self):
         """Run the client tool"""
@@ -35,6 +36,8 @@ class ClientTool:
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
         upload_parser.add_argument("--url", "-u", default="https://localhost:5173", help="Server URL")
         upload_parser.add_argument("--timeout", type=int, default=300, help="Server timeout, default is 5 min")
+        upload_parser.add_argument("--insecure", action="store_true", help="Allow insecure server connections")
+        upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
 
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
@@ -46,9 +49,11 @@ class ClientTool:
     def run_upload(self, args: argparse.Namespace):
         """Run upload subcommand"""
         meta_json = json.loads(args.meta) if args.meta else {}
-
         url = args.url
         self.timeout = args.timeout
+        self.secure = not args.insecure
+        if args.api_key:
+            self.auth_token = args.api_key.strip()
         if args.read:
             read_file = pathlib.Path(args.read)
             if read_file.is_dir():
@@ -135,15 +140,26 @@ class ClientTool:
 
     def upload_file_data(self, base_url: str, temp_file: BinaryIO):
         """Upload content zip file into the server"""
-        full_url = f"{base_url}/api1/batch"
+        # first authenticate to resolve right server address
+        login_url = f"{base_url}/login/statement/samples/ruuvi/ruuvi"  # FIXME: login URL
         headers = {
-            "Content-Type": "application/zip",
+            "Content-Type": "application/json",
         }
         if self.auth_token:
             headers["X-Authorization"] = self.auth_token
         else:
             self.logger.warning("No API key found for upload")
-        resp = requests.post(full_url, data=temp_file, headers=headers, timeout=60)
+        resp = requests.get(login_url, headers=headers, timeout=self.timeout, verify=self.secure)
+        resp.raise_for_status()
+        api_proxy = resp.json().get("api_proxy")
+
+        upload_url = f"{base_url}/api1/batch" if not api_proxy else f"{base_url}/proxy/{api_proxy}/api1/batch"
+        headers = {
+            "Content-Type": "application/zip",
+        }
+        if self.auth_token:
+            headers["X-Authorization"] = self.auth_token
+        resp = requests.post(upload_url, data=temp_file, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
         return resp
 

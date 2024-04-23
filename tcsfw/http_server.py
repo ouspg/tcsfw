@@ -14,7 +14,7 @@ import zipfile
 from aiohttp import web, WSMsgType
 
 from tcsfw.client_api import ClientAPI, APIRequest, APIListener
-from tcsfw.command_basics import get_api_key
+from tcsfw.command_basics import get_api_key, get_authorization
 from tcsfw.model import IoTSystem
 
 
@@ -99,9 +99,7 @@ class HTTPServerRunner:
         """Check permissions"""
         auth_t = from_query
         if not auth_t:
-            auth_t = request.headers.get("x-authorization", "").strip()
-        if not auth_t:
-            auth_t = request.cookies.get("authorization", "").strip()
+            auth_t = get_authorization(request)
         if not auth_t:
             if self.auth_token:
                 raise PermissionError("No authentication token provided")

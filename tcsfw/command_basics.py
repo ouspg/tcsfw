@@ -4,6 +4,9 @@ import os
 import pathlib
 from typing import Dict
 
+from aiohttp import web
+
+
 API_KEY_NAME = "TCSFW_SERVER_API_KEY"
 
 def read_env_file() -> Dict[str, str]:
@@ -25,3 +28,10 @@ def get_api_key() -> str:
         return key
     values = read_env_file()
     return values.get(API_KEY_NAME, "")
+
+def get_authorization(request: web.Request) -> str:
+    """Get authorization from Web request"""
+    auth_t = request.headers.get("x-authorization", "").strip()
+    if not auth_t:
+        auth_t = request.cookies.get("authorization", "").strip()
+    return auth_t
