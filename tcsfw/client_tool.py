@@ -6,11 +6,13 @@ import logging
 import os
 import pathlib
 import sys
-from typing import BinaryIO, Dict
+from typing import BinaryIO, Dict, List
 import tempfile
 import zipfile
 
 import requests
+
+from tcsfw.batch_import import FileMetaInfo
 
 class ClientTool:
     """Client tool"""
@@ -74,12 +76,27 @@ class ClientTool:
 
     def upload_directory(self, url: str, path: pathlib.Path):
         """Upload directory"""
-        if (path / "00meta.json").exists():
+        files = sorted(path.iterdir())
+
+        meta_file = path / "00meta.json"
+        if meta_file.exists():
+            with meta_file.open() as f:
+                meta_json = json.load(f)
+            file_load_order = meta_json.get("file_order", [])
+            if file_load_order:
+                # sort subdirectories based on file_load_order
+                files = FileMetaInfo.sort_load_order(files, file_load_order)
+
             # meta file exists -> upload files from here
             self.logger.info("Uploading directory %s", path.as_posix())
             with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
-                self.copy_to_zipfile(path, temp_file)
+                self.copy_to_zipfile(files, temp_file)
                 self.upload_file_data(url, temp_file)
+
+        # visit subdirectories
+        for subdir in files:
+            if subdir.is_dir():
+                self.upload_directory(url, subdir)
 
     def create_zipfile(self, file_data: BinaryIO, meta_json: Dict, temp_file: BinaryIO):
         """Create zip file"""
@@ -96,11 +113,11 @@ class ClientTool:
                     chunk = file_data.read(chunk_size)
         temp_file.seek(0)
 
-    def copy_to_zipfile(self, path: pathlib.Path, temp_file: BinaryIO):
+    def copy_to_zipfile(self, files: List[pathlib.Path], temp_file: BinaryIO):
         """Copy files from directory into zipfile"""
         chunk_size = 256 * 1024
         with zipfile.ZipFile(temp_file.name, 'w') as zip_file:
-            for file in path.iterdir():
+            for file in files:
                 if not file.is_file():
                     continue
                 # write content
