@@ -2,14 +2,13 @@
 
 import asyncio
 import hmac
-from io import BytesIO
 import json
 import logging
 import os
 import pathlib
 import tempfile
 import traceback
-from typing import Dict, Optional, Tuple, List
+from typing import BinaryIO, Dict, Optional, Tuple, List
 import zipfile
 
 from aiohttp import web, WSMsgType
@@ -147,7 +146,7 @@ class HTTPServerRunner:
             traceback.print_exc()
             return web.Response(status=500)
 
-    async def read_stream_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
+    async def read_stream_to_file(self, request, file: BinaryIO) -> Optional[BinaryIO]:
         """Read stream to a file, return data or None if no data"""
         r_size = 0
         b = await request.content.read(1024)
@@ -158,7 +157,7 @@ class HTTPServerRunner:
         file.seek(0)
         return file if r_size > 0 else None
 
-    async def read_multipart_form_to_file(self, request, file: BytesIO) -> Optional[BytesIO]:
+    async def read_multipart_form_to_file(self, request, file: BinaryIO) -> Optional[BinaryIO]:
         """Read multipart form to a file, return data or None if no data"""
         reader = await request.multipart()
         r_size = 0
