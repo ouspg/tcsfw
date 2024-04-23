@@ -1,7 +1,6 @@
 """Clinet tool for TCSFW"""
 
 import argparse
-from io import BytesIO
 import json
 import logging
 import os
@@ -17,6 +16,7 @@ class ClientTool:
     """Client tool"""
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
+        self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
 
     def run(self):
         """Run the client tool"""
@@ -35,8 +35,6 @@ class ClientTool:
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
-
-        self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
 
         # if args.command == 'upload':
         self.run_upload(args)
