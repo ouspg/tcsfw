@@ -20,7 +20,7 @@ class ClientTool:
 
     def run(self):
         """Run the client tool"""
-        parser = argparse.ArgumentParser(prog="client", description="TCSFW client tool")
+        parser = argparse.ArgumentParser(prog="tcsfw", description="TCSFW client tool")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
 
@@ -126,6 +126,10 @@ class ClientTool:
         resp = requests.post(full_url, data=temp_file, headers=headers, timeout=60)
         resp.raise_for_status()
         return resp
+
+def main():
+    """Main entry point"""
+    ClientTool().run()
 
 if __name__ == "__main__":
     ClientTool().run()
