@@ -19,6 +19,7 @@ class ClientTool:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
+        self.timeout = -1
 
     def run(self):
         """Run the client tool"""
@@ -33,6 +34,7 @@ class ClientTool:
         upload_parser.add_argument("--read", "-r", help="Path to file or directory to upload, default stdin")
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
         upload_parser.add_argument("--url", "-u", default="https://localhost:5173", help="Server URL")
+        upload_parser.add_argument("--timeout", type=int, default=300, help="Server timeout, default is 5 min")
 
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
@@ -46,6 +48,7 @@ class ClientTool:
         meta_json = json.loads(args.meta) if args.meta else {}
 
         url = args.url
+        self.timeout = args.timeout
         if args.read:
             read_file = pathlib.Path(args.read)
             if read_file.is_dir():
@@ -64,7 +67,7 @@ class ClientTool:
             if not meta_json:
                 raise ValueError("Missing upload meta-data")
             self.logger.info("Uploading to %s...", url)
-            self.upload_file(url, f, sys.stdin.buffer)
+            self.upload_file(url, sys.stdin.buffer, meta_json)
         self.logger.info("upload complete")
 
     def upload_file(self, url: str, file_data: BinaryIO, meta_json: Dict):
