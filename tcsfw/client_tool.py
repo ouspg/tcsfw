@@ -3,7 +3,6 @@
 import argparse
 import json
 import logging
-import os
 import pathlib
 import sys
 from typing import BinaryIO, Dict, List
@@ -13,12 +12,13 @@ import zipfile
 import requests
 
 from tcsfw.batch_import import FileMetaInfo
+from tcsfw.command_basics import get_api_key
 
 class ClientTool:
     """Client tool"""
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
-        self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
+        self.auth_token = get_api_key()
         self.timeout = -1
 
     def run(self):
@@ -141,6 +141,8 @@ class ClientTool:
         }
         if self.auth_token:
             headers["X-Authorization"] = self.auth_token
+        else:
+            self.logger.warning("No API key found for upload")
         resp = requests.post(full_url, data=temp_file, headers=headers, timeout=60)
         resp.raise_for_status()
         return resp
