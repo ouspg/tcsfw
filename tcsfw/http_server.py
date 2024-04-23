@@ -14,6 +14,7 @@ import zipfile
 from aiohttp import web, WSMsgType
 
 from tcsfw.client_api import ClientAPI, APIRequest, APIListener
+from tcsfw.command_basics import get_api_key
 from tcsfw.model import IoTSystem
 
 
@@ -50,9 +51,9 @@ class HTTPServerRunner:
         self.sample_path = base_directory / "sample"
         self.host = "127.0.0.1"
         self.port = port
-        self.auth_token = os.environ.get("TCSFW_SERVER_API_KEY", "")
+        self.auth_token = get_api_key()
         if not self.auth_token and not no_auth_ok:
-            raise ValueError("No environment variable TCSFW_SERVER_API_KEY (use --no-auth-ok to skip check)")
+            raise ValueError("No TCSFW_SERVER_API_KEY (use --no-auth-ok to skip check)")
         if self.auth_token:
             self.host = None  # allow all hosts, when token is present
         self.component_delay = 0

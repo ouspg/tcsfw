@@ -20,7 +20,7 @@ def read_env_file() -> Dict[str, str]:
 
 def get_api_key() -> str:
     """Get API key from environment or .env file"""
-    key = os.environ.get(API_KEY_NAME, "")
+    key = os.environ.get(API_KEY_NAME, "").strip()
     if key:
         return key
     values = read_env_file()
