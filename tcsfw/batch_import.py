@@ -57,12 +57,10 @@ class BatchImporter:
 
     def import_batch(self, file: pathlib.Path):
         """Import a batch of files from a directory or zip file recursively."""
-        if file.is_file() and file.suffix.lower() == ".zip":
-            raise NotImplementedError("Zip file import is not implemented yet.")
         if file.is_dir:
             self._import_batch(file)
         else:
-            raise ValueError(f"Expected directory or ZIP as : {file.as_posix()}")
+            raise ValueError(f"Expected directory, got {file.as_posix()}")
 
     def _import_batch(self, file: pathlib.Path):
         """Import a batch of files from a directory or zip file recursively."""
