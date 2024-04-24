@@ -58,8 +58,9 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/api1/ping', self.handle_ping),  # ping for health check
-            web.get('/login/{tail:.+}', self.handle_login),
+            web.get('/api1/ping', self.handle_ping),         # ping for health check
+            web.get('/login/{tail:.+}', self.handle_login),  # login
+            web.get('/api1/proxy/{tail:.+}', self.handle_login),       # get proxy configuration
         ])
         rr = web.AppRunner(app)
         await rr.setup()
@@ -76,16 +77,24 @@ class Launcher:
         try:
             if request.method != "GET":
                 raise NotImplementedError("Unexpected method")
-            if not request.path.startswith("/login/statement/"):
+            use_api_key = False
+            if request.path.startswith("/login/statement/"):
+                app = request.path[17:]
+            elif request.path.startswith("/api1/proxy/statement/"):
+                app = request.path[22:]
+                use_api_key = True
+            else:
                 raise FileNotFoundError("Unexpected statement path")
 
-            auth_token = get_authorization(request)
-            if auth_token in self.api_key_reverse:
-                # a valid API key provided, no login really needed (likely client API call)
-                api_key = auth_token
-                user_name = self.api_key_reverse[auth_token]
+            if use_api_key:
+                # API call with API key
+                api_key = get_authorization(request)
+                if api_key not in self.api_key_reverse:
+                    raise PermissionError("Invalid API key")
+                user_name = self.api_key_reverse[api_key]
                 self.logger.info("Login by valid API key for %s", user_name)
             else:
+                # Login to new or logged in application
                 user_name = request.headers.get("x-user", "").strip()
                 if not user_name:
                     raise PermissionError("No authenticated user name")
@@ -97,7 +106,6 @@ class Launcher:
                     self.logger.info("Generating new api_key for %s", user_name)
                     api_key = self.generate_api_key(user_name)
 
-            app = request.path[17:]
             api_req = APIRequest(request).parse(request.path_qs)
             explicit_key = api_req.parameters.get("instance-key")
             app_key = f"{app}/{explicit_key}" if explicit_key else app
@@ -105,7 +113,7 @@ class Launcher:
             api_port = await self.run_process(key, app, api_key=api_key)
             res = {"api_proxy": api_port}
 
-            if auth_token != api_key:
+            if not use_api_key:
                 # return the generated API key
                 res = res.copy()
                 res.update({"api_key": api_key})
