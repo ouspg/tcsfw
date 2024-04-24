@@ -19,6 +19,7 @@ from tcsfw.mitm_log_reader import MITMLogReader
 from tcsfw.model import EvidenceNetworkSource, IoTSystem
 from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
+from tcsfw.ping_command import PingCommand
 from tcsfw.releases import ReleaseReader
 from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
@@ -217,6 +218,7 @@ class BatchFileType(StrEnum):
     HAR = "har"
     MITMPROXY = "mitmproxy"
     NMAP = "nmap"
+    PING = "ping"
     RELEASES = "github-releases"  # Github format
     SPDX = "spdx"
     SSH_AUDIT = "ssh-audit"
