@@ -8,7 +8,7 @@ import pathlib
 import sys
 from typing import BinaryIO, Dict, List
 import tempfile
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 import zipfile
 
 import requests
@@ -77,8 +77,9 @@ class ClientTool:
             user_password = getpass("Password: ")
         u = urlparse(url)
         base_url = f"{u.scheme}://{u.netloc}"
+        path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
 
-        login_url = f"{base_url}/login{u.path}"
+        login_url = f"{base_url}/login{path}"
         self.logger.info("Getting API key from %s", login_url)
         headers = {"X-User": user_name}  # Only in development, when missing authenticator from between
         resp = requests.get(login_url, timeout=self.timeout, auth=(user_name, user_password), headers=headers,
@@ -199,10 +200,9 @@ class ClientTool:
         # split URL into host and statement
         u = urlparse(url)
         base_url = f"{u.scheme}://{u.netloc}"
-        if not u.path:
-            raise ValueError("Invalid server URL, must have format: http(s)://host[:port]/statement")
+        path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
         # first query to resolve right server address
-        query_url = f"{base_url}/api1/proxy{u.path}"
+        query_url = f"{base_url}/api1/proxy{path}"
         headers = {
             "Content-Type": "application/json",
         }
