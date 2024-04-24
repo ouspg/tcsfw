@@ -9,6 +9,8 @@ from aiohttp import web
 
 API_KEY_NAME = "TCSFW_SERVER_API_KEY"
 
+API_KEY_FILE_NAME = ".tcsfw_api_key"
+
 def read_env_file() -> Dict[str, str]:
     """Read .env file"""
     values = {}
@@ -22,10 +24,14 @@ def read_env_file() -> Dict[str, str]:
     return values
 
 def get_api_key() -> str:
-    """Get API key from environment or .env file"""
+    """Get API key from environment, key file or .env file"""
     key = os.environ.get(API_KEY_NAME, "").strip()
     if key:
         return key
+    key_file = pathlib.Path(API_KEY_FILE_NAME)
+    if key_file.exists():
+        with key_file.open(encoding="utf-8") as f:
+            return f.read().strip()
     values = read_env_file()
     return values.get(API_KEY_NAME, "")
 

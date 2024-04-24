@@ -1,19 +1,21 @@
 """Clinet tool for TCSFW"""
 
 import argparse
+from getpass import getpass
 import json
 import logging
 import pathlib
 import sys
 from typing import BinaryIO, Dict, List
 import tempfile
+from urllib.parse import urlparse
 import zipfile
 
 import requests
 import urllib3
 
 from tcsfw.batch_import import FileMetaInfo
-from tcsfw.command_basics import get_api_key
+from tcsfw.command_basics import API_KEY_FILE_NAME, get_api_key
 
 class ClientTool:
     """Client tool"""
@@ -28,31 +30,76 @@ class ClientTool:
         parser = argparse.ArgumentParser(prog="tcsfw", description="TCSFW client tool")
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
+        parser.add_argument("--timeout", type=int, default=300, help="Server timeout, default is 5 min")
+        parser.add_argument("--insecure", action="store_true", help="Allow insecure server connections")
 
         subparsers = parser.add_subparsers(title="commands", dest="command")
         subparsers.required = True
+
+        # Subcommand: get api key
+        key_parser = subparsers.add_parser("get-key", help="Get API key")
+        key_parser.add_argument("--url", "-u", help="Server URL")
+        key_parser.add_argument("--name", "-n", help="User name (leave out for prompt)")
+        key_parser.add_argument("--password", "-p", help="User password (leave out for prompt)")
+        key_parser.add_argument("--save", "-s", action="store_true",
+                                help=f"Save API key to {API_KEY_FILE_NAME} (default is to stdout)")
+
         # Subcommand: upload files
         upload_parser = subparsers.add_parser("upload", help="Upload tool output")
         upload_parser.add_argument("--read", "-r", help="Path to file or directory to upload, default stdin")
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
-        upload_parser.add_argument("--url", "-u", default="https://localhost:5173", help="Server URL")
-        upload_parser.add_argument("--timeout", type=int, default=300, help="Server timeout, default is 5 min")
-        upload_parser.add_argument("--insecure", action="store_true", help="Allow insecure server connections")
+        upload_parser.add_argument("--url", "-u", default="", help="Server URL")
         upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
 
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
 
-        # if args.command == 'upload':
-        self.run_upload(args)
+        self.timeout = args.timeout
+        self.secure = not args.insecure
+
+        if args.command == "get-key":
+            self.run_get_key(args)
+        else:
+            self.run_upload(args)
+
+    def run_get_key(self, args: argparse.Namespace):
+        """Run get-key subcommand"""
+        url = args.url.strip()
+        if not url:
+            raise ValueError("Missing server URL")
+        save = args.save
+        user_name = args.name
+        user_password = args.password
+        if not user_name:
+            user_name = input("Username: ")
+        if user_password is None:
+            user_password = getpass("Password: ")
+        u = urlparse(url)
+        base_url = f"{u.scheme}://{u.netloc}"
+
+        login_url = f"{base_url}/login{u.path}"
+        self.logger.info("Getting API key from %s", login_url)
+        headers = {"X-User": user_name}  # Only in development, when missing authenticator from between
+        resp = requests.get(login_url, timeout=self.timeout, auth=(user_name, user_password), headers=headers,
+                            verify=self.secure)
+        resp.raise_for_status()
+
+        resp_json = resp.json()
+        api_key = resp_json.get("api_key")
+        if save:
+            with pathlib.Path(API_KEY_FILE_NAME).open("w", encoding="utf-8") as f:
+                f.write(f"{api_key}\n")
+            self.logger.info("API key saved to %s", API_KEY_FILE_NAME)
+        else:
+            print(f"{api_key}")
 
     def run_upload(self, args: argparse.Namespace):
         """Run upload subcommand"""
         meta_json = json.loads(args.meta) if args.meta else {}
-        url = args.url
-        self.timeout = args.timeout
-        self.secure = not args.insecure
+        url = args.url.strip()
+        if not url:
+            raise ValueError("Missing server URL")
         if not self.secure:
             self.logger.warning("Disabling TLS verification for server connection")
             urllib3.disable_warnings()
@@ -147,10 +194,15 @@ class ClientTool:
                             chunk = file_data.read(chunk_size)
         temp_file.seek(0)
 
-    def upload_file_data(self, base_url: str, temp_file: BinaryIO):
+    def upload_file_data(self, url: str, temp_file: BinaryIO):
         """Upload content zip file into the server"""
+        # split URL into host and statement
+        u = urlparse(url)
+        base_url = f"{u.scheme}://{u.netloc}"
+        if not u.path:
+            raise ValueError("Invalid server URL, must have format: http(s)://host[:port]/statement")
         # first query to resolve right server address
-        query_url = f"{base_url}/api1/proxy/statement/samples/ruuvi/ruuvi"  # FIXME: login URL
+        query_url = f"{base_url}/api1/proxy{u.path}"
         headers = {
             "Content-Type": "application/json",
         }
