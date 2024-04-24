@@ -10,6 +10,7 @@ import tempfile
 import zipfile
 
 import requests
+import urllib3
 
 from tcsfw.batch_import import FileMetaInfo
 from tcsfw.command_basics import get_api_key
@@ -52,6 +53,9 @@ class ClientTool:
         url = args.url
         self.timeout = args.timeout
         self.secure = not args.insecure
+        if not self.secure:
+            self.logger.warning("Disabling TLS verification for server connection")
+            urllib3.disable_warnings()
         if args.api_key:
             self.auth_token = args.api_key.strip()
         if args.read:
