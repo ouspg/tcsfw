@@ -140,8 +140,8 @@ class ClientTool:
 
     def upload_file_data(self, base_url: str, temp_file: BinaryIO):
         """Upload content zip file into the server"""
-        # first authenticate to resolve right server address
-        login_url = f"{base_url}/login/statement/samples/ruuvi/ruuvi"  # FIXME: login URL
+        # first query to resolve right server address
+        query_url = f"{base_url}/api1/proxy/statement/samples/ruuvi/ruuvi"  # FIXME: login URL
         headers = {
             "Content-Type": "application/json",
         }
@@ -149,7 +149,7 @@ class ClientTool:
             headers["X-Authorization"] = self.auth_token
         else:
             self.logger.warning("No API key found for upload")
-        resp = requests.get(login_url, headers=headers, timeout=self.timeout, verify=self.secure)
+        resp = requests.get(query_url, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
         api_proxy = resp.json().get("api_proxy")
 
