@@ -24,7 +24,7 @@ class PingCommand(BaseFileCheckTool):
         ev = Evidence(source)
         with TextIOWrapper(data) as f:
             while True:
-                line = f.readline().strip()
+                line = f.readline()
                 if not line:
                     break
                 r = self.parse_ping_line(line)
