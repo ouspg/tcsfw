@@ -125,12 +125,17 @@ class ClientTool:
                     chunk = file_data.read(chunk_size)
         temp_file.seek(0)
 
-    def copy_to_zipfile(self, files: List[pathlib.Path], temp_file: BinaryIO):
+    def copy_to_zipfile(self, files: List[pathlib.Path], temp_file: BinaryIO) -> bool:
         """Copy files from directory into zipfile"""
         chunk_size = 256 * 1024
         with zipfile.ZipFile(temp_file.name, 'w') as zip_file:
             for file in files:
                 if not file.is_file():
+                    continue
+                # skip too large files
+                file_size_mb = file.stat().st_size // (1024 * 1024)
+                if file_size_mb > 16:
+                    self.logger.warning("File too large: %s (%d > 16 M)", file.as_posix(), file_size_mb)
                     continue
                 # write content
                 zip_info = zipfile.ZipInfo(file.name)
@@ -163,7 +168,8 @@ class ClientTool:
         }
         if self.auth_token:
             headers["X-Authorization"] = self.auth_token
-        resp = requests.post(upload_url, data=temp_file, headers=headers, timeout=self.timeout, verify=self.secure)
+        multipart = {"file": temp_file}
+        resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
         return resp
 
