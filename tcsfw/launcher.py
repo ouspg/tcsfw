@@ -58,9 +58,9 @@ class Launcher:
         """Start the Web server"""
         app = web.Application()
         app.add_routes([
-            web.get('/api1/ping', self.handle_ping),         # ping for health check
-            web.get('/login/{tail:.+}', self.handle_login),  # login
-            web.get('/api1/proxy/{tail:.+}', self.handle_login),       # get proxy configuration
+            web.get('/api1/ping', self.handle_ping),             # ping for health check
+            web.get('/login/{tail:.+}', self.handle_login),      # login
+            web.get('/api1/proxy/{tail:.+}', self.handle_login), # query proxy configuration
         ])
         rr = web.AppRunner(app)
         await rr.setup()
