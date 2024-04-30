@@ -24,6 +24,7 @@ class ClientTool:
         self.auth_token = get_api_key()
         self.timeout = -1
         self.secure = True
+        self.force_upload = False
         self.dry_run = False
 
     def run(self):
@@ -51,6 +52,7 @@ class ClientTool:
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
         upload_parser.add_argument("--url", "-u", default="", help="Server URL")
         upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        upload_parser.add_argument("--force-upload", "-f", action="store_true", help="Force upload for all files")
         upload_parser.add_argument("--dry-run", action="store_true", help="Only print files to be uploaded")
 
         # Subcommand: reload statement
@@ -147,6 +149,7 @@ class ClientTool:
         path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
         use_url = f"{base_url}/statement{path}"
 
+        self.force_upload = args.force_upload or False
         if self.dry_run:
             self.logger.warning("DRY RUN, no files will be uploaded")
         self.auth_token = args.api_key or self.auth_token
@@ -294,8 +297,7 @@ class ClientTool:
         api_proxy = resp.json().get("api_proxy")
         return f"{base_url}/api1" if not api_proxy else f"{base_url}/proxy/{api_proxy}/api1"
 
-    @classmethod
-    def filter_data_files(cls, files: List[pathlib.Path]) -> List[pathlib.Path]:
+    def filter_data_files(self, files: List[pathlib.Path]) -> List[pathlib.Path]:
         """Filter data files"""
         r = []
         for f in files:
@@ -305,7 +307,7 @@ class ClientTool:
                 continue
             if f.name.startswith(".") or f.name.endswith("~"):
                 continue
-            if cls.is_uploaded(f):
+            if not self.force_upload and self.is_uploaded(f):
                 continue
             r.append(f)
         return r
