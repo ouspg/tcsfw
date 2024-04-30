@@ -180,9 +180,10 @@ class Launcher:
             await process.wait()
             await stdout_task
             await stderr_task
+            # free port, but leave keys in place
             self.clients.remove(client_port)
             self.connected.pop(key, None)
-            self.logger.info("Exit code %s from %s at port %s", process.returncode, key_str, client_port)
+            self.logger.info("Exit code %s from %s at port %d", process.returncode, key_str, client_port)
             # remove log files
             os.remove(stdout_file)
             os.remove(stderr_file)
