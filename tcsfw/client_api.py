@@ -164,7 +164,7 @@ class ClientAPI(ModelListener):
         clear_db = bool(param.get("clear_db", False))
         if clear_db:
             self.registry.clear_database()
-        return {}
+        return param
 
     def api_post_file(self, request: APIRequest, data_file: pathlib.Path) -> Dict:
         """Post API data in ZIP file"""

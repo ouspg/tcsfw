@@ -266,13 +266,18 @@ class HTTPServerRunner:
         req = APIRequest.parse(request.path_qs)
         data = await request.content.read() if request.content else b""
         res = self.api.api_exit(req, data)
+        exit_delay = int(res.get("exit_delay", 1000))
+        res = {}  # do not return the parameters
 
         # reload means exiting this process, delay it for response to be sent
         def do_exit():
             # return code 0 for successful exit
             sys.exit(0)  # pylint: disable=consider-using-sys-exit
 
-        self.loop.call_later(1, do_exit)
+        if exit_delay > 0:
+            self.loop.call_later(exit_delay / 1000, do_exit)
+        else:
+            do_exit()  # no response will be sent
         return web.Response(text=json.dumps(res))
 
     def dump_model(self, channel: WebsocketChannel):
