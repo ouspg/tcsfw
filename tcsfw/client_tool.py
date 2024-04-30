@@ -53,6 +53,12 @@ class ClientTool:
         upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
         upload_parser.add_argument("--dry-run", action="store_true", help="Only print files to be uploaded")
 
+        # Subcommand: reload statement
+        reload_parser = subparsers.add_parser("reload", help="Reset statement")
+        reload_parser.add_argument("--url", "-u", help="Server URL")
+        reload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        reload_parser.add_argument("--param", help="Specify reload parameters by JSON")
+
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
@@ -62,6 +68,8 @@ class ClientTool:
 
         if args.command == "get-key":
             self.run_get_key(args)
+        elif args.command == "reload":
+            self.run_reload(args)
         else:
             self.run_upload(args)
 
@@ -96,6 +104,35 @@ class ClientTool:
             self.logger.info("API key saved to %s", API_KEY_FILE_NAME)
         else:
             print(f"{api_key}")
+
+    def run_reload(self, args: argparse.Namespace):
+        """Run reload subcommand"""
+        url = args.url.strip()
+        if not url:
+            raise ValueError("Missing server URL")
+        u = urlparse(url)
+        path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
+
+        api_url = self.resolve_api_url(url)
+        use_url = f"{api_url}/reload{path}"
+
+        params = json.loads(args.param) if args.param else {}
+
+        self.auth_token = args.api_key or self.auth_token
+        if not self.auth_token:
+            raise ValueError("Missing API key")
+        if not self.secure:
+            self.logger.warning("Disabling TLS verification for server connection")
+            urllib3.disable_warnings()
+        self.logger.info("Reset %s...", use_url)
+        headers = {
+            "Content-Type": "application/json",
+            "X-Authorization": self.auth_token,
+        }
+        resp = requests.post(use_url, headers=headers, json=params,
+                             timeout=self.timeout, verify=self.secure)
+        resp.raise_for_status()
+        self.logger.info("statement reload")
 
     def run_upload(self, args: argparse.Namespace):
         """Run upload subcommand"""
@@ -225,6 +262,20 @@ class ClientTool:
         """Upload content zip file into the server"""
         if self.dry_run:
             return
+        api_url = self.resolve_api_url(url)
+        upload_url = f"{api_url}/batch"
+        headers = {
+            "Content-Type": "application/zip",
+        }
+        if self.auth_token:
+            headers["X-Authorization"] = self.auth_token
+        multipart = {"file": temp_file}
+        resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
+        resp.raise_for_status()
+        return resp
+
+    def resolve_api_url(self, url: str) -> str:
+        """Query server for API URL"""
         # split URL into host and statement
         u = urlparse(url)
         base_url = f"{u.scheme}://{u.netloc}"
@@ -241,17 +292,7 @@ class ClientTool:
         resp = requests.get(query_url, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
         api_proxy = resp.json().get("api_proxy")
-
-        upload_url = f"{base_url}/api1/batch" if not api_proxy else f"{base_url}/proxy/{api_proxy}/api1/batch"
-        headers = {
-            "Content-Type": "application/zip",
-        }
-        if self.auth_token:
-            headers["X-Authorization"] = self.auth_token
-        multipart = {"file": temp_file}
-        resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
-        resp.raise_for_status()
-        return resp
+        return f"{base_url}/api1" if not api_proxy else f"{base_url}/proxy/{api_proxy}/api1"
 
     @classmethod
     def filter_data_files(cls, files: List[pathlib.Path]) -> List[pathlib.Path]:
