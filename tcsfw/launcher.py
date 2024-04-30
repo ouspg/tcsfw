@@ -1,6 +1,7 @@
 """Lauch model given from command-line"""
 
 import asyncio
+from asyncio.subprocess import Process
 import logging
 import os
 import argparse
@@ -10,11 +11,14 @@ import secrets
 import subprocess
 import sys
 import traceback
-from typing import Dict, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 import aiofiles
 from aiohttp import web
 import aiohttp
+
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 from tcsfw.client_api import APIRequest
 from tcsfw.command_basics import get_authorization
@@ -30,7 +34,9 @@ class Launcher:
         parser.add_argument("-l", "--log", dest="log_level", choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                             help="Set the logging level", default=None)
         parser.add_argument("--no-db", action="store_true",
-                            help="Do not use DB storage", default=None)
+                            help="Do not use DB storage")
+        parser.add_argument("--watch", action="store_true",
+                            help="Watch for statement file changes")
         args = parser.parse_args()
 
         self.logger = logging.getLogger("launcher")
@@ -42,6 +48,10 @@ class Launcher:
         self.connected: Dict[Tuple[str, str], int] = {}  # key: user, app
         self.api_keys: Dict[str, str] = {}
         self.api_key_reverse: Dict[str, str] = {}
+
+        self.change_observer: Optional[FileChangeObserver] = None
+        if args.watch:
+            self.change_observer = FileChangeObserver(self)
 
         self.db_base_dir = None if args.no_db else pathlib.Path("app-dbs")  # create sqlite DBs here
 
@@ -156,7 +166,8 @@ class Launcher:
         self.connected[key] = client_port
 
         python_app = f"{app}.py"
-        if not pathlib.Path(python_app).exists():
+        app_file = pathlib.Path(python_app)
+        if not app_file.exists():
             raise FileNotFoundError(f"App not found: {python_app}")
 
         args = [sys.executable, python_app, "--http-server", f"{client_port}"]
@@ -185,6 +196,8 @@ class Launcher:
             self.clients.remove(client_port)
             self.connected.pop(key, None)
             self.logger.info("Exit code %s from %s at port %d", process.returncode, key_str, client_port)
+            if self.change_observer:
+                self.change_observer.update_watch_list(process, remove=app_file.parent)
             # remove log files
             os.remove(stdout_file)
             os.remove(stderr_file)
@@ -197,6 +210,9 @@ class Launcher:
         ping_url = f"http://localhost:{client_port}/api1/ping"
         self.logger.info("Pinging %s...", ping_url)
         while True:
+            if client_port not in self.clients:
+                self.logger.info("Process failed/killed without starting")
+                raise FileNotFoundError("Process failed to start")
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(ping_url) as resp:
@@ -206,8 +222,8 @@ class Launcher:
                 pass
             await asyncio.sleep(0.1)
         self.logger.info("...ping OK")
-
-
+        if self.change_observer:
+            self.change_observer.update_watch_list(process, add=app_file.parent)
         return client_port
 
     async def save_stream_to_file(self, stream, file_path):
@@ -226,6 +242,43 @@ class Launcher:
         self.api_keys[user_name] = key
         self.api_key_reverse[key] = user_name
         return key
+
+
+class FileChangeObserver(FileSystemEventHandler):
+    """Observe file changes"""
+    def __init__(self, laucher: Launcher):
+        self.launcher = laucher
+        self.watch_list: Dict[pathlib.Path, Process] = {}
+        self.observer = Observer()
+        self.observer.start()
+
+    def update_watch_list(self, process: Process,
+                          add: Optional[pathlib.Path] = None, remove: Optional[pathlib.Path] = None):
+        """Update watch list"""
+        if add:
+            path = add.as_posix()
+            self.launcher.logger.info("Adding watch for %s", path)
+            self.observer.schedule(self, path, recursive=True)
+            self.watch_list[path] = process
+        if remove:
+            path = remove.as_posix()
+            self.launcher.logger.info("Removing watch for %s", path)
+            self.watch_list.pop(path, None)
+            self.observer.unschedule_all()
+            for p in self.watch_list:
+                self.observer.schedule(self, p, recursive=True)
+
+    def on_modified(self, event: FileSystemEvent) -> None:
+        """File modified, reload relevant process, if any"""
+        proc = self.watch_list.get(event.src_path)
+        if proc:
+            del self.watch_list[event.src_path]
+            self.launcher.logger.info("File modified: %s, reloading process", event.src_path)
+            try:
+                proc.kill()
+            except ProcessLookupError:
+                self.launcher.logger.info("Process kill failed")
+
 
 if __name__ == "__main__":
     Launcher()
