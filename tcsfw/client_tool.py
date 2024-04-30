@@ -270,7 +270,6 @@ class ClientTool:
         multipart = {"file": temp_file}
         resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
-        return resp
 
     def resolve_api_url(self, url: str) -> str:
         """Query server for API URL"""
