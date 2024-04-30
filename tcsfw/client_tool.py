@@ -146,9 +146,13 @@ class ClientTool:
     def upload_directory(self, url: str, path: pathlib.Path):
         """Upload directory"""
         files = sorted(path.iterdir())
-
         meta_file = path / "00meta.json"
-        if meta_file.exists():
+
+        # files to upload
+        to_upload = self.filter_data_files(files)
+
+        if meta_file.exists() and to_upload:
+            to_upload.insert(0, meta_file)  # upload also meta file, make it first
             self.logger.info("%s", meta_file.as_posix())
             with meta_file.open() as f:
                 meta_json = json.load(f)
@@ -160,8 +164,14 @@ class ClientTool:
             # meta file exists -> upload files from here
             self.logger.info("%s/", path.as_posix())
             with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
-                self.copy_to_zipfile(files, temp_file)
+                self.copy_to_zipfile(to_upload, temp_file)
                 self.upload_file_data(url, temp_file)
+
+            # mark files as uploaded
+            if not self.dry_run:
+                for f in to_upload:
+                    if f != meta_file:
+                        self.mark_uploaded(f)
 
         # visit subdirectories
         for subdir in files:
@@ -237,6 +247,34 @@ class ClientTool:
         resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
         return resp
+
+    @classmethod
+    def filter_data_files(cls, files: List[pathlib.Path]) -> List[pathlib.Path]:
+        """Filter data files"""
+        r = []
+        for f in files:
+            if not f.is_file() or f.name == "00meta.json":
+                continue
+            if f.suffix.lower() in {".meta", ".bak", ".tmp", ".temp"}:
+                continue
+            if f.name.startswith(".") or f.name.endswith("~"):
+                continue
+            if cls.is_uploaded(f):
+                continue
+            r.append(f)
+        return r
+
+    @classmethod
+    def is_uploaded(cls, path: pathlib.Path) -> bool:
+        """Check if file has been uploaded"""
+        p = path.parent / f".{path.name}.up"
+        return p.exists()
+
+    @classmethod
+    def mark_uploaded(cls, path: pathlib.Path):
+        """Mark file as uploaded"""
+        p = path.parent / f".{path.name}.up"
+        p.touch()
 
 def main():
     """Main entry point"""
