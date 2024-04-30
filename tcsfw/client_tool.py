@@ -100,29 +100,34 @@ class ClientTool:
     def run_upload(self, args: argparse.Namespace):
         """Run upload subcommand"""
         meta_json = json.loads(args.meta) if args.meta else {}
-        url = args.url.strip()
         self.dry_run = args.dry_run or False
-        if self.dry_run:
-            self.logger.warning("DRY RUN, no files will be uploaded")
+        url = args.url.strip()
         if not url:
             raise ValueError("Missing server URL")
+
+        u = urlparse(url)
+        base_url = f"{u.scheme}://{u.netloc}"
+        path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
+        use_url = f"{base_url}/statement{path}"
+
+        if self.dry_run:
+            self.logger.warning("DRY RUN, no files will be uploaded")
+        self.auth_token = args.api_key or self.auth_token
         if not self.secure:
             self.logger.warning("Disabling TLS verification for server connection")
             urllib3.disable_warnings()
-        if args.api_key:
-            self.auth_token = args.api_key.strip()
         if args.read:
             read_file = pathlib.Path(args.read)
             if read_file.is_dir():
                 # uploading data from directory with meta-files in place
-                self.upload_directory(url, read_file)
+                self.upload_directory(use_url, read_file)
             else:
                 # uploading single file
                 if not meta_json:
                     raise ValueError("Missing upload meta-data")
-                self.logger.info("Uploading %s to %s...", read_file.as_posix(), url)
+                self.logger.info("Uploading %s to %s...", read_file.as_posix(), use_url)
                 with read_file.open('rb') as f:
-                    self.upload_file(url, f, meta_json)
+                    self.upload_file(use_url, f, meta_json)
 
         else:
             # uploading from stdin
@@ -130,8 +135,8 @@ class ClientTool:
                 raise ValueError("Missing upload meta-data")
             if "from_pipe" not in meta_json:
                 meta_json["from_pipe"] = True  # tell server that file name carries no meaning
-            self.logger.info("Uploading to %s...", url)
-            self.upload_file(url, sys.stdin.buffer, meta_json)
+            self.logger.info("Uploading to %s...", use_url)
+            self.upload_file(use_url, sys.stdin.buffer, meta_json)
         self.logger.info("upload complete")
 
     def upload_file(self, url: str, file_data: BinaryIO, meta_json: Dict):
