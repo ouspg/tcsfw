@@ -14,6 +14,7 @@ from typing import Dict, Set, Tuple
 
 import aiofiles
 from aiohttp import web
+import aiohttp
 
 from tcsfw.client_api import APIRequest
 from tcsfw.command_basics import get_authorization
@@ -191,6 +192,22 @@ class Launcher:
         asyncio.create_task(wait_process())
 
         self.logger.info("Launched %s at port %s", key_str, client_port)
+
+        # wait for the process web server to start
+        ping_url = f"http://localhost:{client_port}/api1/ping"
+        self.logger.info("Pinging %s...", ping_url)
+        while True:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(ping_url) as resp:
+                        if resp.status == 200:
+                            break
+            except aiohttp.ClientConnectorError:
+                pass
+            await asyncio.sleep(0.1)
+        self.logger.info("...ping OK")
+
+
         return client_port
 
     async def save_stream_to_file(self, stream, file_path):
