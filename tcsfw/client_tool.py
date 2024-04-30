@@ -81,7 +81,7 @@ class ClientTool:
         base_url = f"{u.scheme}://{u.netloc}"
         path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
 
-        login_url = f"{base_url}/login{path}"
+        login_url = f"{base_url}/login/statement{path}"
         self.logger.info("Getting API key from %s", login_url)
         headers = {"X-User": user_name}  # Only in development, when missing authenticator from between
         resp = requests.get(login_url, timeout=self.timeout, auth=(user_name, user_password), headers=headers,
