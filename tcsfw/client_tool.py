@@ -24,6 +24,7 @@ class ClientTool:
         self.auth_token = get_api_key()
         self.timeout = -1
         self.secure = True
+        self.dry_run = False
 
     def run(self):
         """Run the client tool"""
@@ -50,6 +51,7 @@ class ClientTool:
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
         upload_parser.add_argument("--url", "-u", default="", help="Server URL")
         upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        upload_parser.add_argument("--dry-run", action="store_true", help="Only print files to be uploaded")
 
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
@@ -99,6 +101,9 @@ class ClientTool:
         """Run upload subcommand"""
         meta_json = json.loads(args.meta) if args.meta else {}
         url = args.url.strip()
+        self.dry_run = args.dry_run or False
+        if self.dry_run:
+            self.logger.warning("DRY RUN, no files will be uploaded")
         if not url:
             raise ValueError("Missing server URL")
         if not self.secure:
@@ -132,6 +137,8 @@ class ClientTool:
     def upload_file(self, url: str, file_data: BinaryIO, meta_json: Dict):
         """Upload a file"""
         # create a temporary zip file
+        if self.dry_run:
+            return
         with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
             self.create_zipfile(file_data, meta_json, temp_file)
             self.upload_file_data(url, temp_file)
@@ -142,6 +149,7 @@ class ClientTool:
 
         meta_file = path / "00meta.json"
         if meta_file.exists():
+            self.logger.info("%s", meta_file.as_posix())
             with meta_file.open() as f:
                 meta_json = json.load(f)
             file_load_order = meta_json.get("file_order", [])
@@ -150,7 +158,7 @@ class ClientTool:
                 files = FileMetaInfo.sort_load_order(files, file_load_order)
 
             # meta file exists -> upload files from here
-            self.logger.info("Uploading directory %s", path.as_posix())
+            self.logger.info("%s/", path.as_posix())
             with tempfile.NamedTemporaryFile(suffix='.zip') as temp_file:
                 self.copy_to_zipfile(files, temp_file)
                 self.upload_file_data(url, temp_file)
@@ -188,7 +196,7 @@ class ClientTool:
                     self.logger.warning("File too large: %s (%d > 1024 M)", file.as_posix(), file_size_mb)
                     continue
                 # write content
-                self.logger.info("Adding %s", file.as_posix())
+                self.logger.info("%s", file.as_posix())
                 zip_info = zipfile.ZipInfo(file.name)
                 with file.open("rb") as file_data:
                     with zip_file.open(zip_info, "w") as of:
@@ -200,6 +208,8 @@ class ClientTool:
 
     def upload_file_data(self, url: str, temp_file: BinaryIO):
         """Upload content zip file into the server"""
+        if self.dry_run:
+            return
         # split URL into host and statement
         u = urlparse(url)
         base_url = f"{u.scheme}://{u.netloc}"
