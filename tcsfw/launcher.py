@@ -81,7 +81,11 @@ class Launcher:
             if request.path.startswith("/login/statement/"):
                 app = request.path[17:]
             elif request.path.startswith("/api1/proxy/statement/"):
+                # NOTE: Remove /statement/ parts at some point
                 app = request.path[22:]
+                use_api_key = True
+            elif request.path.startswith("/api1/proxy/"):
+                app = request.path[12:]
                 use_api_key = True
             else:
                 raise FileNotFoundError("Unexpected statement path")
