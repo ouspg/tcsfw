@@ -274,6 +274,8 @@ class ClientTool:
     def resolve_api_url(self, url: str) -> str:
         """Query server for API URL"""
         # split URL into host and statement
+        if url.endswith("/"):
+            raise ValueError("URL should not end with /")
         u = urlparse(url)
         base_url = f"{u.scheme}://{u.netloc}"
         path = urlunparse(('', '', u.path, u.params, u.query, u.fragment))
