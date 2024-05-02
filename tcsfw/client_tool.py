@@ -186,20 +186,24 @@ class ClientTool:
     def upload_directory(self, url: str, path: pathlib.Path):
         """Upload directory"""
         files = sorted(path.iterdir())
+
         meta_file = path / "00meta.json"
-
-        # files to upload
-        to_upload = self.filter_data_files(files)
-
-        if meta_file.exists() and to_upload:
-            to_upload.insert(0, meta_file)  # upload also meta file, make it first
-            self.logger.info("%s", meta_file.as_posix())
+        if meta_file.exists():
             with meta_file.open() as f:
                 meta_json = json.load(f)
             file_load_order = meta_json.get("file_order", [])
             if file_load_order:
-                # sort subdirectories based on file_load_order
+                # sort files by file_load_order
                 files = FileMetaInfo.sort_load_order(files, file_load_order)
+        else:
+            meta_json = None  # not {}
+
+        # files to upload
+        to_upload = self.filter_data_files(files)
+
+        if meta_json is not None and to_upload:
+            to_upload.insert(0, meta_file)  # upload also meta file, make it first
+            self.logger.info("%s", meta_file.as_posix())
 
             # meta file exists -> upload files from here
             self.logger.info("%s/", path.as_posix())
