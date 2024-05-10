@@ -3,6 +3,7 @@
 from io import StringIO
 from typing import Any, List, TextIO, Tuple
 
+from tcsfw.entity import Entity
 from tcsfw.model import Host, IoTSystem, NetworkNode, Service
 
 
@@ -23,19 +24,20 @@ class BaseTable:
 
     def print_rows(self, rows: List[List[Any]], stream: TextIO) -> str:
         """Print the rows"""
+        screen_wid = self.screen_size[0]
         for row in rows:
             line = []
             x, target_x = 0, 0
             assert len(row) == len(self.columns), f"Row and columns mismatch: {len(row)} != {len(self.columns)}"
             for i, col in enumerate(row):
+                col_wid = self.columns[i][1]
+                target_x += col_wid
                 s = f"{col}"
                 if i < len(self.columns) - 1:
                     s += ","
-                col_wid = self.columns[i][1]
-                target_x += col_wid
-                pad_len = max(0, target_x - x - len(s))
-                s = s + " " * pad_len
-                line.append(s)
+                    pad_len = max(0, target_x - x - len(s))
+                    s = s + " " * pad_len
+                line.append(s[:screen_wid - x])
                 x += len(s)
                 # space between columns
                 target_x += 1
@@ -50,8 +52,9 @@ class HostTable(BaseTable):
     def __init__(self, root: IoTSystem, screen_size=(80, 50)):
         super().__init__([
             ("Host", 10),
-            ("Service", 10),
+            ("Service", 20),
             ("Component", 10),
+            ("Status", 10),
         ], screen_size)
         self.root = root
 
@@ -60,15 +63,15 @@ class HostTable(BaseTable):
 
         def _components(node: NetworkNode):
             for c in node.components:
-                rows.append(['', '', c.name])
+                rows.append(['', '', c.name, c.status_string()])
 
         for h in self.root.get_children():
             if isinstance(h, Host):
-                rows.append([h.long_name(), '', ''])
+                rows.append([h.long_name(), '', '', h.status_string()])
                 _components(h)
                 for s in h.get_children():
                     if isinstance(s, Service):
-                        rows.append(['', s.long_name(), ''])
+                        rows.append(['', s.long_name(), '', s.status_string()])
                         _components(s)
 
         self.print_rows(rows, stream)
