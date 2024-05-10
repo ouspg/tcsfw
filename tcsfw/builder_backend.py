@@ -6,6 +6,7 @@ import ipaddress
 import json
 import logging
 import pathlib
+import shutil
 import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
@@ -1099,8 +1100,11 @@ class SystemBackendRunner(SystemBackend):
             print(json.dumps(resp, indent=4))
             return
         if args.test_get:
+            wid, hei = shutil.get_terminal_size()
             for res in args.test_get:
-                print(api.api_get(APIRequest.parse(res), pretty=True))
+                api_req = APIRequest.parse(res)
+                api_req.set_param("screen", f"{wid}x{hei}")
+                print(api.api_get(api_req, pretty=True))
             return
 
         out_form = args.output

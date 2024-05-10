@@ -28,6 +28,9 @@ class Connection(Entity):
         system = self.source.get_system()
         return self in system.originals
 
+    def is_admin(self) -> bool:
+        return self.target.is_admin()
+
     def is_relevant(self, ignore_ends=False) -> bool:
         """Is this connection relevant, i.e. not placeholder or external?"""
         if self.status in {Status.EXPECTED, Status.UNEXPECTED}:
@@ -159,6 +162,9 @@ class NetworkNode(Entity):
 
     def is_relevant(self) -> bool:
         return self.status in {Status.EXPECTED, Status.UNEXPECTED}
+
+    def is_admin(self) -> bool:
+        return self.host_type == HostType.ADMINISTRATIVE
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""

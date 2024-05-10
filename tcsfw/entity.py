@@ -79,6 +79,10 @@ class Entity:
         """Is this entity relevant, i.e. not placeholder or external?"""
         return True
 
+    def is_admin(self) -> bool:
+        """Is an admin entity?"""
+        return False
+
     def is_host(self) -> bool:
         """Is a host?"""
         return False

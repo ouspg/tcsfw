@@ -51,6 +51,11 @@ class APIRequest:
         req.get_visual = "visual" in qs  # Assumes we have VisualAPI
         return req
 
+    def set_param(self, key: str, value: str) -> 'APIRequest':
+        """Set parameter"""
+        self.parameters[key] = value
+        return self
+
     def change_path(self, path: str) -> 'APIRequest':
         """Change the path"""
         r = APIRequest(path)
@@ -122,7 +127,7 @@ class ClientAPI(ModelListener):
         context = RequestContext(request, self)
         path = request.path
         if path.startswith("table/"):
-            text = TableView.get_print(self.registry.system, path[6:])
+            text = TableView.get_print(self.registry.system, path[6:], parameters=request.parameters)
             return text
         if path == "all":
             request.get_connections = False

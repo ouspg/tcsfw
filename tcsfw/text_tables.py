@@ -1,8 +1,10 @@
 """Text tables"""
 
 from io import StringIO
-from typing import Any, List, TextIO, Tuple
+from typing import Any, Dict, List, TextIO, Tuple
 
+from tcsfw.basics import Status
+from tcsfw.entity import Entity
 from tcsfw.model import Host, IoTSystem, NetworkNode, Service
 
 
@@ -17,6 +19,17 @@ class BaseTable:
             ratio = screen_size[0] / min_wid
             self.columns = [(c[0], int(c[1] * ratio)) for c in columns]
         self.relevant_only = True
+        self.include_admin = False
+        self.include_external = False
+
+    def _include(self, entity: Entity) -> bool:
+        if self.relevant_only and not entity.is_relevant():
+            return False
+        if not self.include_external and entity.status == Status.EXTERNAL:
+            return False
+        if not self.include_admin and entity.is_admin():
+            return False
+        return True
 
     def print(self, stream: TextIO):
         """Print!"""
@@ -24,8 +37,14 @@ class BaseTable:
 
     def print_rows(self, rows: List[List[Any]], stream: TextIO) -> str:
         """Print the rows"""
+        show_rows = len(rows)
+        drop_rows = show_rows - self.screen_size[1]
+        if drop_rows > 0:
+            drop_rows += 1
+            show_rows -= drop_rows
+
         screen_wid = self.screen_size[0]
-        for row in rows:
+        for row in rows[:show_rows]:
             line = []
             x, target_x = 0, 0
             assert len(row) == len(self.columns), f"Row and columns mismatch: {len(row)} != {len(self.columns)}"
@@ -42,14 +61,14 @@ class BaseTable:
                 # space between columns
                 target_x += 1
                 x += 1
-
             line_s = "".join(line)
             stream.write(f"{line_s}\n")
-
+        if drop_rows > 0:
+            stream.write(f"[...{drop_rows} rows omitted]\n")
 
 class HostTable(BaseTable):
     """Host table"""
-    def __init__(self, root: IoTSystem, screen_size=(80, 50)):
+    def __init__(self, root: IoTSystem, screen_size: Tuple[int, int]):
         super().__init__([
             ("Host", 10),
             ("Service", 20),
@@ -67,12 +86,12 @@ class HostTable(BaseTable):
 
         for h in self.root.get_children():
             if isinstance(h, Host):
-                if self.relevant_only and not h.is_relevant():
+                if not self._include(h):
                     continue
                 rows.append([h.long_name(), '', '', h.status_string()])
                 _components(h)
                 for s in h.get_children():
-                    if self.relevant_only and not s.is_relevant():
+                    if not self._include(s):
                         continue
                     if isinstance(s, Service):
                         rows.append(['', s.long_name(), '', s.status_string()])
@@ -83,7 +102,7 @@ class HostTable(BaseTable):
 
 class ConnectionTable(BaseTable):
     """Host table"""
-    def __init__(self, root: IoTSystem, screen_size=(80, 50)):
+    def __init__(self, root: IoTSystem, screen_size: Tuple[int, int]):
         super().__init__([
             ("Source", 20),
             ("Target", 20),
@@ -94,7 +113,9 @@ class ConnectionTable(BaseTable):
 
     def print(self, stream: TextIO):
         rows = [[h[0] for h in self.columns]]
-        for c in self.root.get_connections(self.relevant_only):
+        for c in self.root.get_connections(relevant_only=False):
+            if not self._include(c):
+                continue
             s, t = c.source, c.target
             proto = ""
             if isinstance(t, Service) and t.protocol is not None:
@@ -110,9 +131,16 @@ class TableView:
         self.tables = tables
 
     @classmethod
-    def get_print(cls, model: IoTSystem, _name: str) -> str:
+    def get_print(cls, model: IoTSystem, _name: str, parameters: Dict[str, str]) -> str:
         """Get printout by name"""
-        view = TableView([HostTable(model), ConnectionTable(model)])
+        screen = parameters.get("screen")
+        if screen:
+            screen_size = tuple([int(x) for x in screen.split("x")])
+            assert len(screen_size) == 2
+        else:
+            screen_size = (80, 50)
+        screen_size = screen_size[0], int(screen_size[1] / 2)
+        view = TableView([HostTable(model, screen_size), ConnectionTable(model, screen_size)])
         buf = StringIO()
         view.print(buf)
         return buf.getvalue()
