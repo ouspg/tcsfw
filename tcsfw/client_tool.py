@@ -6,6 +6,7 @@ import json
 import logging
 import pathlib
 import sys
+import time
 from typing import BinaryIO, Dict, List
 import tempfile
 from urllib.parse import urlparse, urlunparse
@@ -61,6 +62,11 @@ class ClientTool:
         reload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
         reload_parser.add_argument("--param", help="Specify reload parameters by JSON")
 
+        # Subcommand: views
+        show_parser = subparsers.add_parser("show", help="Show view")
+        show_parser.add_argument("--url", "-u", help="Server URL")
+        show_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
@@ -72,6 +78,8 @@ class ClientTool:
             self.run_get_key(args)
         elif args.command == "reload":
             self.run_reload(args)
+        elif args.command == "show":
+            self.run_show(args)
         else:
             self.run_upload(args)
 
@@ -275,6 +283,24 @@ class ClientTool:
         resp = requests.post(upload_url, files=multipart, headers=headers, timeout=self.timeout, verify=self.secure)
         resp.raise_for_status()
 
+    def run_show(self, args: argparse.Namespace):
+        """Textual views"""
+        url = args.url.strip()
+        if not url:
+            raise ValueError("Missing server URL")
+        api_url = self.resolve_api_url(url)
+        table_url = f"{api_url}/table/xxx"
+        headers = {}
+        if self.auth_token:
+            headers["X-Authorization"] = self.auth_token
+
+        while True:
+            resp = requests.get(table_url, timeout=self.timeout, headers=headers, verify=self.secure)
+            resp.raise_for_status()
+            print('\033[2J\033[H', end='')  # clear screen and move cursor to top
+            print(resp.text)
+            time.sleep(1)
+
     def resolve_api_url(self, url: str) -> str:
         """Query server for API URL"""
         # split URL into host and statement
@@ -323,6 +349,8 @@ class ClientTool:
         """Mark file as uploaded"""
         p = path.parent / f".{path.name}.up"
         p.touch()
+
+
 
 def main():
     """Main entry point"""
