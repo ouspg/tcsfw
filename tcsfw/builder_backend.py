@@ -1097,9 +1097,11 @@ class SystemBackendRunner(SystemBackend):
                 api.logger.info("POST file %s", data)
                 resp = api.api_post_file(request, pathlib.Path(data))
             print(json.dumps(resp, indent=4))
+            return
         if args.test_get:
             for res in args.test_get:
-                print(json.dumps(api.api_get(APIRequest.parse(res)), indent=4))
+                print(api.api_get(APIRequest.parse(res), pretty=True))
+            return
 
         out_form = args.output
         if not out_form:
