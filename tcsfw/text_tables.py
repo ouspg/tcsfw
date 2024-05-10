@@ -3,7 +3,6 @@
 from io import StringIO
 from typing import Any, List, TextIO, Tuple
 
-from tcsfw.entity import Entity
 from tcsfw.model import Host, IoTSystem, NetworkNode, Service
 
 
@@ -13,10 +12,11 @@ class BaseTable:
         self.screen_size = screen_size
         self.columns = columns
         # spread columns evenly
-        min_wid = sum([c[1] for c in columns])
+        min_wid = sum([c[1] for c in columns]) + len(columns) - 1
         if min_wid < screen_size[0]:
             ratio = screen_size[0] / min_wid
             self.columns = [(c[0], int(c[1] * ratio)) for c in columns]
+        self.relevant_only = True
 
     def print(self, stream: TextIO):
         """Print!"""
@@ -67,12 +67,39 @@ class HostTable(BaseTable):
 
         for h in self.root.get_children():
             if isinstance(h, Host):
+                if self.relevant_only and not h.is_relevant():
+                    continue
                 rows.append([h.long_name(), '', '', h.status_string()])
                 _components(h)
                 for s in h.get_children():
+                    if self.relevant_only and not s.is_relevant():
+                        continue
                     if isinstance(s, Service):
                         rows.append(['', s.long_name(), '', s.status_string()])
                         _components(s)
+
+        self.print_rows(rows, stream)
+
+
+class ConnectionTable(BaseTable):
+    """Host table"""
+    def __init__(self, root: IoTSystem, screen_size=(80, 50)):
+        super().__init__([
+            ("Source", 20),
+            ("Target", 20),
+            ("Protocol", 10),
+            ("Status", 10),
+        ], screen_size)
+        self.root = root
+
+    def print(self, stream: TextIO):
+        rows = [[h[0] for h in self.columns]]
+        for c in self.root.get_connections(self.relevant_only):
+            s, t = c.source, c.target
+            proto = ""
+            if isinstance(t, Service) and t.protocol is not None:
+                proto = t.protocol.name
+            rows.append([s.long_name(), t.long_name(), proto, c.status_string()])
 
         self.print_rows(rows, stream)
 
@@ -85,7 +112,7 @@ class TableView:
     @classmethod
     def get_print(cls, model: IoTSystem, _name: str) -> str:
         """Get printout by name"""
-        view = TableView([HostTable(model)])
+        view = TableView([HostTable(model), ConnectionTable(model)])
         buf = StringIO()
         view.print(buf)
         return buf.getvalue()
