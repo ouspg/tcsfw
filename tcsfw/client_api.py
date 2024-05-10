@@ -14,6 +14,7 @@ from prompt_toolkit.history import FileHistory
 
 from tcsfw.basics import Status
 from tcsfw.batch_import import BatchImporter
+from tcsfw.text_tables import TableView
 from tcsfw.verdict import Verdict
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.coverage_result import CoverageReport
