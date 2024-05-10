@@ -10,15 +10,12 @@ class BaseTable:
     """Table base class"""
     def __init__(self, columns: List[Tuple[str, int]], screen_size: Tuple[int, int]):
         self.screen_size = screen_size
-        self.columns = columns.copy()
-        # calculate missing widths
-        missing_c = sum([(1 if c[1] == 0 else 0) for c in columns])
-        if missing_c > 0:
-            taken_wid = len(columns) + sum([c[1] for c in columns])
-            fill_c = max(3, (screen_size[0] - taken_wid) / missing_c)
-            for i, c in enumerate(columns):
-                if c[1] == 0:
-                    columns[i] = (c[0], fill_c)
+        self.columns = columns
+        # spread columns evenly
+        min_wid = sum([c[1] for c in columns])
+        if min_wid < screen_size[0]:
+            ratio = screen_size[0] / min_wid
+            self.columns = [(c[0], int(c[1] * ratio)) for c in columns]
 
     def print(self, stream: TextIO):
         """Print!"""
