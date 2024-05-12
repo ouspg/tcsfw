@@ -15,10 +15,10 @@ from tcsfw.release_info import ReleaseInfo
 
 
 class ReleaseReader(ComponentCheckTool):
-    """Read release data aquired from GitLab API"""
+    """Read release data aquired from GitHub API"""
     def __init__(self, system: IoTSystem):
-        super().__init__("gitlab-releases", ".json", system)
-        self.tool.name = "GitLab releases"
+        super().__init__("github-releases", ".json", system)
+        self.tool.name = "GitHub releases"
 
     def filter_component(self, component: NetworkNode) -> bool:
         """Filter checked entities"""
