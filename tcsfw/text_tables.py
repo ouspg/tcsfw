@@ -15,7 +15,7 @@ class BaseTable:
         self.screen_size = screen_size
         self.columns = columns
         # spread columns evenly
-        min_wid = sum([c[1] for c in columns]) + len(columns) - 1
+        min_wid = sum(c[1] for c in columns) + len(columns) - 1
         if min_wid < screen_size[0]:
             ratio = screen_size[0] / min_wid
             self.columns = [(c[0], int(c[1] * ratio)) for c in columns]
@@ -156,7 +156,7 @@ class TableView:
         """Get printout by name"""
         screen = parameters.get("screen")
         if screen:
-            screen_size = tuple([int(x) for x in screen.split("x")])
+            screen_size = tuple(int(x) for x in screen.split("x"))
             assert len(screen_size) == 2
         else:
             screen_size = (80, 50)

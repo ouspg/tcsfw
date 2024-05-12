@@ -1,7 +1,7 @@
 """Event registry backed by database"""
 
 import logging
-from typing import List, Optional, Dict, Self, Any, Set
+from typing import Optional, Dict, Self, Any, Set
 
 from tcsfw.entity import Entity
 from tcsfw.entity_database import EntityDatabase, InMemoryDatabase
