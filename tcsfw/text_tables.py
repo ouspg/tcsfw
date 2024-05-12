@@ -6,6 +6,7 @@ from typing import Any, Dict, List, TextIO, Tuple
 from tcsfw.basics import Status
 from tcsfw.entity import Entity
 from tcsfw.model import Host, IoTSystem, NetworkNode, Service
+from tcsfw.registry import Registry
 
 
 class BaseTable:
@@ -125,13 +126,33 @@ class ConnectionTable(BaseTable):
         self.print_rows(rows, stream)
 
 
+class SourceTable(BaseTable):
+    """Source table"""
+    def __init__(self, registry: Registry, screen_size: Tuple[int, int]):
+        super().__init__([
+            ("Source", 20),
+            ("Reference", 40),
+            ("Status", 10),
+            ("Age", 10),
+        ], screen_size)
+        self.registry = registry
+
+    def print(self, stream: TextIO):
+        rows = [[h[0] for h in self.columns]]
+        sources = self.registry.database.get_souces()
+        for src in sources:
+            rows.append([src.name, src.base_ref, "", ""])
+
+        self.print_rows(rows, stream)
+
+
 class TableView:
     """View of one or more tables"""
     def __init__(self, tables: List[BaseTable]) -> None:
         self.tables = tables
 
     @classmethod
-    def get_print(cls, model: IoTSystem, _name: str, parameters: Dict[str, str]) -> str:
+    def get_print(cls, registry: Registry, name: str, parameters: Dict[str, str]) -> str:
         """Get printout by name"""
         screen = parameters.get("screen")
         if screen:
@@ -139,8 +160,14 @@ class TableView:
             assert len(screen_size) == 2
         else:
             screen_size = (80, 50)
-        screen_size = screen_size[0], int(screen_size[1] / 2)
-        view = TableView([HostTable(model, screen_size), ConnectionTable(model, screen_size)])
+        model = registry.get_system()
+        if name == "system":
+            screen_size = screen_size[0], int(screen_size[1] / 2)
+            view = TableView([HostTable(model, screen_size), ConnectionTable(model, screen_size)])
+        elif name == "sources":
+            view = TableView([SourceTable(registry, screen_size)])
+        else:
+            raise ValueError(f"Unnown view '{name}'")
         buf = StringIO()
         view.print(buf)
         return buf.getvalue()

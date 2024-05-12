@@ -65,6 +65,7 @@ class ClientTool:
 
         # Subcommand: views
         show_parser = subparsers.add_parser("show", help="Show view")
+        show_parser.add_argument("view", help="Name of the view")
         show_parser.add_argument("--url", "-u", help="Server URL")
         show_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
 
@@ -286,11 +287,12 @@ class ClientTool:
 
     def run_show(self, args: argparse.Namespace):
         """Textual views"""
+        view = args.view
         url = args.url.strip()
         if not url:
             raise ValueError("Missing server URL")
         api_url = self.resolve_api_url(url)
-        table_url = f"{api_url}/table/xxx"
+        table_url = f"{api_url}/table/{view}"
         headers = {}
         if self.auth_token:
             headers["X-Authorization"] = self.auth_token

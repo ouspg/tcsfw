@@ -127,7 +127,7 @@ class ClientAPI(ModelListener):
         context = RequestContext(request, self)
         path = request.path
         if path.startswith("table/"):
-            text = TableView.get_print(self.registry.system, path[6:], parameters=request.parameters)
+            text = TableView.get_print(self.registry, path[6:], parameters=request.parameters)
             return text
         if path == "all":
             request.get_connections = False
