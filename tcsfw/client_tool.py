@@ -5,6 +5,7 @@ from getpass import getpass
 import json
 import logging
 import pathlib
+import shutil
 import sys
 import time
 from typing import BinaryIO, Dict, List
@@ -295,7 +296,9 @@ class ClientTool:
             headers["X-Authorization"] = self.auth_token
 
         while True:
-            resp = requests.get(table_url, timeout=self.timeout, headers=headers, verify=self.secure)
+            wid, hei = shutil.get_terminal_size()
+            use_url = f"{table_url}?screen={wid}x{hei}"
+            resp = requests.get(use_url, timeout=self.timeout, headers=headers, verify=self.secure)
             resp.raise_for_status()
             print('\033[2J\033[H', end='')  # clear screen and move cursor to top
             print(resp.text)
