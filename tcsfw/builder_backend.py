@@ -1100,7 +1100,7 @@ class SystemBackendRunner(SystemBackend):
             print(json.dumps(resp, indent=4))
             return
         if args.test_get:
-            wid, hei = shutil.get_terminal_size()
+            wid, hei = shutil.get_terminal_size()[0], 0  # only width specified
             for res in args.test_get:
                 api_req = APIRequest.parse(res)
                 api_req.set_param("screen", f"{wid}x{hei}")
