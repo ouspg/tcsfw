@@ -12,7 +12,7 @@ from tcsfw.registry import Registry
 class BaseTable:
     """Table base class"""
     def __init__(self, columns: List[Tuple[str, int]], screen_size: Tuple[int, int]):
-        self.screen_size = screen_size
+        self.screen_size = screen_size  # (width, height or -1)
         self.columns = columns
         # spread columns evenly
         min_wid = sum(c[1] for c in columns) + len(columns) - 1
@@ -39,7 +39,7 @@ class BaseTable:
     def print_rows(self, rows: List[List[Any]], stream: TextIO) -> str:
         """Print the rows"""
         show_rows = len(rows)
-        drop_rows = show_rows - self.screen_size[1]
+        drop_rows = show_rows - self.screen_size[1] if self.screen_size[1] >= 0 else 0
         if drop_rows > 0:
             drop_rows += 1
             show_rows -= drop_rows
@@ -131,8 +131,8 @@ class SourceTable(BaseTable):
     def __init__(self, registry: Registry, screen_size: Tuple[int, int]):
         super().__init__([
             ("Source", 20),
-            ("Reference", 40),
-            ("Status", 10),
+            ("Target", 40),
+            ("Label", 10),
             ("Age", 10),
         ], screen_size)
         self.registry = registry
@@ -141,7 +141,7 @@ class SourceTable(BaseTable):
         rows = [[h[0] for h in self.columns]]
         sources = self.registry.database.get_souces()
         for src in sources:
-            rows.append([src.name, src.base_ref, "", ""])
+            rows.append([src.name, src.target, src.label, ""])
 
         self.print_rows(rows, stream)
 

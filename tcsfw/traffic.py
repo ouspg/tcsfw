@@ -12,14 +12,20 @@ class EvidenceSource:
     """Evidence source"""
     def __init__(self, name: str, base_ref="", label=""):
         self.name = name
+        self.target = ''
         self.base_ref = base_ref
         self.label = label or base_ref or self.name
         self.model_override = False  # model loading overrides values
         self.timestamp: Optional[datetime.datetime] = None
 
-    def rename(self, name: str) -> Self:
+    def rename(self, name: Optional[str] = None, target: Optional[str] = None, base_ref: Optional[str] = None,
+               label: Optional[str] = None) -> Self:
         """Rename and create new source"""
-        s = EvidenceSource(name, self.base_ref, self.label)
+        s = EvidenceSource(
+            name if name is not None else self.name,
+            self.base_ref if base_ref is None else base_ref,
+            self.label if label is None else label)
+        s.target = target if target is not None else self.target
         s.model_override = self.model_override
         return s
 

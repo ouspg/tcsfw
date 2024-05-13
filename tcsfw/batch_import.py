@@ -164,7 +164,8 @@ class BatchImporter:
                 reader = ZEDReader(self.interface.get_system())
 
             if reader:
-                ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix())
+                ev = info.source.rename(name=reader.tool.name, base_ref=file_path.as_posix(),
+                                        label=info.label)
                 # tool-specific code can override, if knows better
                 ev.timestamp = datetime.fromtimestamp(file_path.stat().st_mtime)
                 self.evidence.setdefault(info.label, []).append(ev)
@@ -194,7 +195,7 @@ class BatchImporter:
         for fn in files:
             if not fn.is_file():
                 continue  # directories called later
-            ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix())
+            ev = info.source.rename(name=tool.tool.name, base_ref=fn.as_posix(), label=info.label)
             self.evidence.setdefault(info.label, []).append(ev)
             with fn.open("rb") as f:
                 # tool-specific code can override, if knows better

@@ -67,6 +67,7 @@ class EndpointCheckTool(CheckTool):
         key = self.file_name_map.get(file_name)
         if key:
             self.logger.info("processing (%s) %s", source.label, file_name)
+            source.target = str(key)
             self.process_stream(key, data, interface, source)
             return True
         return False
@@ -156,6 +157,7 @@ class ComponentCheckTool(CheckTool):
         key = self.file_name_map.get(file_name)
         if key:
             self.logger.info("processing (%s) %s", source.label, file_name)
+            source.target = key.long_name()
             self.process_stream(key, data, interface, source)
             return True
         return False
