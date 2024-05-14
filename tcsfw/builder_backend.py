@@ -17,7 +17,7 @@ from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest, ClientPrompt
-from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, Software
+from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, OperatingSystem, Software
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
@@ -26,7 +26,7 @@ from tcsfw.http_server import HTTPServerRunner
 from tcsfw.main import (ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS,
                         BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder,
                         CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder,
-                        ConfigurationException, ProtocolConfigurer, ProtocolType,
+                        ConfigurationException, OSBuilder, ProtocolConfigurer, ProtocolType,
                         SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup,
                         SoftwareBuilder, SystemBuilder, VisualizerBuilder)
 from tcsfw.main_tools import EvidenceLoader, NodeManipulator, SubLoader, ToolPlanLoader
@@ -378,6 +378,9 @@ class HostBackend(NodeBackend, HostBuilder):
         for p in protocols:
             self / p  # pylint: disable=pointless-statement
         return self
+
+    def os(self) -> OSBuilder:
+        return OSBackend(self)
 
     def __lshift__(self, multicast: ServiceBackend) -> 'ConnectionBackend':
         mc = multicast.entity
@@ -847,6 +850,15 @@ class ProtocolConfigurers:
         UDP: UDPBackend,
         BLEAdvertisement: BLEAdvertisementBackend,
     }
+
+
+class OSBackend(OSBuilder):
+    """OS builder backend"""
+    def __init__(self, parent: HostBackend):
+        self.component = OperatingSystem.get_os(parent.entity)
+
+    def processes(self, owner_process: Dict[str, List[str]]) -> 'OSBuilder':
+        self.component.process_map.update(owner_process)
 
 
 class ClaimBackend(ClaimBuilder):

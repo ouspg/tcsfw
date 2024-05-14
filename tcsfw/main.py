@@ -165,6 +165,10 @@ class HostBuilder(NodeBuilder):
         """This host uses some sensitive data"""
         raise NotImplementedError()
 
+    def os(self) -> 'OSBuilder':
+        """Operating System definitions"""
+        raise NotImplementedError()
+
     def __truediv__(self, protocol: ProtocolType) -> ServiceBuilder:
         """Pick or add the configured protocol"""
         raise NotImplementedError()
@@ -351,6 +355,13 @@ class BLEAdvertisement(ProtocolConfigurer):
     def __init__(self, event_type: int):
         ProtocolConfigurer.__init__(self, "BLE Ad")
         self.event_type = event_type
+
+
+class OSBuilder:
+    """Operating System builder"""
+    def processes(self, owner_process: Dict[str, List[str]]) -> 'OSBuilder':
+        """Define processes: mapping from owner to list of processes"""
+        raise NotImplementedError()
 
 
 class ClaimBuilder:

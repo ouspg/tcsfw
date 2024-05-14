@@ -106,6 +106,23 @@ class SoftwareComponent:
     version: str = ""
 
 
+class OperatingSystem(NodeComponent):
+    """Operating system"""
+    def __init__(self, entity: NetworkNode):
+        super().__init__(entity, "OS")
+        self.process_map: Dict[str, List[str]] = {}  # owner: process names
+
+    @classmethod
+    def get_os(cls, entity: NetworkNode) -> 'OperatingSystem':
+        """Get the OS for network node"""
+        for c in entity.components:
+            if isinstance(c, OperatingSystem):
+                return c
+        c = OperatingSystem(entity)
+        entity.components.append(c)
+        return c
+
+
 class DataStorages(NodeComponent):
     """Data storages in IoT system or network node"""
     def __init__(self, entity: NetworkNode, name="Sensitive data", data: List[SensitiveData] = None):
