@@ -113,11 +113,13 @@ class OperatingSystem(NodeComponent):
         self.process_map: Dict[str, List[str]] = {}  # owner: process names
 
     @classmethod
-    def get_os(cls, entity: NetworkNode) -> 'OperatingSystem':
+    def get_os(cls, entity: NetworkNode, add=True) -> Optional['OperatingSystem']:
         """Get the OS for network node"""
         for c in entity.components:
             if isinstance(c, OperatingSystem):
                 return c
+        if not add:
+            return None
         c = OperatingSystem(entity)
         entity.components.append(c)
         return c
