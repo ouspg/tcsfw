@@ -18,11 +18,12 @@ from tcsfw.traffic import EvidenceSource
 
 class BatchImporter:
     """Batch importer for importing a batch of files from a directory."""
-    def __init__(self, interface: EventInterface, label_filter: 'LabelFilter' = None):
+    def __init__(self, interface: EventInterface, label_filter: 'LabelFilter' = None, load_baseline=False) -> None:
         self.interface = interface
         self.system = interface.get_system()
         self.label_filter = label_filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
+        self.load_baseline = load_baseline  # True to load baseline, false to check it
 
         # collect evidence sources from visited tools
         self.evidence: Dict[str, List[EvidenceSource]] = {}
@@ -120,7 +121,7 @@ class BatchImporter:
                 if skip_processing:
                     self.logger.info("skipping (%s) %s", info.label, file_path.as_posix())
                     return
-                reader.load_baseline = info.load_baseline
+                reader.load_baseline = info.load_baseline or self.load_baseline
                 reader.process_file(stream, file_name, self.interface, ev)
                 return
 
@@ -132,7 +133,7 @@ class BatchImporter:
                           skip_processing: bool):
         """Process files"""
         reader = tool.create_tool(self.system)
-        reader.load_baseline = info.load_baseline
+        reader.load_baseline = info.load_baseline or self.load_baseline
 
         if skip_processing:
             self.logger.info("skipping (%s) data files", info.label)
