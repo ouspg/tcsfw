@@ -1,9 +1,7 @@
 import pathlib
 from tcsfw.address import HWAddress, IPAddress
-from tcsfw.batch_import import BatchFileType, BatchImporter, FileMetaInfo
+from tcsfw.batch_import import BatchImporter, FileMetaInfo
 from tcsfw.inspector import Inspector
-from tcsfw.matcher import SystemMatcher
-from tcsfw.model import IoTSystem
 from tests.test_model import simple_setup_1
 
 
@@ -29,8 +27,8 @@ def test_parse_from_json():
     result = FileMetaInfo.parse_from_json(json_data, "pcap-x", system)
 
     assert result.label == "pcap-x"
-    assert result.file_type == BatchFileType.CAPTURE
-    assert result.default_include == True
+    assert result.file_type == "capture"
+    assert result.default_include is True
     assert len(result.source.address_map) == 2
     assert result.source.address_map[IPAddress.new("1.2.3.4")] == system.get_entity("Device 1")
     assert result.source.address_map[HWAddress.new("1:2:3:4:5:6")] == system.get_entity("Device 2")
