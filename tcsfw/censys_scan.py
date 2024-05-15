@@ -26,7 +26,8 @@ class CensysScan(EndpointCheckTool):
     def filter_node(self, node: NetworkNode) -> bool:
         return isinstance(node, Host)
 
-    def process_stream(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, 
+                         source: EvidenceSource):
         raw = json.load(stream)
 
         evidence = Evidence(source)

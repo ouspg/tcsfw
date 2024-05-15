@@ -22,7 +22,7 @@ class AndroidManifestScan(ComponentCheckTool):
     def filter_component(self, component: NodeComponent) -> bool:
         return isinstance(component, Software)
 
-    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
+    def process_component(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
                        source: EvidenceSource):
         software = cast(Software, component)
 

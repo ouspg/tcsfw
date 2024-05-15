@@ -24,7 +24,7 @@ class ReleaseReader(ComponentCheckTool):
         """Filter checked entities"""
         return isinstance(component, Software)
 
-    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
+    def process_component(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
                        source: EvidenceSource):
         software = cast(Software, component)
 

@@ -63,12 +63,21 @@ class EndpointCheckTool(CheckTool):
         self.file_name_map: Dict[str, Addressable] = {}
         self.create_file_name_map()
 
+    def filter_node(self, _node: NetworkNode) -> bool:
+        """Filter checked endpoints by the corresponding node"""
+        return True
+
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, 
+                         source: EvidenceSource):
+        """Process result file for specific endpoint"""
+        raise NotImplementedError()
+
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
             self.logger.info("processing (%s) %s", source.label, file_name)
             source.target = str(key)
-            self.process_stream(key, data, interface, source)
+            self.process_endpoint(key, data, interface, source)
             return True
         return False
 
@@ -98,14 +107,6 @@ class EndpointCheckTool(CheckTool):
             if a_file_name not in self.file_name_map:
                 self.file_name_map[a_file_name] = a
 
-    def filter_node(self, _node: NetworkNode) -> bool:
-        """Filter checked entities"""
-        return True
-
-    def process_stream(self,  endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, source: EvidenceSource):
-        """Process file from stream"""
-        raise NotImplementedError()
-
 
 class NodeCheckTool(CheckTool):
     """Network node check tool"""
@@ -115,11 +116,19 @@ class NodeCheckTool(CheckTool):
         self.file_name_map: Dict[str, NetworkNode] = {}
         self.create_file_name_map()
 
+    def filter_node(self, _node: NetworkNode) -> bool:
+        """Filter checked nodes"""
+        return True
+
+    def process_node(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+        """Process file for specific network node"""
+        raise NotImplementedError()
+
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
             self.logger.info("processing (%s) %s", source.label, file_name)
-            self.process_stream(key, data, interface, source)
+            self.process_node(key, data, interface, source)
             return True
         return False
 
@@ -129,20 +138,11 @@ class NodeCheckTool(CheckTool):
 
         def check_component(node: NetworkNode):
             for c in node.children:
-                if not tool.filter_component(c):
+                if not tool.filter_node(c):
                     continue
                 self.file_name_map[tool.get_file_by_name(c.name)] = c
                 check_component(c)
         check_component(self.system)
-
-
-    def process_stream(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
-        """Check entity with data"""
-        raise NotImplementedError()
-
-    def filter_component(self, _node: NetworkNode) -> bool:
-        """Filter checked entities"""
-        return True
 
 
 class ComponentCheckTool(CheckTool):
@@ -153,12 +153,21 @@ class ComponentCheckTool(CheckTool):
         self.file_name_map: Dict[str, NodeComponent] = {}
         self._create_file_name_map()
 
+    def filter_component(self, _component: NodeComponent) -> bool:
+        """Filter checked components"""
+        return True
+
+    def process_component(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
+                          source: EvidenceSource):
+        """Process file for specific component"""
+        raise NotImplementedError()
+
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource):
         key = self.file_name_map.get(file_name)
         if key:
             self.logger.info("processing (%s) %s", source.label, file_name)
             source.target = key.long_name()
-            self.process_stream(key, data, interface, source)
+            self.process_component(key, data, interface, source)
             return True
         return False
 
@@ -174,15 +183,6 @@ class ComponentCheckTool(CheckTool):
             for c in node.children:
                 check_component(c)
         check_component(self.system)
-
-    def filter_component(self, _component: NodeComponent) -> bool:
-        """Filter checked entities"""
-        return True
-
-    def process_stream(self, component: NodeComponent, data_file: BytesIO, interface: EventInterface,
-                       source: EvidenceSource):
-        """Check entity with data"""
-        raise NotImplementedError()
 
 
 class SimpleFlowTool(BaseFileCheckTool):

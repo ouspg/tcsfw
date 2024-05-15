@@ -25,7 +25,7 @@ class SSHAuditScan(EndpointCheckTool):
             return False
         return node.protocol == Protocol.SSH
 
-    def process_stream(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface,
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface,
                        source: EvidenceSource):
         """Scan network node"""
         raw = json.load(stream)
