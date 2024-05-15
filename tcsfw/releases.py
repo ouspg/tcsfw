@@ -9,12 +9,12 @@ from typing import Tuple, List, cast
 from tcsfw.components import Software
 from tcsfw.event_interface import EventInterface, PropertyEvent
 from tcsfw.model import IoTSystem, NetworkNode, NodeComponent
-from tcsfw.tools import ComponentCheckTool
+from tcsfw.tools import NodeComponentTool
 from tcsfw.traffic import EvidenceSource, Evidence
 from tcsfw.release_info import ReleaseInfo
 
 
-class ReleaseReader(ComponentCheckTool):
+class ReleaseReader(NodeComponentTool):
     """Read release data aquired from GitHub API"""
     def __init__(self, system: IoTSystem):
         super().__init__("github-releases", ".json", system)

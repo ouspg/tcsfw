@@ -9,12 +9,12 @@ from tcsfw.address import EndpointAddress, Protocol, DNSName
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent
 from tcsfw.model import IoTSystem
 from tcsfw.property import Properties, PropertyKey
-from tcsfw.tools import BaseFileCheckTool
+from tcsfw.tools import SystemWideTool
 from tcsfw.traffic import EvidenceSource, Evidence
 from tcsfw.verdict import Verdict
 
 
-class ZEDReader(BaseFileCheckTool):
+class ZEDReader(SystemWideTool):
     """Read ZED attack proxy scanning results for a software"""
     def __init__(self, system: IoTSystem):
         super().__init__("zed", system)

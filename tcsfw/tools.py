@@ -13,8 +13,8 @@ from tcsfw.traffic import Evidence, EvidenceSource, Tool, IPFlow
 from tcsfw.basics import Status
 
 
-class CheckTool:
-    """A security check tool"""
+class ToolAdapter:
+    """Security tool adapter base class"""
     def __init__(self, tool_label: str, system: IoTSystem):
         self.tool_label = tool_label
         self.tool = Tool(tool_label)  # human readable
@@ -47,15 +47,15 @@ class CheckTool:
         return n
 
 
-class BaseFileCheckTool(CheckTool):
-    """Check tool which scans set of files, no way to specify entries directly"""
+class SystemWideTool(ToolAdapter):
+    """Apply tool output to system as output indicates"""
 
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         raise NotImplementedError()
 
 
-class EndpointCheckTool(CheckTool):
-    """Check a service endpoint"""
+class EndpointTool(ToolAdapter):
+    """Tool applies to endpoints"""
     def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
         # map from file names into addressable entities
@@ -67,7 +67,7 @@ class EndpointCheckTool(CheckTool):
         """Filter checked endpoints by the corresponding node"""
         return True
 
-    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface, 
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface,
                          source: EvidenceSource):
         """Process result file for specific endpoint"""
         raise NotImplementedError()
@@ -108,8 +108,8 @@ class EndpointCheckTool(CheckTool):
                 self.file_name_map[a_file_name] = a
 
 
-class NodeCheckTool(CheckTool):
-    """Network node check tool"""
+class NetworkNodeTool(ToolAdapter):
+    """Tool applies to network nodes"""
     def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
         self.data_file_suffix = data_file_suffix
@@ -145,8 +145,8 @@ class NodeCheckTool(CheckTool):
         check_component(self.system)
 
 
-class ComponentCheckTool(CheckTool):
-    """Software check tool"""
+class NodeComponentTool(ToolAdapter):
+    """Tool applies to node components"""
     def __init__(self, tool_label: str, data_file_suffix: str, system: IoTSystem):
         super().__init__(tool_label, system)
         self.data_file_suffix = data_file_suffix
@@ -185,7 +185,7 @@ class ComponentCheckTool(CheckTool):
         check_component(self.system)
 
 
-class SimpleFlowTool(BaseFileCheckTool):
+class SimpleFlowTool(SystemWideTool):
     """Simple flow tool powered by list of flows"""
     def __init__(self, system: IoTSystem):
         super().__init__("flow", system)

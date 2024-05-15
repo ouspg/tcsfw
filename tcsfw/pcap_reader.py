@@ -20,11 +20,11 @@ from tcsfw.address import HWAddress, Protocol, IPAddress
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import Connection, IoTSystem
 from tcsfw.services import NameEvent, DNSService
-from tcsfw.tools import BaseFileCheckTool
+from tcsfw.tools import SystemWideTool
 from tcsfw.traffic import IPFlow, EvidenceSource, Evidence, EthernetFlow, Flow
 
 
-class PCAPReader(BaseFileCheckTool):
+class PCAPReader(SystemWideTool):
     """PCAP reading tool"""
     def __init__(self, system: IoTSystem, name="PCAP reader"):
         super().__init__("pcap", system)

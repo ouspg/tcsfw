@@ -8,12 +8,12 @@ from tcsfw.address import AnyAddress, Protocol
 from tcsfw.event_interface import PropertyAddressEvent, EventInterface
 from tcsfw.model import Service, IoTSystem, NetworkNode
 from tcsfw.property import Properties, PropertyKey
-from tcsfw.tools import EndpointCheckTool
+from tcsfw.tools import EndpointTool
 from tcsfw.traffic import Evidence, EvidenceSource
 from tcsfw.verdict import Verdict
 
 
-class SSHAuditScan(EndpointCheckTool):
+class SSHAuditScan(EndpointTool):
     """Ssh-audit output reading tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("ssh-audit", ".json", system)

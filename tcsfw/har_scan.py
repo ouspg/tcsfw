@@ -11,12 +11,12 @@ from tcsfw.components import Cookies, CookieData
 from tcsfw.event_interface import PropertyAddressEvent, PropertyEvent, EventInterface
 from tcsfw.model import Host, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey, Properties
-from tcsfw.tools import NodeCheckTool
+from tcsfw.tools import NetworkNodeTool
 from tcsfw.traffic import EvidenceSource, Evidence
 from tcsfw.verdict import Verdict
 
 
-class HARScan(NodeCheckTool):
+class HARScan(NetworkNodeTool):
     """HAR JSON tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("har", ".json", system)

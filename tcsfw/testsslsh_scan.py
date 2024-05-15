@@ -8,12 +8,12 @@ from tcsfw.address import AnyAddress
 from tcsfw.event_interface import EventInterface, PropertyAddressEvent
 from tcsfw.model import Service, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey, Properties
-from tcsfw.tools import EndpointCheckTool
+from tcsfw.tools import EndpointTool
 from tcsfw.traffic import Evidence, EvidenceSource
 from tcsfw.verdict import Verdict
 
 
-class TestSSLScan(EndpointCheckTool):
+class TestSSLScan(EndpointTool):
     """Testssl.sh output reading tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("testssl", ".json", system)

@@ -8,12 +8,12 @@ from tcsfw.components import Software
 from tcsfw.event_interface import PropertyEvent, EventInterface
 from tcsfw.model import IoTSystem, NodeComponent
 from tcsfw.property import Properties, PropertyKey
-from tcsfw.tools import ComponentCheckTool
+from tcsfw.tools import NodeComponentTool
 from tcsfw.traffic import EvidenceSource, Evidence
 from tcsfw.verdict import Verdict
 
 
-class AndroidManifestScan(ComponentCheckTool):
+class AndroidManifestScan(NodeComponentTool):
     """Android manifest XML tool"""
     def __init__(self, system: IoTSystem):
         super().__init__("android", ".xml", system)

@@ -8,12 +8,12 @@ from tcsfw.event_interface import EventInterface
 from tcsfw.model import IoTSystem
 from tcsfw.property import Properties
 from tcsfw.services import NameEvent
-from tcsfw.tools import BaseFileCheckTool
+from tcsfw.tools import SystemWideTool
 from tcsfw.traffic import EvidenceSource, Evidence, IPFlow
 from tcsfw.verdict import Verdict
 
 
-class MITMLogReader(BaseFileCheckTool):
+class MITMLogReader(SystemWideTool):
     """Read MITM log created the tls_check MITMproxy add-on"""
     def __init__(self, system: IoTSystem):
         super().__init__("mitm", system)
