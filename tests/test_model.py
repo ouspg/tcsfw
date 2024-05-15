@@ -1,4 +1,6 @@
 from tcsfw.address import EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
+from tcsfw.inspector import Inspector
+from tcsfw.model import IoTSystem
 from tcsfw.verdict import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, SSH
@@ -6,6 +8,20 @@ from tcsfw.matcher import SystemMatcher
 from tcsfw.basics import ExternalActivity
 from tcsfw.traffic import IPFlow
 from tcsfw.basics import Status
+
+
+class Setup:
+    """Testing setup"""
+    def __init__(self):
+        self.system = SystemBackend()
+
+    def get_system(self) -> IoTSystem:
+        """Get system"""
+        return self.system.system
+
+    def get_inspector(self):
+        """Get inspector"""
+        return Inspector(self.get_system())
 
 
 def simple_setup_1(external=False) -> SystemBackend:
