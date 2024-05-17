@@ -42,9 +42,11 @@ class ShellCommandPs(NetworkNodeTool):
                 cmd = line[columns["CM"]].strip()
                 if cmd.startswith("[") and cmd.endswith("]"):
                     continue  # kernel thread
+                cmd_0 = cmd.split()[0]
+                if cmd_0 == "ps":
+                    continue  # ps command itself
                 if self.load_baseline:
                     # learning the processes
-                    cmd_0 = cmd.split()[0]
                     base_ps = os.process_map.setdefault(user, [])
                     if cmd_0 not in base_ps:
                         base_ps.append(f"^{cmd_0}")
