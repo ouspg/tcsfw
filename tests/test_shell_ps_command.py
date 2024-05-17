@@ -22,16 +22,16 @@ def test_shell_ps_baseline():
     BatchImporter(su.get_inspector(), load_baseline=True).import_batch(pathlib.Path("tests/samples/shell-ps"))
     os = OperatingSystem.get_os(su.device1.entity, add=False)
     assert os.process_map == {
-        '100070': ['postgres:'], 
-        'root': ['/opt/venv.d/production/bin/python', 'highball'], 
-        'john': ['acommand']
+        '100070': ['^postgres:'],
+        'root': ['^/opt/venv.d/production/bin/python', '^highball'],
+        'john': ['^acommand']
     }
 
 
 def test_shell_ps_pass():
     su = Setup_1()
     su.device1.os().processes({
-        'root': ['highball', '/opt/venv.d/production/bin/python'],
+        'root': ['^highball', '^.*/bin/python'],
     })
     BatchImporter(su.get_inspector()).import_batch(pathlib.Path("tests/samples/shell-ps"))
     os = OperatingSystem.get_os(su.device1.entity, add=False)

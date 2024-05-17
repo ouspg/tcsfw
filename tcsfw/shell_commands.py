@@ -1,6 +1,7 @@
 """Shell command 'ps'"""
 
 from io import BytesIO, TextIOWrapper
+import re
 from typing import Dict
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
@@ -20,34 +21,40 @@ class ShellCommandPs(NetworkNodeTool):
         columns: Dict[str, int] = {}
         unexpected = {}
         os = OperatingSystem.get_os(node, add=self.load_baseline)
+
+        # expected processes as regexps
+        regexp_map = {}
+        for user, ps_list in os.process_map.items():
+            regexp_map[user] = [re.compile(ps) for ps in ps_list]
+
         with TextIOWrapper(data_file) as f:
             while True:
-                line = f.readline().split()
+                line = f.readline().split(maxsplit=len(columns) -1 if columns else -1)
                 if not line:
                     break
                 if not columns:
-                    # header line
+                    # header line, use first two characters (headers are truncated for narrow data)
                     columns = {name[:2]: idx for idx, name in enumerate(line)}
                     continue
                 if len(line) < len(columns):
                     continue  # bad line
-                user = line[columns["US"]]
-                cmd = line[columns["CM"]]
+                user = line[columns["US"]].strip()
+                cmd = line[columns["CM"]].strip()
                 if cmd.startswith("[") and cmd.endswith("]"):
                     continue  # kernel thread
-                exp_ps = os.process_map.get(user) if os else None
                 if self.load_baseline:
                     # learning the processes
                     cmd_0 = cmd.split()[0]
-                    exp_ps = os.process_map.setdefault(user, [])
-                    if cmd_0 not in exp_ps:
-                        exp_ps.append(cmd_0)
+                    base_ps = os.process_map.setdefault(user, [])
+                    if cmd_0 not in base_ps:
+                        base_ps.append(f"^{cmd_0}")
                     continue
+                exp_ps = regexp_map.get(user) if os else None
                 if exp_ps is None:
                     self.logger.debug("User %s not in process map", user)
                     continue
                 for ps in exp_ps:
-                    if cmd.startswith(ps):
+                    if ps.match(cmd):
                         break
                 else:
                     self.logger.debug("Command %s not expected process for %s", cmd, user)
