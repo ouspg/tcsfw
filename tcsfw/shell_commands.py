@@ -2,13 +2,14 @@
 
 from io import BytesIO, TextIOWrapper
 import re
-from typing import Dict
+from typing import Dict, Tuple
+from tcsfw.address import Addresses, EndpointAddress, IPAddress
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
 from tcsfw.model import IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey
 from tcsfw.tools import NetworkNodeTool
-from tcsfw.traffic import Evidence, EvidenceSource
+from tcsfw.traffic import Evidence, EvidenceSource, Protocol
 from tcsfw.verdict import Verdict
 
 
@@ -79,3 +80,66 @@ class ShellCommandPs(NetworkNodeTool):
                     exp = ""
                 ev = PropertyEvent(evidence, os, key.verdict(ver, explanation=exp))
                 interface.property_update(ev)
+
+
+class ShellCommandSs(NetworkNodeTool):
+    """Shell command 'ss' tool adapter"""
+    def __init__(self, system: IoTSystem):
+        super().__init__("shell-ss", ".txt", system)
+
+    def _parse_address(self, addr: str) -> Tuple[str, str, int]:
+        """Parse address into IP, interface, port"""
+        ad_inf, _, port = addr.rpartition(":")
+        ad, _, inf = ad_inf.partition("%")
+        return ad if ad not in {"", "*", "0.0.0.0"} else "", inf, int(port) if port not in {"", "*"} else -1
+
+    LOCAL_ADDRESS = "Local_Address"
+    PEER_ADDRESS = "Peer_Address"
+
+    def process_node(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+        columns: Dict[str, int] = {}
+        services = set()
+        conns = set()
+
+        with TextIOWrapper(data_file) as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                if not columns:
+                    # header line, use first two characters (headers are truncated for narrow data)
+                    line = line.replace("Local Address:Port", self.LOCAL_ADDRESS)
+                    line = line.replace("Peer Address:Port", self.PEER_ADDRESS)
+                    columns = {name: idx for idx, name in enumerate(line.split())}
+                    assert self.LOCAL_ADDRESS in columns, "Local address not found"
+                    assert self.PEER_ADDRESS in columns, "Peer address not found"
+                    continue
+                cols = line.split()
+                if len(cols) <= columns[self.PEER_ADDRESS]:
+                    continue  # bad line
+                net_id = cols[columns["Netid"]]
+                state = cols[columns["State"]]
+                local_ip, local_inf, local_port = self._parse_address(cols[columns[self.LOCAL_ADDRESS]])
+                peer_ip, _, peer_port = self._parse_address(cols[columns[self.PEER_ADDRESS]])
+                self.logger.debug("Local %s:%d Peer %s:%d", local_ip, local_port, peer_ip, peer_port)
+                local_add = IPAddress.new(local_ip) if local_ip else None
+                peer_add = IPAddress.new(peer_ip) if peer_ip else None
+                if local_inf == "lo" or (local_add and local_add.is_loopback()):
+                    continue  # loopback is not external
+                if net_id == "udp" and state == "UNCONN":
+                    # listening UDP port
+                    add = EndpointAddress(local_add or Addresses.ANY, Protocol.UDP, local_port)
+                    services.add(add)
+                    continue
+                if net_id == "tcp" and state == "LISTEN":
+                    # listening TCP port
+                    add = EndpointAddress(local_add or Addresses.ANY, Protocol.TCP, local_port)
+                    services.add(add)
+                    continue
+                if net_id in {"udp", "tcp"} and state != "LISTEN" and local_add and peer_add:
+                    # UDP or TCP connection
+                    proto = Protocol.UDP if net_id == "udp" else Protocol.TCP
+                    local = EndpointAddress(local_add, proto, local_port)
+                    peer = EndpointAddress(peer_add, proto, peer_port)
+                    conns.add((local, peer))
+                    continue
