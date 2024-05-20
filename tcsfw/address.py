@@ -69,6 +69,10 @@ class AnyAddress:
         """Is multicast or broadcast address?"""
         return False
 
+    def is_loopback(self) -> bool:
+        """Is loopback address?"""
+        return False
+
     def is_hardware(self) -> bool:
         """Is hardware address?"""
         return False
@@ -260,6 +264,9 @@ class IPAddress(AnyAddress):
     def is_global(self) -> bool:
         return self.data.is_global
 
+    def is_loopback(self) -> bool:
+        return self.data.is_loopback
+
     def priority(self) -> int:
         return 2
 
@@ -378,6 +385,9 @@ class EndpointAddress(AnyAddress):
 
     def is_global(self) -> bool:
         return self.host.is_global()
+
+    def is_loopback(self) -> bool:
+        return self.host.is_loopback()
 
     def is_wildcard(self) -> bool:
         return self.host.is_wildcard()
