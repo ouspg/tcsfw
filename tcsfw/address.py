@@ -247,6 +247,8 @@ class IPAddress(AnyAddress):
     @classmethod
     def new(cls, address: str) -> 'IPAddress':
         """Create new IP address"""
+        if address.startswith("[") and address.endswith("]"):
+            address = address[1:-1]  # IPv6 address in brackets
         return IPAddress(ipaddress.ip_address(address))
 
     @classmethod
