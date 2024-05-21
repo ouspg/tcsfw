@@ -6,7 +6,7 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, Protocol, IPAddress, HWAddress, DNSName
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Protocol, IPAddress, HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
 from tcsfw.property import PropertyKey
@@ -334,8 +334,10 @@ class Addressable(NetworkNode):
 
 class Host(Addressable):
     """A host"""
-    def __init__(self, parent: 'IoTSystem', name: str):
+    def __init__(self, parent: 'IoTSystem', name: str, tag: Optional[EntityTag] = None):
         super().__init__(name)
+        if tag:
+            self.addresses.add(tag)
         self.concept_name = "node"
         self.parent = parent
         self.visual = True

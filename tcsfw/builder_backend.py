@@ -10,7 +10,7 @@ import shutil
 import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
-from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, HWAddress,
+from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
                            HWAddresses, IPAddress, IPAddresses, Protocol)
 from tcsfw.address_resolver import AddressResolver
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
@@ -146,7 +146,7 @@ class SystemBackend(SystemBuilder):
         """Get or create a host"""
         hb = self.hosts_by_name.get(name)
         if hb is None:
-            h = Host(self.system, name)
+            h = Host(self.system, name, tag=EntityTag(name))  # tag is not renamed, name can be
             h.description = description
             h.match_priority = 10
             hb = HostBackend(h, self)

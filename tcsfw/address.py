@@ -81,6 +81,10 @@ class AnyAddress:
         """Is global address?"""
         return False
 
+    def is_tag(self) -> bool:
+        """Is entity tag?"""
+        return False
+
     def change_host(self, _host: 'AnyAddress') -> Self:
         """Change host to given address. As default, returns this address"""
         return self
@@ -95,6 +99,38 @@ class AnyAddress:
 
     def __lt__(self, other):
         return self.__repr__() < other.__repr__()
+
+
+class EntityTag(AnyAddress):
+    """An unique tag for entity"""
+    def __init__(self, tag: str):
+        self.tag = tag
+
+    def is_global(self) -> bool:
+        return True  # well, perhaps a flag for this later
+
+    def is_multicast(self) -> bool:
+        return False
+
+    def is_tag(self) -> bool:
+        return True
+
+    def priority(self) -> int:
+        return 3
+
+    def get_parseable_value(self) -> str:
+        return f"{self.tag}|tag"
+
+    def __eq__(self, other):
+        if not isinstance(other, EntityTag):
+            return False
+        return self.tag == other.tag
+
+    def __hash__(self):
+        return self.tag.__hash__()
+
+    def __repr__(self):
+        return self.tag
 
 
 class PseudoAddress(AnyAddress):
@@ -158,6 +194,8 @@ class Addresses:
             return IPAddress.new(v)
         if t == "hw":
             return HWAddress.new(v)
+        if t == "tag":
+            return EntityTag(v)
         if t == "name":
             return DNSName(v)
         raise ValueError(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
@@ -387,6 +425,9 @@ class EndpointAddress(AnyAddress):
 
     def is_global(self) -> bool:
         return self.host.is_global()
+
+    def is_tag(self) -> bool:
+        return self.host.is_tag()
 
     def is_loopback(self) -> bool:
         return self.host.is_loopback()

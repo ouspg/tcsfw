@@ -184,7 +184,7 @@ class MatchEngine:
         if entity.any_host:
             ads = []  # always match by wildcards
         else:
-            ads = {a.get_host(): None for a in entity.get_addresses()}.keys()
+            ads = {a.get_host(): None for a in entity.get_addresses() if not a.is_tag()}.keys()
 
         if ads:
             # addressed host
@@ -441,7 +441,7 @@ class MatchEndpoint:
     """Match endpoint"""
     def __init__(self, entity: Addressable, match_no_service=True, priority_services=False):
         self.entity = entity
-        self.addresses = entity.addresses.copy()
+        self.addresses = set(a for a in entity.addresses if not a.is_tag())
         self.match_no_service = match_no_service    # match without service?
         self.match_priority = entity.match_priority
         self.system = entity.get_system()
@@ -453,7 +453,8 @@ class MatchEndpoint:
 
     def add_address(self, address: AnyAddress) -> Self:
         """Add mapped address to endpoint"""
-        self.addresses.add(address)
+        if not address.is_tag():
+            self.addresses.add(address)
         return self
 
     def is_same_host(self, other: Optional['MatchEndpoint']) -> bool:
