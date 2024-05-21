@@ -146,7 +146,7 @@ class SystemBackend(SystemBuilder):
         """Get or create a host"""
         hb = self.hosts_by_name.get(name)
         if hb is None:
-            h = Host(self.system, name, tag=EntityTag(name))  # tag is not renamed, name can be
+            h = Host(self.system, name, tag=EntityTag.new(name))  # tag is not renamed, name can be
             h.description = description
             h.match_priority = 10
             hb = HostBackend(h, self)

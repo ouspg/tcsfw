@@ -106,6 +106,12 @@ class EntityTag(AnyAddress):
     def __init__(self, tag: str):
         self.tag = tag
 
+    @classmethod
+    def new(cls, tag: str) -> 'EntityTag':
+        """New tag, force allowed characters"""
+        # replace not allowed characters by underscore
+        return EntityTag("".join(c if c.isalnum() or c in {"-", "_"} else "_" for c in tag))
+
     def is_global(self) -> bool:
         return True  # well, perhaps a flag for this later
 
@@ -183,6 +189,14 @@ class Addresses:
             if add is None or add.priority() < a.priority():
                 add = a
         return add or IPAddresses.NULL
+
+    @classmethod
+    def get_tag(cls, addresses: Iterable[AnyAddress]) -> Optional[EntityTag]:
+        """Get tag from addresses"""
+        for a in addresses:
+            if isinstance(a, EntityTag):
+                return a
+        return None
 
     @classmethod
     def parse_address(cls, address: str) -> AnyAddress:
