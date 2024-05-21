@@ -1,6 +1,6 @@
 from tcsfw.address import EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
 from tcsfw.inspector import Inspector
-from tcsfw.model import IoTSystem
+from tcsfw.model import Host, IoTSystem
 from tcsfw.verdict import Verdict
 from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, SSH
@@ -61,7 +61,8 @@ def test_connection_match():
     assert cs.source.name == "Device 1"
     assert cs.target.name == "UDP:1234"
 
-    cs = m.connection(IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:3", "1.0.0.3", 1234))
+    flow = IPFlow.UDP("1:0:0:0:0:1", "192.168.0.1", 1100) >> ("1:0:0:0:0:3", "1.0.0.3", 1234)
+    cs = m.connection(flow)
     assert cs is not None
     assert cs.status == Status.UNEXPECTED
     assert cs.source.name == "Device 1"
