@@ -23,6 +23,10 @@ class Setup:
         """Get inspector"""
         return Inspector(self.get_system())
 
+    def get_hosts(self):
+        """Get hosts"""
+        return [c for c in self.get_system().children if isinstance(c, Host)]
+
 
 def simple_setup_1(external=False) -> SystemBackend:
     sb = SystemBackend()

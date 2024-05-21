@@ -6,10 +6,10 @@ from typing import Dict, Tuple
 from tcsfw.address import Addresses, EndpointAddress, IPAddress
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
-from tcsfw.model import IoTSystem, NetworkNode
+from tcsfw.model import Addressable, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey
 from tcsfw.tools import NetworkNodeTool
-from tcsfw.traffic import Evidence, EvidenceSource, Protocol
+from tcsfw.traffic import Evidence, EvidenceSource, Protocol, ServiceScan
 from tcsfw.verdict import Verdict
 
 
@@ -91,7 +91,7 @@ class ShellCommandSs(NetworkNodeTool):
         """Parse address into IP, interface, port"""
         ad_inf, _, port = addr.rpartition(":")
         ad, _, inf = ad_inf.partition("%")
-        return ad if ad not in {"", "*", "0.0.0.0"} else "", inf, int(port) if port not in {"", "*"} else -1
+        return ad if ad not in {"", "*", "0.0.0.0", "[::]"} else "", inf, int(port) if port not in {"", "*"} else -1
 
     LOCAL_ADDRESS = "Local_Address"
     PEER_ADDRESS = "Peer_Address"
@@ -100,6 +100,9 @@ class ShellCommandSs(NetworkNodeTool):
         columns: Dict[str, int] = {}
         services = set()
         conns = set()
+
+        assert isinstance(node, Addressable)
+        tag = Addresses.get_tag(node.addresses)
 
         with TextIOWrapper(data_file) as f:
             while True:
@@ -126,6 +129,10 @@ class ShellCommandSs(NetworkNodeTool):
                 peer_add = IPAddress.new(peer_ip) if peer_ip else None
                 if local_inf == "lo" or (local_add and local_add.is_loopback()):
                     continue  # loopback is not external
+                if not local_add:
+                    if not tag:
+                        continue  # no host address known, cannot send events
+                    local_add = tag
                 if net_id == "udp" and state == "UNCONN":
                     # listening UDP port
                     add = EndpointAddress(local_add or Addresses.ANY, Protocol.UDP, local_port)
@@ -143,3 +150,9 @@ class ShellCommandSs(NetworkNodeTool):
                     peer = EndpointAddress(peer_add, proto, peer_port)
                     conns.add((local, peer))
                     continue
+
+        if self.send_events:
+            evidence = Evidence(source)
+            for addr in sorted(services):
+                scan = ServiceScan(evidence, addr)
+                interface.service_scan(scan)
