@@ -3,13 +3,13 @@
 from io import BytesIO, TextIOWrapper
 import re
 from typing import Dict, Tuple
-from tcsfw.address import Addresses, EndpointAddress, IPAddress
+from tcsfw.address import Addresses, EndpointAddress, HWAddresses, IPAddress
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
 from tcsfw.model import Addressable, IoTSystem, NetworkNode
 from tcsfw.property import PropertyKey
 from tcsfw.tools import NetworkNodeTool
-from tcsfw.traffic import Evidence, EvidenceSource, Protocol, ServiceScan
+from tcsfw.traffic import Evidence, EvidenceSource, IPFlow, Protocol, ServiceScan
 from tcsfw.verdict import Verdict
 
 
@@ -98,6 +98,7 @@ class ShellCommandSs(NetworkNodeTool):
 
     def process_node(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
         columns: Dict[str, int] = {}
+        local_ads = set()
         services = set()
         conns = set()
 
@@ -135,11 +136,13 @@ class ShellCommandSs(NetworkNodeTool):
                     local_add = tag
                 if net_id == "udp" and state == "UNCONN":
                     # listening UDP port
+                    local_ads.add(local_add)
                     add = EndpointAddress(local_add or Addresses.ANY, Protocol.UDP, local_port)
                     services.add(add)
                     continue
                 if net_id == "tcp" and state == "LISTEN":
                     # listening TCP port
+                    local_ads.add(local_add)
                     add = EndpointAddress(local_add or Addresses.ANY, Protocol.TCP, local_port)
                     services.add(add)
                     continue
@@ -156,3 +159,18 @@ class ShellCommandSs(NetworkNodeTool):
             for addr in sorted(services):
                 scan = ServiceScan(evidence, addr)
                 interface.service_scan(scan)
+            # NOTE: Create host scan event to report missing services
+
+            for conn in sorted(conns):
+                s, t = conn
+                if s.host in local_ads:
+                    # incoming connection
+                    t, s = conn
+                flow = IPFlow(evidence,
+                              source=(HWAddresses.NULL, s.host, s.port),
+                              target=(HWAddresses.NULL, t.host, t.port),
+                              protocol=s.protocol)
+                interface.connection(flow)
+                # these are established connections, both ways
+                interface.connection(flow.reverse())
+

@@ -27,6 +27,10 @@ class Setup:
         """Get hosts"""
         return [c for c in self.get_system().children if isinstance(c, Host)]
 
+    def get_connections(self):
+        """Get connections"""
+        return self.get_system().get_connections()
+
 
 def simple_setup_1(external=False) -> SystemBackend:
     sb = SystemBackend()
