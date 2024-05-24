@@ -173,4 +173,3 @@ class ShellCommandSs(NetworkNodeTool):
                 interface.connection(flow)
                 # these are established connections, both ways
                 interface.connection(flow.reverse())
-
