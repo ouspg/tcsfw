@@ -10,6 +10,7 @@ from tcsfw.nmap_scan import NMAPScan
 from tcsfw.pcap_reader import PCAPReader
 from tcsfw.ping_command import PingCommand
 from tcsfw.releases import ReleaseReader
+from tcsfw.setup_reader import SetupCSVReader
 from tcsfw.shell_commands import ShellCommandPs, ShellCommandSs
 from tcsfw.spdx_reader import SPDXReader
 from tcsfw.ssh_audit_scan import SSHAuditScan
@@ -80,6 +81,7 @@ class ToolFinderImplementation:
         self.pcap = ToolDepiction(["capture", ""], PCAPReader, extension="pcap")  # Default tool - file_type ""
         self.pcap = ToolDepiction("capture-json", TSharkReader, extension="json")
         self.pcap_flow = ToolDepiction("pcap-flow", SimpleFlowTool, extension="json")
+        self.setup = ToolDepiction("setup", SetupCSVReader, extension="csv")
         self.shell_ps = ToolDepiction("shell-ps", ShellCommandPs)
         self.shell_ss = ToolDepiction("shell-ss", ShellCommandSs)
         self.sdpx = ToolDepiction("spdx", SPDXReader)
