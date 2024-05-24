@@ -3,22 +3,25 @@
 from io import BytesIO, TextIOWrapper
 import re
 from typing import Dict, Tuple
-from tcsfw.address import Addresses, EndpointAddress, HWAddresses, IPAddress
+from tcsfw.address import Addresses, AnyAddress, EndpointAddress, HWAddresses, IPAddress
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
-from tcsfw.model import Addressable, IoTSystem, NetworkNode
+from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey
-from tcsfw.tools import NetworkNodeTool
+from tcsfw.tools import EndpointTool
 from tcsfw.traffic import Evidence, EvidenceSource, IPFlow, Protocol, ServiceScan
 from tcsfw.verdict import Verdict
 
 
-class ShellCommandPs(NetworkNodeTool):
+class ShellCommandPs(EndpointTool):
     """Shell command 'ps' tool adapter"""
     def __init__(self, system: IoTSystem):
         super().__init__("shell-ps", ".txt", system)
 
-    def process_node(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface,
+                         source: EvidenceSource):
+        node = self.system.get_endpoint(endpoint)
+
         columns: Dict[str, int] = {}
         unexpected = {}
         os = OperatingSystem.get_os(node, add=self.load_baseline)
@@ -28,7 +31,7 @@ class ShellCommandPs(NetworkNodeTool):
         for user, ps_list in os.process_map.items():
             regexp_map[user] = [re.compile(ps) for ps in ps_list]
 
-        with TextIOWrapper(data_file) as f:
+        with TextIOWrapper(stream) as f:
             while True:
                 line = f.readline().split(maxsplit=len(columns) -1 if columns else -1)
                 if not line:
@@ -82,7 +85,7 @@ class ShellCommandPs(NetworkNodeTool):
                 interface.property_update(ev)
 
 
-class ShellCommandSs(NetworkNodeTool):
+class ShellCommandSs(EndpointTool):
     """Shell command 'ss' tool adapter"""
     def __init__(self, system: IoTSystem):
         super().__init__("shell-ss", ".txt", system)
@@ -96,16 +99,17 @@ class ShellCommandSs(NetworkNodeTool):
     LOCAL_ADDRESS = "Local_Address"
     PEER_ADDRESS = "Peer_Address"
 
-    def process_node(self, node: NetworkNode, data_file: BytesIO, interface: EventInterface, source: EvidenceSource):
+    def process_endpoint(self, endpoint: AnyAddress, stream: BytesIO, interface: EventInterface,
+                         source: EvidenceSource):
         columns: Dict[str, int] = {}
         local_ads = set()
         services = set()
         conns = set()
 
-        assert isinstance(node, Addressable)
+        node = self.system.get_endpoint(endpoint)
         tag = Addresses.get_tag(node.addresses)
 
-        with TextIOWrapper(data_file) as f:
+        with TextIOWrapper(stream) as f:
             while True:
                 line = f.readline()
                 if not line:

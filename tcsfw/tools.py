@@ -98,9 +98,10 @@ class EndpointTool(ToolAdapter):
 
     def map_addressable(self, entity: Addressable):
         """Map addressable entity to file names"""
-        # First pass is DNS names, then IP addresses
+        # First pass is Tags, DNS names, then IP addresses
         addresses = entity.get_addresses()
-        ads_sorted = [a for a in addresses if isinstance(a.get_host(), DNSName)]
+        ads_sorted = [a for a in addresses if a.is_tag()]
+        ads_sorted.extend([a for a in addresses if isinstance(a.get_host(), DNSName)])
         ads_sorted.extend([a for a in addresses if isinstance(a.get_host(), IPAddress)])
         for a in ads_sorted:
             a_file_name = self.get_file_by_endpoint(a)
