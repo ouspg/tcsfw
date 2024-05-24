@@ -113,7 +113,7 @@ class EntityTag(AnyAddress):
         return EntityTag("".join(c if c.isalnum() or c in {"-", "_"} else "_" for c in tag))
 
     def is_global(self) -> bool:
-        return True  # well, perhaps a flag for this later
+        return False  # tag does not make node global
 
     def is_multicast(self) -> bool:
         return False
