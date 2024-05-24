@@ -180,6 +180,8 @@ class Addresses:
         """Get prioritized address"""
         add = None
         for a in addresses:
+            if a.is_tag():
+                continue
             if not ip and isinstance(a, IPAddress):
                 continue
             if not hw and isinstance(a, HWAddress):
