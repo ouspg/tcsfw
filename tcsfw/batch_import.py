@@ -58,9 +58,9 @@ class BatchImporter:
             # get tool info by file type
             tool_dep = ToolFinder.by_file_type(info.file_type)
 
-            # list files/directories to process
+            # list files/directories to process, files first
             proc_list = []
-            for a_file in file.iterdir():
+            for a_file in sorted(file.iterdir(), key=lambda f: (f.is_dir(), f.name)):
                 if a_file == meta_file:
                     continue
                 prefix = a_file.name[:1]

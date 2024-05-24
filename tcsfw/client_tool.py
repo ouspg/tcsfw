@@ -195,7 +195,7 @@ class ClientTool:
 
     def upload_directory(self, url: str, path: pathlib.Path):
         """Upload directory"""
-        files = sorted(path.iterdir())
+        files = sorted(path.iterdir(), key=lambda f: (f.is_dir(), f.name))  # files first
 
         meta_file = path / "00meta.json"
         if meta_file.exists():
