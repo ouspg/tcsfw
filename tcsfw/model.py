@@ -3,7 +3,7 @@
 import ipaddress
 import itertools
 import re
-from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator
+from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
 from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Protocol, IPAddress, HWAddress, DNSName
@@ -484,27 +484,28 @@ class IoTSystem(NetworkNode):
                 return False
         return True
 
-    def learn_named_address(self, name: DNSName, address: Optional[AnyAddress]) -> Tuple[Host, bool]:
-        """Learn DNS named addresses, return named host and if any changes"""
+    def learn_named_address(self, name: Union[DNSName, EntityTag], address: Optional[AnyAddress]) -> Tuple[Host, bool]:
+        """Learn addresses for host, return the named host and if any changes"""
         # pylint: disable=too-many-return-statements
 
-        # check for reverse DNS
-        if name.name.endswith(".arpa") and len(name.name) > 5:
-            # reverse DNS from IP addresss to name
-            nn = name.name[:-5]
-            if nn.endswith(".in-addr") and len(nn) > 8:
-                address = IPAddress.new(nn[:-8])
-            elif nn.endswith(".ip6") and len(nn) > 4:
-                nn = nn[:-4].replace(".", "")[::-1]
-                nn = ":".join(re.findall("....", nn))
-                address = IPAddress.new(nn)
-            else:
-                # E.g. _dns.resolver.arpa - leave as name!
-                address = None
-            if address:
-                add = self.get_endpoint(address)
-                assert isinstance(add, Host)
-                return add, False  # Did not add name to host (why?)
+        if isinstance(name, DNSName):
+            # check for reverse DNS
+            if name.name.endswith(".arpa") and len(name.name) > 5:
+                # reverse DNS from IP addresss to name
+                nn = name.name[:-5]
+                if nn.endswith(".in-addr") and len(nn) > 8:
+                    address = IPAddress.new(nn[:-8])
+                elif nn.endswith(".ip6") and len(nn) > 4:
+                    nn = nn[:-4].replace(".", "")[::-1]
+                    nn = ":".join(re.findall("....", nn))
+                    address = IPAddress.new(nn)
+                else:
+                    # E.g. _dns.resolver.arpa - leave as name!
+                    address = None
+                if address:
+                    add = self.get_endpoint(address)
+                    assert isinstance(add, Host)
+                    return add, False  # Did not add name to host (why?)
 
         # find relevant hosts
         named = None
@@ -533,6 +534,8 @@ class IoTSystem(NetworkNode):
             return add, True
 
         if named is None:
+            if isinstance(name, EntityTag):
+                return None, False  # do not create hosts for unknown tags
             named = self.get_endpoint(name)
 
         if not add:

@@ -2,10 +2,12 @@
 import csv
 
 from io import BytesIO, TextIOWrapper
+from tcsfw.address import DNSName, EntityTag
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import IoTSystem
+from tcsfw.services import NameEvent
 from tcsfw.tools import ToolAdapter
-from tcsfw.traffic import EvidenceSource
+from tcsfw.traffic import Evidence, EvidenceSource
 
 
 class SetupCSVReader(ToolAdapter):
@@ -19,6 +21,7 @@ class SetupCSVReader(ToolAdapter):
         columns = {}
         host_i = -1
         address_i = -1
+        ev = Evidence(source)
         for row in reader:
             if not columns:
                 columns = {c: i for i, c in enumerate(row)}
@@ -32,5 +35,8 @@ class SetupCSVReader(ToolAdapter):
             ads = row[address_i].strip().split(", \t\n\r")
             if not host_tag or not ads:
                 continue
-            # FIXME: Does nothing now!
+            for a in ads:
+                address = DNSName.name_or_ip(a)
+                event = NameEvent(ev, None, tag=EntityTag(host_tag), address=address)
+                interface.name(event)
         return True

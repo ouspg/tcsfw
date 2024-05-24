@@ -3,7 +3,7 @@
 from io import BytesIO, TextIOWrapper
 import re
 
-from tcsfw.address import HWAddresses
+from tcsfw.address import DNSName, HWAddresses
 from tcsfw.event_interface import EventInterface
 from tcsfw.model import IoTSystem
 from tcsfw.property import Properties
@@ -62,7 +62,7 @@ class MITMLogReader(SystemWideTool):
                 flow.evidence = evidence
                 if d:
                     # learn SNI, no peers in event, the connection will be UNEXPECTED if it is not expected
-                    name = NameEvent(evidence, None, d, flow.target[1])
+                    name = NameEvent(evidence, None, name=DNSName(d), address=flow.target[1])
                     if name not in names:
                         interface.name(name)
                         names.add(name)

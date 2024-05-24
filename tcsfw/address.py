@@ -202,7 +202,7 @@ class Addresses:
 
     @classmethod
     def parse_address(cls, address: str) -> AnyAddress:
-        """Parse any address type from string, type given as 'type/address'"""
+        """Parse any address type from string, type given as 'type|address'"""
         v, _, t = address.rpartition("|")
         if v == "":
             t, v = "ip", t  # default is IP
