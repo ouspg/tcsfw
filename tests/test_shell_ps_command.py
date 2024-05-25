@@ -35,8 +35,7 @@ def test_shell_ps_pass():
     })
     BatchImporter(su.get_inspector()).import_batch(pathlib.Path("tests/samples/shell-ps"))
     os = OperatingSystem.get_os(su.device1.entity, add=False)
-    prop = os.properties.get(PropertyKey("process", "root"))
-    assert prop.verdict == Verdict.PASS
+    assert PropertyKey("process", "root").get_verdict(os.properties) == Verdict.PASS
 
 
 def test_shell_ps_fail():
@@ -46,5 +45,4 @@ def test_shell_ps_fail():
     })
     BatchImporter(su.get_inspector()).import_batch(pathlib.Path("tests/samples/shell-ps"))
     os = OperatingSystem.get_os(su.device1.entity, add=False)
-    prop = os.properties.get(PropertyKey("process", "root"))
-    assert prop.verdict == Verdict.FAIL
+    assert PropertyKey("process", "root").get_verdict(os.properties) == Verdict.FAIL
