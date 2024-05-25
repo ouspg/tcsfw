@@ -35,8 +35,36 @@ class Protocol(enum.Enum):
             return default
 
 
+class Network:
+    """Network"""
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Network) and self.name == other.name
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+class Networks:
+    """Network constants"""
+    Default = Network("Default")     # Default network
+    Internet = Network("Internet")   # Internet
+    Local = Network("Local")         # Local network
+
+
 class AnyAddress:
     """Any address"""
+    def __init__(self, network=Networks.Default):
+        self.network = network
+
     def get_ip_address(self) -> Optional['IPAddress']:
         """Get possible IP address here"""
         return None
@@ -103,7 +131,8 @@ class AnyAddress:
 
 class EntityTag(AnyAddress):
     """An unique tag for entity"""
-    def __init__(self, tag: str):
+    def __init__(self, tag: str, network=Networks.Default):
+        AnyAddress.__init__(self, network)
         self.tag = tag
 
     @classmethod
@@ -130,18 +159,19 @@ class EntityTag(AnyAddress):
     def __eq__(self, other):
         if not isinstance(other, EntityTag):
             return False
-        return self.tag == other.tag
+        return self.tag == other.tag and self.network == other.network
 
     def __hash__(self):
-        return self.tag.__hash__()
+        return self.tag.__hash__() ^ self.network.__hash__()
 
     def __repr__(self):
-        return self.tag
+        return self.tag if self.network == Networks.Default else f"{self.tag}@{self.network}"
 
 
 class PseudoAddress(AnyAddress):
     """Pseudo-address"""
     def __init__(self, name: str, wildcard=False, multicast=False, hardware=False):
+        AnyAddress.__init__(self, Networks.Default)
         self.name = name
         self.wildcard = wildcard
         self.multicast = multicast
@@ -161,6 +191,12 @@ class PseudoAddress(AnyAddress):
 
     def priority(self) -> int:
         return 3
+
+    def __eq__(self, value: object) -> bool:
+        return self.name == value.name   # NOTE: We assume name is unique, other fields not included!
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
 
     def __repr__(self):
         return self.name
@@ -231,7 +267,8 @@ class Addresses:
 
 class HWAddress(AnyAddress):
     """Hardware address, e.g. Ethernet"""
-    def __init__(self, data: str):
+    def __init__(self, data: str, network=Networks.Default):
+        AnyAddress.__init__(self, network)
         self.data = data.lower()
         assert len(self.data) == 17, f"Expecting HW address syntax dd:dd:dd:dd:dd:dd, got {data}"
 
@@ -273,13 +310,13 @@ class HWAddress(AnyAddress):
     def __eq__(self, other):
         if not isinstance(other, HWAddress):
             return False
-        return self.data == other.data
+        return self.data == other.data and self.network == other.network
 
     def __hash__(self):
-        return self.data.__hash__()
+        return self.data.__hash__() ^ self.network.__hash__()
 
     def __repr__(self):
-        return self.data
+        return self.data if self.network == Networks.Default else f"{self.data}@{self.network}"
 
 
 class HWAddresses:
@@ -292,7 +329,8 @@ class HWAddresses:
 
 class IPAddress(AnyAddress):
     """IP address, either IPv4 or IPv6"""
-    def __init__(self, data: Union[IPv4Address, IPv6Address]):
+    def __init__(self, data: Union[IPv4Address, IPv6Address], network=Networks.Internet):
+        AnyAddress.__init__(self, network)
         self.data = data
 
     def get_ip_address(self) -> Optional['IPAddress']:
@@ -332,13 +370,13 @@ class IPAddress(AnyAddress):
     def __eq__(self, other):
         if not isinstance(other, IPAddress):
             return False
-        return self.data == other.data
+        return self.data == other.data and self.network == other.network
 
     def __hash__(self):
-        return self.data.__hash__()
+        return self.data.__hash__() ^ self.network.__hash__()
 
     def __repr__(self):
-        return str(self.data)
+        return str(self.data) if self.network == Networks.Internet else f"{self.data}@{self.network}"
 
 
 class IPAddresses:
@@ -351,7 +389,8 @@ class IPAddresses:
 
 class DNSName(AnyAddress):
     """DNS name"""
-    def __init__(self, name: str):
+    def __init__(self, name: str, network=Networks.Internet):
+        AnyAddress.__init__(self, network)
         self.name = name
 
     def is_global(self) -> bool:
@@ -369,10 +408,10 @@ class DNSName(AnyAddress):
     def __eq__(self, other):
         if not isinstance(other, DNSName):
             return False
-        return self.name == other.name
+        return self.name == other.name and self.network == other.network
 
     def __hash__(self):
-        return self.name.__hash__()
+        return self.name.__hash__() ^ self.network.__hash__()
 
     def __repr__(self):
         return self.name
@@ -399,6 +438,7 @@ class DNSName(AnyAddress):
 class EndpointAddress(AnyAddress):
     """Endpoint address made up from host, protocol, and port"""
     def __init__(self, host: AnyAddress, protocol: Protocol, port=-1):
+        AnyAddress.__init__(self, host.network)  # network follows host
         self.host = host
         self.protocol = protocol
         self.port = port
