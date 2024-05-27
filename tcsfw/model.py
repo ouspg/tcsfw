@@ -6,7 +6,7 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Protocol, IPAddress, HWAddress, DNSName
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Networks, Protocol, IPAddress, HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
 from tcsfw.property import PropertyKey
@@ -442,8 +442,11 @@ class IoTSystem(NetworkNode):
         super().__init__(name)
         self.concept_name = "system"
         self.status = Status.EXPECTED
-        # network mask(s)
+
+        # network mask(s) - FIXME: moving to self.network
         self.ip_networks = [ipaddress.ip_network("192.168.0.0/16")]  # reasonable default
+        self.network = Networks.Default
+
         # online resources
         self.online_resources: Dict[str, str] = {}
         # original entities and connections

@@ -188,7 +188,7 @@ class FileMetaInfo:
 
         # read batch-specific addresses
         for add, ent in json_data.get("addresses", {}).items():
-            address = Addresses.parse_address(add)
+            address = Addresses.parse_address(add, network=system.network)
             entity = system.get_entity(ent)
             if not entity:
                 raise ValueError(f"Unknown entity {ent}")

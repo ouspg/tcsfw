@@ -40,6 +40,10 @@ class Network:
     def __init__(self, name: str) -> None:
         self.name = name
 
+    def resolve_by_ip(self, _address: Union[IPv4Address, IPv6Address]) -> 'Network':
+        """Resolve sub-network by IP-address"""
+        return Networks.Internet  # FIXME: Not really resolved now
+
     def __eq__(self, other) -> bool:
         return isinstance(other, Network) and self.name == other.name
 
@@ -237,26 +241,26 @@ class Addresses:
         return None
 
     @classmethod
-    def parse_address(cls, address: str) -> AnyAddress:
+    def parse_address(cls, address: str, network=Networks.Default) -> AnyAddress:
         """Parse any address type from string, type given as 'type|address'"""
         v, _, t = address.rpartition("|")
         if v == "":
             t, v = "ip", t  # default is IP
         if t == "ip":
-            return IPAddress.new(v)
+            return IPAddress.new(v, network)
         if t == "hw":
-            return HWAddress.new(v)
+            return HWAddress.new(v, network)
         if t == "tag":
-            return EntityTag(v)
+            return EntityTag(v, network)
         if t == "name":
-            return DNSName(v)
+            return DNSName(v, network)
         raise ValueError(f"Unknown address type '{t}', allowed are 'ip', 'hw', and 'name'")
 
     @classmethod
-    def parse_endpoint(cls, value: str) -> AnyAddress:
+    def parse_endpoint(cls, value: str, network=Networks.Default) -> AnyAddress:
         """Parse address or endpoint"""
         a, _, p = value.partition("/")
-        addr = cls.parse_address(a)
+        addr = cls.parse_address(a, network)
         if p == "":
             return addr
         prot, _, port = p.partition(":")
@@ -273,7 +277,7 @@ class HWAddress(AnyAddress):
         assert len(self.data) == 17, f"Expecting HW address syntax dd:dd:dd:dd:dd:dd, got {data}"
 
     @classmethod
-    def new(cls, data: str) -> 'HWAddress':
+    def new(cls, data: str, network=Networks.Default) -> 'HWAddress':
         """New address, check something about the format"""
         p = list(data.split(":"))
         if len(p) != 6:
@@ -281,7 +285,7 @@ class HWAddress(AnyAddress):
         for i in range(6):
             if len(p[i]) != 2:
                 p[i] = f"0{p[i]}"  # zero-prefix
-        return HWAddress(":".join(p))
+        return HWAddress(":".join(p), network)
 
     @classmethod
     def from_ip(cls, address: 'IPAddress') -> 'HWAddress':
@@ -330,24 +334,24 @@ class HWAddresses:
 class IPAddress(AnyAddress):
     """IP address, either IPv4 or IPv6"""
     def __init__(self, data: Union[IPv4Address, IPv6Address], network=Networks.Internet):
-        AnyAddress.__init__(self, network)
+        AnyAddress.__init__(self, network.resolve_by_ip(data))
         self.data = data
 
     def get_ip_address(self) -> Optional['IPAddress']:
         return self
 
     @classmethod
-    def new(cls, address: str) -> 'IPAddress':
+    def new(cls, address: str, network=Networks.Internet) -> 'IPAddress':
         """Create new IP address"""
         if address.startswith("[") and address.endswith("]"):
             address = address[1:-1]  # IPv6 address in brackets
-        return IPAddress(ipaddress.ip_address(address))
+        return IPAddress(ipaddress.ip_address(address), network)
 
     @classmethod
-    def parse_with_port(cls, address: str, default_port=0) -> Tuple['IPAddress', int]:
+    def parse_with_port(cls, address: str, default_port=0, network=Networks.Internet) -> Tuple['IPAddress', int]:
         """Parse IPv4 address, possibly with port"""
         ad, _, p = address.partition(":")
-        return cls.new(ad), default_port if p == "" else int(p)
+        return cls.new(ad, network), default_port if p == "" else int(p)
 
     def is_null(self) -> bool:
         return self.data == IPAddresses.NULL.data
@@ -417,12 +421,12 @@ class DNSName(AnyAddress):
         return self.name
 
     @classmethod
-    def name_or_ip(cls, value: str) -> Union[IPAddress, 'DNSName']:
+    def name_or_ip(cls, value: str, network: Network) -> Union[IPAddress, 'DNSName']:
         """Get value as DNS name or IP address"""
         try:
-            return IPAddress.new(value)
+            return IPAddress.new(value, network)
         except ValueError:
-            return DNSName(value)
+            return DNSName(value, network)
 
     @classmethod
     def looks_like(cls, name: str) -> bool:

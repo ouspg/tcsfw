@@ -3,7 +3,7 @@
 import datetime
 from typing import Any, Callable, Tuple, Set, Optional, Self, Dict
 
-from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, AnyAddress, \
+from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Network, Protocol, EndpointAddress, AnyAddress, \
     Addresses
 from tcsfw.property import PropertyKey
 
@@ -408,7 +408,7 @@ class IPFlow(Flow):
         return self.source == other.source and self.target == other.target and super().__eq__(other)
 
     @classmethod
-    def parse_from_json(cls, value: Dict) -> 'IPFlow':
+    def parse_from_json(cls, value: Dict, network: Network) -> 'IPFlow':
         """Parse event from a string"""
         # Form 1
         protocol = "udp" if "udp" in value else "tcp" if "tcp" in value else None
@@ -420,10 +420,10 @@ class IPFlow(Flow):
                           (HWAddress.new(t_hw), IPAddress.new(t_ip), t_port), protocol=Protocol.get_protocol(protocol))
         # Form 2
         protocol = Protocol.get_protocol(value["protocol"])
-        s_ip, s_port = IPAddress.parse_with_port(value["source"])
-        t_ip, t_port = IPAddress.parse_with_port(value["target"])
-        s_hw = HWAddress.new(value["source_hw"]) if "source_hw" in value else HWAddress.from_ip(s_ip)
-        t_hw = HWAddress.new(value["target_hw"]) if "target_hw" in value else HWAddress.from_ip(t_ip)
+        s_ip, s_port = IPAddress.parse_with_port(value["source"], network)
+        t_ip, t_port = IPAddress.parse_with_port(value["target"], network)
+        s_hw = HWAddress.new(value["source_hw"], network) if "source_hw" in value else HWAddress.from_ip(s_ip, network)
+        t_hw = HWAddress.new(value["target_hw"], network) if "target_hw" in value else HWAddress.from_ip(t_ip, network)
         return IPFlow(NO_EVIDENCE, (s_hw, s_ip, s_port), (t_hw, t_ip, t_port), protocol=protocol)
 
 

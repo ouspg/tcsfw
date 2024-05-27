@@ -195,6 +195,6 @@ class SimpleFlowTool(SystemWideTool):
     def process_file(self, data: BytesIO, file_name: str, interface: EventInterface, source: EvidenceSource) -> bool:
         raw_json = json.load(data)
         for raw_flow in raw_json.get("flows", []):
-            flow = IPFlow.parse_from_json(raw_flow)
+            flow = IPFlow.parse_from_json(raw_flow, network=self.system.network)
             flow.evidence = Evidence(source)
             interface.connection(flow)

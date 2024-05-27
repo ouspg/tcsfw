@@ -1071,7 +1071,7 @@ class SystemBackendRunner(SystemBackend):
         for set_ip in args.set_ip or []:
             name, _, ips = set_ip.partition("=")
             h = self.system.get_entity(name) or self.system.get_endpoint(
-                DNSName.name_or_ip(name))
+                DNSName.name_or_ip(name, network=self.system.network))
             if not isinstance(h, Host) or not h.is_relevant():
                 raise ValueError(f"No such host '{name}'")
             for ip in ips.split(","):
