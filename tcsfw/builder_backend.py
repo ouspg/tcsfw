@@ -11,7 +11,7 @@ import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
 from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
-                           HWAddresses, IPAddress, IPAddresses, Protocol)
+                           HWAddresses, IPAddress, IPAddresses, Network, Protocol)
 from tcsfw.address_resolver import AddressResolver
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
@@ -60,7 +60,7 @@ class SystemBackend(SystemBuilder):
 
     def network(self, mask: str) -> Self:
         self.network_masks.append(ipaddress.ip_network(mask))
-        self.system.ip_networks = self.network_masks
+        self.system.network = Network(self.system.network.name, self.network_masks)
         return self
 
     def device(self, name="") -> 'HostBackend':

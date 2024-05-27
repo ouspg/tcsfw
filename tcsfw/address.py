@@ -2,8 +2,8 @@
 
 import enum
 import ipaddress
-from ipaddress import IPv4Address, IPv6Address
-from typing import Union, Optional, Tuple, Iterable, Self
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from typing import List, Union, Optional, Tuple, Iterable, Self
 
 
 class Protocol(enum.Enum):
@@ -33,6 +33,44 @@ class Protocol(enum.Enum):
             return cls[value.upper()] if value else default
         except KeyError:
             return default
+
+
+class Network:
+    """Network"""
+    def __init__(self, name: str, ip_networks: List[IPv4Network | IPv6Network] = None) -> None:
+        self.name = name
+        self.ip_networks = [] if ip_networks is None else ip_networks
+
+    def is_local(self, address: 'AnyAddress') -> bool:
+        """Is local address for this network?"""
+        h = address.get_host()
+        if h.is_global():
+            return False
+        if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
+            return True
+        # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
+        for m in self.ip_networks:
+            if h.data in m:
+                return True
+        return False
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Network) and self.name == other.name
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+class Networks:
+    """Network constants"""
+    Default = Network("Default")     # Default network
+    Internet = Network("Internet")   # Internet
 
 
 class AnyAddress:

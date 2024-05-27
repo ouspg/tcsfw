@@ -6,7 +6,8 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Protocol, IPAddress, HWAddress, DNSName
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Networks, Protocol, IPAddress, \
+    HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
 from tcsfw.property import PropertyKey
@@ -265,6 +266,7 @@ class Addressable(NetworkNode):
     def __init__(self, name: str):
         super().__init__(name)
         self.parent: Optional[NetworkNode] = None
+        self.network = Networks.Default  # usually copied from parent
         self.addresses: Set[AnyAddress] = set()
         self.any_host = False  # can be one or many hosts
 
@@ -443,7 +445,7 @@ class IoTSystem(NetworkNode):
         self.concept_name = "system"
         self.status = Status.EXPECTED
         # network mask(s)
-        self.ip_networks = [ipaddress.ip_network("192.168.0.0/16")]  # reasonable default
+        self.network = Network("local", ip_networks=[ipaddress.ip_network("192.168.0.0/16")])  # reasonable default
         # online resources
         self.online_resources: Dict[str, str] = {}
         # original entities and connections
@@ -473,16 +475,7 @@ class IoTSystem(NetworkNode):
 
     def is_external(self, address: AnyAddress) -> bool:
         """Is an external network address?"""
-        h = address.get_host()
-        if h.is_global():
-            return True
-        if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
-            return False
-        # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
-        for m in self.ip_networks:
-            if h.data in m:
-                return False
-        return True
+        return not self.network.is_local(address)
 
     def learn_named_address(self, name: Union[DNSName, EntityTag], address: Optional[AnyAddress]) -> Tuple[Host, bool]:
         """Learn addresses for host, return the named host and if any changes"""
