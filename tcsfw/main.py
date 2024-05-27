@@ -21,8 +21,8 @@ class ConfigurationException(Exception):
 
 class SystemBuilder:
     """System model builder"""
-    def network(self, mask: str) -> Self:
-        """Configure network mask"""
+    def network(self, subnet="") -> 'NetworkBuilder':
+        """Configure network or subnetwork"""
         raise NotImplementedError()
 
     def device(self, name="") -> 'HostBuilder':
@@ -101,6 +101,10 @@ class NodeBuilder:
 
     def external_activity(self, value: ExternalActivity) -> Self:
         """Define external activity"""
+        raise NotImplementedError()
+
+    def in_networks(self, *network: 'NetworkBuilder') -> Self:
+        """Set networks this node interfaces with"""
         raise NotImplementedError()
 
     def software(self, name: Optional[str] = None) -> 'SoftwareBuilder':
@@ -196,6 +200,13 @@ class ConnectionBuilder:
     """Connection builder"""
     def logical_only(self) -> Self:
         """Only a logical link"""
+        raise NotImplementedError()
+
+
+class NetworkBuilder:
+    """Network or subnet builder"""
+    def mask(self, *mask: str) -> Self:
+        """Set network mask(s)"""
         raise NotImplementedError()
 
 
@@ -334,7 +345,7 @@ class SSH(ProtocolConfigurer):
 
 class TCP(ProtocolConfigurer):
     """TCP configurer"""
-    def __init__(self, port: int, name="TCP", administrative=False):
+    def __init__(self, port: int, name="TCP", networks: List[NetworkBuilder] = None, administrative=False):
         ProtocolConfigurer.__init__(self, name)
         self.port = port
         self.name = name

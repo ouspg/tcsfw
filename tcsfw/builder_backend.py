@@ -25,7 +25,7 @@ from tcsfw.release_info import ReleaseInfo
 from tcsfw.http_server import HTTPServerRunner
 from tcsfw.main import (ARP, DHCP, DNS, EAPOL, ICMP, NTP, SSH, HTTP, TCP, UDP, IP, TLS,
                         BLEAdvertisement, ClaimBuilder, ClaimSetBuilder, ConnectionBuilder,
-                        CookieBuilder, HostBuilder, NodeBuilder, NodeVisualBuilder,
+                        CookieBuilder, HostBuilder, NetworkBuilder, NodeBuilder, NodeVisualBuilder,
                         ConfigurationException, OSBuilder, ProtocolConfigurer, ProtocolType,
                         SensitiveDataBuilder, ServiceBuilder, ServiceGroupBuilder, ServiceOrGroup,
                         SoftwareBuilder, SystemBuilder, VisualizerBuilder)
@@ -51,17 +51,16 @@ class SystemBackend(SystemBuilder):
         self.system = IoTSystem(name)
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
         self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
-        self.network_masks = []
         self.claim_set = ClaimSetBackend(self)
         self.visualizer = Visualizer()
         self.loaders: List[EvidenceLoader] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
         self.address_resolver = AddressResolver()
 
-    def network(self, mask: str) -> Self:
-        self.network_masks.append(ipaddress.ip_network(mask))
-        self.system.network = Network(self.system.network.name, self.network_masks)
-        return self
+    def network(self, subnet="") -> 'NetworkBuilder':
+        if subnet:
+            return NetworkBackend(self, subnet)
+        return NetworkBuilder(self)
 
     def device(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Device")
@@ -228,6 +227,9 @@ class NodeBackend(NodeBuilder, NodeManipulator):
     def external_activity(self, value: ExternalActivity) -> Self:
         self.entity.set_external_activity(value)
         return self
+
+    def in_networks(self, *network: NetworkBuilder) -> Self:
+        self.entity.network = [n.network for n in network]
 
     def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         if name is None:
@@ -446,6 +448,20 @@ class ConnectionBackend(ConnectionBuilder):
 
     def __repr__(self):
         return self.connection.__repr__()
+
+
+class NetworkBackend(NetworkBuilder):
+    """Network or subnet backend"""
+    def __init__(self, parent: SystemBackend, name=""):
+        self.parent = parent
+        self.name = name
+        self.network = Network(name) if name else parent.system.network
+
+    def mask(self, *mask: str) -> Self:
+        self.network.mask = [ipaddress.ip_network(m) for m in mask]
+
+    def __repr__(self) -> str:
+        return self.name
 
 
 class SoftwareBackend(SoftwareBuilder):

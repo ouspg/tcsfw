@@ -126,6 +126,7 @@ class NetworkNode(Entity):
         self.visual = False  # show visual image?
         self.children: List[Addressable] = []
         self.components: List[NodeComponent] = []
+        self.network = Networks.Default  # usually copied from parent
         self.external_activity = ExternalActivity.BANNED
 
     def get_children(self) -> Iterable['Entity']:
@@ -266,7 +267,6 @@ class Addressable(NetworkNode):
     def __init__(self, name: str):
         super().__init__(name)
         self.parent: Optional[NetworkNode] = None
-        self.network = Networks.Default  # usually copied from parent
         self.addresses: Set[AnyAddress] = set()
         self.any_host = False  # can be one or many hosts
 
@@ -342,6 +342,7 @@ class Host(Addressable):
             self.addresses.add(tag)
         self.concept_name = "node"
         self.parent = parent
+        self.network = parent.network
         self.visual = True
         self.ignore_name_requests: Set[DNSName] = set()
         self.connections: List[Connection] = []  # connections initiated here
@@ -390,6 +391,7 @@ class Service(Addressable):
         super().__init__(name)
         self.concept_name = "service"
         self.parent = parent
+        self.network = parent.network
         self.protocol: Optional[Protocol] = None  # known protocol
         self.host_type = parent.host_type
         self.con_type = ConnectionType.UNKNOWN

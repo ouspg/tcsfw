@@ -35,44 +35,6 @@ class Protocol(enum.Enum):
             return default
 
 
-class Network:
-    """Network"""
-    def __init__(self, name: str, ip_networks: List[IPv4Network | IPv6Network] = None) -> None:
-        self.name = name
-        self.ip_networks = [] if ip_networks is None else ip_networks
-
-    def is_local(self, address: 'AnyAddress') -> bool:
-        """Is local address for this network?"""
-        h = address.get_host()
-        if h.is_global():
-            return False
-        if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
-            return True
-        # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
-        for m in self.ip_networks:
-            if h.data in m:
-                return True
-        return False
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, Network) and self.name == other.name
-
-    def __hash__(self) -> int:
-        return self.name.__hash__()
-
-    def __lt__(self, other):
-        return self.name < other.name
-
-    def __repr__(self) -> str:
-        return self.name
-
-
-class Networks:
-    """Network constants"""
-    Default = Network("Default")     # Default network
-    Internet = Network("Internet")   # Internet
-
-
 class AnyAddress:
     """Any address"""
     def get_ip_address(self) -> Optional['IPAddress']:
@@ -241,6 +203,10 @@ class Addresses:
     @classmethod
     def parse_address(cls, address: str) -> AnyAddress:
         """Parse any address type from string, type given as 'type|address'"""
+        ad, _, net = address.partition("@")
+        if net != "":
+            # NOTE: Network object is not properly restored
+            return NetworkAddress(Network(net), cls.parse_address(ad))
         v, _, t = address.rpartition("|")
         if v == "":
             t, v = "ip", t  # default is IP
@@ -516,3 +482,90 @@ class EndpointAddress(AnyAddress):
         port = f":{self.port}" if self.port >= 0 else ""
         prot = f"/{self.protocol.value}" if self.protocol != Protocol.ANY else ""
         return f"{self.host}{prot}{port}"
+
+
+class Network:
+    """Network"""
+    def __init__(self, name: str, ip_networks: List[IPv4Network | IPv6Network] = None) -> None:
+        self.name = name
+        # NOTE: Equality etc. is only evaluated by name
+        self.ip_networks = [] if ip_networks is None else ip_networks
+
+    def is_local(self, address: 'AnyAddress') -> bool:
+        """Is local address for this network?"""
+        h = address.get_host()
+        if h.is_global():
+            return False
+        if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
+            return True
+        # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
+        for m in self.ip_networks:
+            if h.data in m:
+                return True
+        return False
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Network) and self.name == other.name
+
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+class Networks:
+    """Network constants"""
+    Default = Network("Default")     # Default network
+    Internet = Network("Internet")   # Internet
+
+
+class NetworkAddress(AnyAddress):
+    """Address with explicit network"""
+    def __init__(self, network: Network, address: AnyAddress) -> None:
+        self.network = network
+        self.address = address
+
+    def get_ip_address(self) -> Optional[IPAddress]:
+        return self.address.get_ip_address()
+
+    def get_hw_address(self) -> Optional[HWAddress]:
+        return self.address.get_hw_address()
+
+    def get_host(self) -> Optional[AnyAddress]:
+        return self.address
+
+    def get_protocol_port(self) -> Optional[Tuple[Protocol, int]]:
+        return self.address.get_protocol_port()
+
+    def change_host(self, host: 'AnyAddress') -> Self:
+        return NetworkAddress(self.network, self.address.change_host(host))
+
+    def is_null(self) -> bool:
+        return self.address.is_null()
+
+    def is_multicast(self) -> bool:
+        return self.address.is_multicast()
+
+    def is_global(self) -> bool:
+        return self.address.is_global()
+
+    def is_tag(self) -> bool:
+        return self.address.is_tag()
+
+    def is_loopback(self) -> bool:
+        return self.address.is_loopback()
+
+    def is_wildcard(self) -> bool:
+        return self.address.is_wildcard()
+
+    def priority(self) -> int:
+        return self.address.priority() + 1
+
+    def get_parseable_value(self) -> str:
+        if self.network == Networks.Default:
+            return self.address.get_parseable_value()
+        return f"{self.address.get_parseable_value()}@{self.network.name}"
