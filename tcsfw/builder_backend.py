@@ -595,6 +595,7 @@ class ProtocolBackend:
         self.host_type = HostType.GENERIC
         self.con_type = ConnectionType.UNKNOWN
         self.authentication = False
+        self.networks: List[Network] = []
         self.external_activity: Optional[ExternalActivity.BANNED] = None
         self.critical_parameter: List[SensitiveData] = []
 
@@ -634,6 +635,7 @@ class ProtocolBackend:
         if self.external_activity is not None:
             s.entity.external_activity = self.external_activity
         s.entity.protocol = self.protocol
+        s.entity.networks = self.networks
         return s
 
     def __repr__(self):
@@ -816,6 +818,7 @@ class TCPBackend(ProtocolBackend):
 
     def __init__(self, configurer: TCP):
         super().__init__(Protocol.TCP, port=configurer.port, name=configurer.name)
+        self.networks = [n.network for n in configurer.networks]
         if configurer.administrative:
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE

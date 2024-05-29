@@ -126,7 +126,7 @@ class NetworkNode(Entity):
         self.visual = False  # show visual image?
         self.children: List[Addressable] = []
         self.components: List[NodeComponent] = []
-        self.networks = [Networks.Default]  # usually copied from parent
+        self.networks: List[Network] = []  # empty means 'same as parent'
         self.external_activity = ExternalActivity.BANNED
 
     def get_children(self) -> Iterable['Entity']:
@@ -170,10 +170,9 @@ class NetworkNode(Entity):
 
     def get_ip_network(self, address: IPAddress) -> Network:
         """Resolve IP network for IP address"""
-        if len(self.networks) > 1:
-            for nw in self.networks:
-                if nw.ip_network and (address.data in nw.ip_network):
-                    return nw
+        for nw in self.networks:
+            if nw.ip_network and (address.data in nw.ip_network):
+                return nw
         return self.networks[0]  # the default
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
@@ -311,9 +310,8 @@ class Addressable(NetworkNode):
 
     def get_ip_network(self, address: IPAddress) -> Network:
         """Resolve IP network for IP address"""
-        if self.parent and self.parent.networks == self.networks:
-            # avoid repeating the same check
-            return self.parent.get_ip_network(address)
+        if not self.networks:
+            return self.parent.get_ip_network(address)  # follow parent
         return super().get_ip_network(address)
 
     def get_addresses(self, ads: Set[AnyAddress] = None) -> Set[AnyAddress]:
@@ -333,9 +331,13 @@ class Addressable(NetworkNode):
     def get_endpoint(self, address: AnyAddress) -> 'Addressable':
         for c in self.children:
             if address in c.addresses:
-                return c
+                return c  # exact address - match without network checks
             for a in c.addresses:
                 if a.is_wildcard():
+                    if c.networks:
+                        # wildcard match with network check
+                        if not all(n.is_local(address) for n in c.networks):
+                            continue
                     ac = a.change_host(address.get_host())
                     if ac == address:
                         return c
@@ -368,7 +370,7 @@ class Host(Addressable):
             self.addresses.add(tag)
         self.concept_name = "node"
         self.parent = parent
-        self.networks = parent.networks
+        self.networks = [] # follow parent
         self.visual = True
         self.ignore_name_requests: Set[DNSName] = set()
         self.connections: List[Connection] = []  # connections initiated here
@@ -417,7 +419,7 @@ class Service(Addressable):
         super().__init__(name)
         self.concept_name = "service"
         self.parent = parent
-        self.networks = parent.networks
+        self.networks = [] # follow parent
         self.protocol: Optional[Protocol] = None  # known protocol
         self.host_type = parent.host_type
         self.con_type = ConnectionType.UNKNOWN

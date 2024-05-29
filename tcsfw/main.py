@@ -260,8 +260,9 @@ class VisualizerBuilder:
 
 class ProtocolConfigurer:
     """Protocol configurer base class"""
-    def __init__(self, name: str):
+    def __init__(self, name: str, networks: Optional[List[NetworkBuilder]] = None):
         self.name = name
+        self.networks = networks or []
 
     def __repr__(self) -> str:
         return self.name
@@ -346,7 +347,7 @@ class SSH(ProtocolConfigurer):
 class TCP(ProtocolConfigurer):
     """TCP configurer"""
     def __init__(self, port: int, name="TCP", networks: List[NetworkBuilder] = None, administrative=False):
-        ProtocolConfigurer.__init__(self, name)
+        ProtocolConfigurer.__init__(self, name, networks)
         self.port = port
         self.name = name
         self.administrative = administrative

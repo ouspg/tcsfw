@@ -3,7 +3,7 @@ from tcsfw.inspector import Inspector
 from tcsfw.model import Host, IoTSystem
 from tcsfw.verdict import Verdict
 from tcsfw.builder_backend import SystemBackend
-from tcsfw.main import UDP, SSH
+from tcsfw.main import TCP, UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.basics import ExternalActivity
 from tcsfw.traffic import NO_EVIDENCE, IPFlow, ServiceScan
@@ -444,7 +444,7 @@ def test_reply_misinterpretation():
     assert c0 != c1
 
 
-def test_unknown_service_in_subnet():
+def test_pick_service_from_subnet():
     su = Setup()
     net1 = su.system.network("VPN", "169.254.0.0/16")
     dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
@@ -453,8 +453,30 @@ def test_unknown_service_in_subnet():
     addr = AddressEnvelope(
         address=IPAddress.new("192.168.4.5"),
         content=EndpointAddress.ip("169.254.6.7", Protocol.UDP, 1234))
-    ins.service_scan(ServiceScan(NO_EVIDENCE, addr))
-    assert len(dev1.entity.children) == 1
-    ser = dev1.entity.children[0]
-    assert ser.name == "UDP:1234@VPN"
-    assert ser.networks == [net1.network]
+
+
+def test_unknown_service_in_subnet():
+    su = Setup()
+    net1 = su.system.network("VPN", "169.254.0.0/16")
+    dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
+    ser1_1 = dev1 / TCP(8686, networks=[net1])
+    system = su.get_system()
+
+    # the known service with envelope address
+    addr = AddressEnvelope(
+        address=IPAddress.new("192.168.4.5"),
+        content=EndpointAddress.ip("169.254.6.7", Protocol.TCP, 8686))
+    s0 = system.get_endpoint(addr)
+    assert s0 == ser1_1.entity
+    assert s0.get_parent_host() == dev1.entity
+
+    # right host, but service in different subnet
+    addr = EndpointAddress.ip("192.168.4.5", Protocol.TCP, 8686)
+    s0 = system.get_endpoint(addr)
+    assert s0 != ser1_1.entity
+
+    # address like in subnet, but actully for host
+    assert s0.get_parent_host() == dev1.entity
+    addr = EndpointAddress.ip("169.254.6.7", Protocol.TCP, 8686)
+    s0 = system.get_endpoint(addr)
+    assert s0.get_parent_host() != dev1.entity
