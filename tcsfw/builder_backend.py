@@ -230,6 +230,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
 
     def in_networks(self, *network: NetworkBuilder) -> Self:
         self.entity.networks = [n.network for n in network]
+        return self
 
     def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         if name is None:

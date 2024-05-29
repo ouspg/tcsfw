@@ -111,7 +111,7 @@ class Event:
 
 class ServiceScan(Event):
     """Individual service scan result"""
-    def __init__(self, evidence: Evidence, endpoint: EndpointAddress, service_name=""):
+    def __init__(self, evidence: Evidence, endpoint: AnyAddress, service_name=""):
         super().__init__(evidence)
         self.endpoint = endpoint
         self.service_name = service_name
