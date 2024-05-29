@@ -1,4 +1,4 @@
-from tcsfw.address import EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
+from tcsfw.address import AddressEnvelope, EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
 from tcsfw.inspector import Inspector
 from tcsfw.model import Host, IoTSystem
 from tcsfw.verdict import Verdict
@@ -6,7 +6,7 @@ from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.basics import ExternalActivity
-from tcsfw.traffic import IPFlow
+from tcsfw.traffic import NO_EVIDENCE, IPFlow, ServiceScan
 from tcsfw.basics import Status
 
 
@@ -444,3 +444,17 @@ def test_reply_misinterpretation():
     assert c0 != c1
 
 
+def test_unknown_service_in_subnet():
+    su = Setup()
+    net1 = su.system.network("VPN", "169.254.0.0/16")
+    dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
+
+    ins = su.get_inspector()
+    addr = AddressEnvelope(
+        address=IPAddress.new("192.168.4.5"),
+        content=EndpointAddress.ip("169.254.6.7", Protocol.UDP, 1234))
+    ins.service_scan(ServiceScan(NO_EVIDENCE, addr))
+    assert len(dev1.entity.children) == 1
+    ser = dev1.entity.children[0]
+    assert ser.name == "UDP:1234@VPN"
+    assert ser.networks == [net1.network]

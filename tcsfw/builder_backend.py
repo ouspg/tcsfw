@@ -57,10 +57,14 @@ class SystemBackend(SystemBuilder):
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
         self.address_resolver = AddressResolver()
 
-    def network(self, subnet="") -> 'NetworkBuilder':
+    def network(self, subnet="", ip_mask: Optional[str] = None) -> 'NetworkBuilder':
         if subnet:
-            return NetworkBackend(self, subnet)
-        return NetworkBackend(self)
+            nb = NetworkBackend(self, subnet)
+        else:
+            nb = NetworkBackend(self)
+        if ip_mask:
+            nb.mask(ip_mask)
+        return nb
 
     def device(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Device")
@@ -459,7 +463,7 @@ class NetworkBackend(NetworkBuilder):
         self.network = Network(name) if name else parent.system.networks[0]
 
     def mask(self, mask: str) -> Self:
-        self.network.mask = ipaddress.ip_network(mask)
+        self.network.ip_network = ipaddress.ip_network(mask)
         return self
 
     def __repr__(self) -> str:

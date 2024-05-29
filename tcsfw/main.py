@@ -205,7 +205,7 @@ class ConnectionBuilder:
 
 class NetworkBuilder:
     """Network or subnet builder"""
-    def mask(self, *mask: str) -> Self:
+    def mask(self, mask: str) -> Self:
         """Set network mask(s)"""
         raise NotImplementedError()
 

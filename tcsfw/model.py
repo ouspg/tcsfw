@@ -172,9 +172,9 @@ class NetworkNode(Entity):
         """Resolve IP network for IP address"""
         if len(self.networks) > 1:
             for nw in self.networks:
-                if nw.ip_network and address in nw.ip_network:
+                if nw.ip_network and (address.data in nw.ip_network):
                     return nw
-        return nw[0]  # the default
+        return self.networks[0]  # the default
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""
@@ -279,7 +279,18 @@ class Addressable(NetworkNode):
         self.any_host = False  # can be one or many hosts
 
     def create_service(self, address: EndpointAddress) -> 'Service':
-        s = Service(Service.make_name(f"{address.protocol.value.upper()}", address.port), self)
+        s_name = Service.make_name(f"{address.protocol.value.upper()}", address.port)
+        nw = None
+        if address.get_ip_address():
+            nw = self.get_ip_network(address.get_ip_address())
+            # update name with network, if non-default
+            if nw:
+                host_nws = self.get_system().networks
+                if nw != host_nws[0]:
+                    s_name = f"{s_name}@{nw.name}"
+        s = Service(s_name, self)
+        if nw:
+            s.networks = [nw]  # specific network
         s.addresses.add(address.change_host(Addresses.ANY))
         if self.status == Status.EXTERNAL:
             s.status = Status.EXTERNAL  # only external propagates, otherwise unexpected
