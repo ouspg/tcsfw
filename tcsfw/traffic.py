@@ -3,7 +3,7 @@
 import datetime
 from typing import Any, Callable, Tuple, Set, Optional, Self, Dict
 
-from tcsfw.address import EntityTag, HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, \
+from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, \
     AnyAddress, Addresses
 from tcsfw.property import PropertyKey
 

@@ -459,7 +459,7 @@ def test_unknown_service_in_subnet():
     su = Setup()
     net1 = su.system.network("VPN", "169.254.0.0/16")
     dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
-    ser1_1 = dev1 / TCP(8686, networks=[net1])
+    ser1_1 = dev1 / TCP(8686).in_network(net1)
     system = su.get_system()
 
     # the known service with envelope address

@@ -6,7 +6,7 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Networks, Protocol, IPAddress, \
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Protocol, IPAddress, \
     HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity

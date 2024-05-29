@@ -3,7 +3,7 @@
 import enum
 import ipaddress
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
-from typing import List, Union, Optional, Tuple, Iterable, Self
+from typing import Union, Optional, Tuple, Iterable, Self
 
 
 class Protocol(enum.Enum):
