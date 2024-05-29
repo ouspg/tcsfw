@@ -126,7 +126,7 @@ class NetworkNode(Entity):
         self.visual = False  # show visual image?
         self.children: List[Addressable] = []
         self.components: List[NodeComponent] = []
-        self.network = Networks.Default  # usually copied from parent
+        self.networks = [Networks.Default]  # usually copied from parent
         self.external_activity = ExternalActivity.BANNED
 
     def get_children(self) -> Iterable['Entity']:
@@ -167,6 +167,14 @@ class NetworkNode(Entity):
 
     def is_admin(self) -> bool:
         return self.host_type == HostType.ADMINISTRATIVE
+
+    def get_ip_network(self, address: IPAddress) -> Network:
+        """Resolve IP network for IP address"""
+        if len(self.networks) > 1:
+            for nw in self.networks:
+                if nw.ip_network and address in nw.ip_network:
+                    return nw
+        return nw[0]  # the default
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""
@@ -290,6 +298,13 @@ class Addressable(NetworkNode):
             return True
         return self.addresses and any(a.is_multicast() for a in self.addresses)
 
+    def get_ip_network(self, address: IPAddress) -> Network:
+        """Resolve IP network for IP address"""
+        if self.parent and self.parent.networks == self.networks:
+            # avoid repeating the same check
+            return self.parent.get_ip_network(address)
+        return super().get_ip_network(address)
+
     def get_addresses(self, ads: Set[AnyAddress] = None) -> Set[AnyAddress]:
         """Get all addresses"""
         ads = set() if ads is None else ads
@@ -342,7 +357,7 @@ class Host(Addressable):
             self.addresses.add(tag)
         self.concept_name = "node"
         self.parent = parent
-        self.network = parent.network
+        self.networks = parent.networks
         self.visual = True
         self.ignore_name_requests: Set[DNSName] = set()
         self.connections: List[Connection] = []  # connections initiated here
@@ -391,7 +406,7 @@ class Service(Addressable):
         super().__init__(name)
         self.concept_name = "service"
         self.parent = parent
-        self.network = parent.network
+        self.networks = parent.networks
         self.protocol: Optional[Protocol] = None  # known protocol
         self.host_type = parent.host_type
         self.con_type = ConnectionType.UNKNOWN
@@ -447,7 +462,7 @@ class IoTSystem(NetworkNode):
         self.concept_name = "system"
         self.status = Status.EXPECTED
         # network mask(s)
-        self.network = Network("local", ip_networks=[ipaddress.ip_network("192.168.0.0/16")])  # reasonable default
+        self.networks = [Network("local", ip_network=ipaddress.ip_network("192.168.0.0/16"))]  # reasonable default
         # online resources
         self.online_resources: Dict[str, str] = {}
         # original entities and connections
@@ -477,7 +492,10 @@ class IoTSystem(NetworkNode):
 
     def is_external(self, address: AnyAddress) -> bool:
         """Is an external network address?"""
-        return not self.network.is_local(address)
+        for nw in self.networks:
+            if nw.is_local(address):
+                return False
+        return True
 
     def learn_named_address(self, name: Union[DNSName, EntityTag], address: Optional[AnyAddress]) -> Tuple[Host, bool]:
         """Learn addresses for host, return the named host and if any changes"""
@@ -574,10 +592,11 @@ class IoTSystem(NetworkNode):
     def get_endpoint(self, address: AnyAddress) -> Addressable:
         """Get or create a new endpoint, service or host"""
         h_add = address.get_host()
+        e_add = address.open_envelope()  # scan from inside is in envelope
         for e in self.children:
             if h_add in e.addresses:
-                if isinstance(address, EndpointAddress):
-                    e = e.get_endpoint(address) or e
+                if isinstance(e_add, EndpointAddress):
+                    e = e.get_endpoint(e_add) or e
                 break
         else:
             # create new host and possibly service
@@ -590,8 +609,8 @@ class IoTSystem(NetworkNode):
             e.addresses.add(h_add)
             e.external_activity = ExternalActivity.UNLIMITED  # we know nothing about its behavior
             self.children.append(e)
-        if isinstance(address, EndpointAddress) and e.is_host():
-            e = e.create_service(address)
+        if isinstance(e_add, EndpointAddress) and e.is_host():
+            e = e.create_service(e_add)
         return e
 
     def new_connection(self, source: Tuple[Addressable, AnyAddress],

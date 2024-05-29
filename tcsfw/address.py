@@ -49,8 +49,8 @@ class AnyAddress:
         """Get host or self"""
         return self
 
-    def get_origin(self) -> 'AnyAddress':
-        """Get the origin, loosely after URL naming, which is host and possible port"""
+    def open_envelope(self) -> 'AnyAddress':
+        """Open address envelope, if any. If none, return this address"""
         return self
 
     def get_protocol_port(self) -> Optional[Tuple[Protocol, int]]:
@@ -203,10 +203,9 @@ class Addresses:
     @classmethod
     def parse_address(cls, address: str) -> AnyAddress:
         """Parse any address type from string, type given as 'type|address'"""
-        ad, _, net = address.partition("@")
-        if net != "":
-            # NOTE: Network object is not properly restored
-            return NetworkAddress(Network(net), cls.parse_address(ad))
+        ad, _, con = address.partition("(")
+        if con and con.endswith(")"):
+            return AddressEnvelope(cls.parse_address(ad), cls.parse_address(con[:-1]))
         v, _, t = address.rpartition("|")
         if v == "":
             t, v = "ip", t  # default is IP
@@ -223,6 +222,9 @@ class Addresses:
     @classmethod
     def parse_endpoint(cls, value: str) -> AnyAddress:
         """Parse address or endpoint"""
+        ad, _, con = value.partition("(")
+        if con and con.endswith(")"):
+            return AddressEnvelope(cls.parse_address(ad), cls.parse_endpoint(con[:-1]))
         a, _, p = value.partition("/")
         addr = cls.parse_address(a)
         if p == "":
@@ -486,10 +488,10 @@ class EndpointAddress(AnyAddress):
 
 class Network:
     """Network"""
-    def __init__(self, name: str, ip_networks: List[IPv4Network | IPv6Network] = None) -> None:
+    def __init__(self, name: str, ip_network: Optional[IPv4Network | IPv6Network] = None) -> None:
         self.name = name
         # NOTE: Equality etc. is only evaluated by name
-        self.ip_networks = [] if ip_networks is None else ip_networks
+        self.ip_network = ip_network
 
     def is_local(self, address: 'AnyAddress') -> bool:
         """Is local address for this network?"""
@@ -499,10 +501,7 @@ class Network:
         if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
             return True
         # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
-        for m in self.ip_networks:
-            if h.data in m:
-                return True
-        return False
+        return h.data in self.ip_network
 
     def __eq__(self, other) -> bool:
         return isinstance(other, Network) and self.name == other.name
@@ -523,11 +522,14 @@ class Networks:
     Internet = Network("Internet")   # Internet
 
 
-class NetworkAddress(AnyAddress):
-    """Address with explicit network"""
-    def __init__(self, network: Network, address: AnyAddress) -> None:
-        self.network = network
+class AddressEnvelope(AnyAddress):
+    """Address envelope carrying content address"""
+    def __init__(self, address: AnyAddress, content: AnyAddress):
         self.address = address
+        self.content = content
+
+    def open_envelope(self) -> 'AnyAddress':
+        return self.content
 
     def get_ip_address(self) -> Optional[IPAddress]:
         return self.address.get_ip_address()
@@ -542,7 +544,7 @@ class NetworkAddress(AnyAddress):
         return self.address.get_protocol_port()
 
     def change_host(self, host: 'AnyAddress') -> Self:
-        return NetworkAddress(self.network, self.address.change_host(host))
+        return AddressEnvelope(self.address.change_host(host), self.content)
 
     def is_null(self) -> bool:
         return self.address.is_null()
@@ -566,6 +568,15 @@ class NetworkAddress(AnyAddress):
         return self.address.priority() + 1
 
     def get_parseable_value(self) -> str:
-        if self.network == Networks.Default:
-            return self.address.get_parseable_value()
-        return f"{self.address.get_parseable_value()}@{self.network.name}"
+        return f"{self.address.get_parseable_value()}({self.content.get_parseable_value()})"
+
+    def __eq__(self, other):
+        if not isinstance(other, AddressEnvelope):
+            return False
+        return self.address == other.address and self.content == other.content
+
+    def __hash__(self):
+        return self.address.__hash__() ^ self.content.__hash__()
+
+    def __repr__(self) -> str:
+        return f"{self.address}({self.content})"

@@ -60,7 +60,7 @@ class SystemBackend(SystemBuilder):
     def network(self, subnet="") -> 'NetworkBuilder':
         if subnet:
             return NetworkBackend(self, subnet)
-        return NetworkBuilder(self)
+        return NetworkBackend(self)
 
     def device(self, name="") -> 'HostBackend':
         name = name or self._free_host_name("Device")
@@ -229,7 +229,7 @@ class NodeBackend(NodeBuilder, NodeManipulator):
         return self
 
     def in_networks(self, *network: NetworkBuilder) -> Self:
-        self.entity.network = [n.network for n in network]
+        self.entity.networks = [n.network for n in network]
 
     def software(self, name: Optional[str] = None) -> 'SoftwareBackend':
         if name is None:
@@ -455,10 +455,11 @@ class NetworkBackend(NetworkBuilder):
     def __init__(self, parent: SystemBackend, name=""):
         self.parent = parent
         self.name = name
-        self.network = Network(name) if name else parent.system.network
+        self.network = Network(name) if name else parent.system.networks[0]
 
-    def mask(self, *mask: str) -> Self:
-        self.network.mask = [ipaddress.ip_network(m) for m in mask]
+    def mask(self, mask: str) -> Self:
+        self.network.mask = ipaddress.ip_network(mask)
+        return self
 
     def __repr__(self) -> str:
         return self.name

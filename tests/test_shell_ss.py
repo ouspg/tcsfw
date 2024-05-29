@@ -26,19 +26,22 @@ def test_shell_ss_pass():
     assert len(hs) == 6
     h = hs[0]
     assert h.status_verdict() == (Status.EXPECTED, Verdict.PASS)
-    assert len(h.children) == 5
+    assert len(h.children) == 6
     s = h.children[0]
     assert s.long_name() == "Device SSH:22"
     assert s.status_verdict() == (Status.EXPECTED, Verdict.PASS)
     s = h.children[1]
-    assert s.long_name() == "Device UDP:68"
+    assert s.long_name() == "Device TCP:51337"
     assert s.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
     s = h.children[2]
-    assert s.long_name() == "Device TCP:41337"
+    assert s.long_name() == "Device UDP:68"
     assert s.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
     s = h.children[3]
-    assert s.long_name() == "Device UDP:1194"
+    assert s.long_name() == "Device TCP:41337"
     assert s.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
     s = h.children[4]
+    assert s.long_name() == "Device UDP:1194"
+    assert s.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)
+    s = h.children[5]
     assert s.long_name() == "Device UDP:123"
     assert s.status_verdict() == (Status.UNEXPECTED, Verdict.FAIL)

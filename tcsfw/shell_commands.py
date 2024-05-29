@@ -3,7 +3,7 @@
 from io import BytesIO, TextIOWrapper
 import re
 from typing import Any, Dict, List, Set, Tuple
-from tcsfw.address import Addresses, AnyAddress, EndpointAddress, HWAddresses, IPAddress
+from tcsfw.address import AddressEnvelope, Addresses, AnyAddress, EndpointAddress, HWAddresses, IPAddress
 from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
 from tcsfw.model import IoTSystem
@@ -113,7 +113,7 @@ class ShellCommandSs(EndpointTool):
                          source: EvidenceSource):
         columns: Dict[str, int] = {}
         local_ads = set()
-        services = set()
+        services: Set[EndpointAddress] = set()
         conns = set()
 
         node = self.system.get_endpoint(endpoint)
@@ -171,7 +171,7 @@ class ShellCommandSs(EndpointTool):
         if self.send_events:
             evidence = Evidence(source)
             for addr in sorted(services):
-                scan = ServiceScan(evidence, addr)
+                scan = ServiceScan(evidence, endpoint=AddressEnvelope(tag, addr) if tag else addr)
                 interface.service_scan(scan)
             # NOTE: Create host scan event to report missing services
 

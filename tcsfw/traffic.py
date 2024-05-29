@@ -3,8 +3,8 @@
 import datetime
 from typing import Any, Callable, Tuple, Set, Optional, Self, Dict
 
-from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, AnyAddress, \
-    Addresses
+from tcsfw.address import EntityTag, HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, \
+    AnyAddress, Addresses
 from tcsfw.property import PropertyKey
 
 
@@ -117,10 +117,11 @@ class ServiceScan(Event):
         self.service_name = service_name
 
     def get_data_json(self, _id_resolver: Callable[[Any], Any]) -> Dict:
-        return {
+        r = {
             "endpoint": self.endpoint.get_parseable_value(),
             "service": self.service_name,
         }
+        return r
 
     @classmethod
     def decode_data_json(cls, evidence: Evidence, data: Dict, _entity_resolver: Callable[[Any], Any]) -> 'ServiceScan':
