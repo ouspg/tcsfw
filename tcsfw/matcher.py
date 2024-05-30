@@ -1,9 +1,10 @@
 """Match events into system model"""
 
+from dataclasses import dataclass
 import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
-from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName
+from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName, Network
 from tcsfw.basics import ExternalActivity, Status
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
@@ -100,7 +101,7 @@ class ConnectionFinder:
         self.unexpected = unexpected  # also check unexpected connections?
 
     def add_source(self, source: AddressMatch) -> Optional[ConnectionMatch]:
-        """Add source connection, priority order, return connection if found"""
+        """Add connection source, priority order, return connection if found"""
         if source.endpoint.entity in self.sources:
             return None
         m = source.endpoint.match_connection(source, self.targets.values(), self.unexpected)
@@ -110,7 +111,7 @@ class ConnectionFinder:
         return None
 
     def add_target(self, target: AddressMatch) -> Optional[ConnectionMatch]:
-        """Add target connection, priority order, return connection if found"""
+        """Add connection target, priority order, return connection if found"""
         if target.endpoint.entity in self.targets:
             return None
         for s in self.sources.values():
@@ -121,7 +122,7 @@ class ConnectionFinder:
         return None
 
     def add_matches(self, matches: List[AddressMatch], target: bool):
-        """Add list of ends, priority order"""
+        """Add list of source or target ends, priority order"""
         for em in matches:
             m = self.add_target(em) if target else self.add_source(em)
             if m:
@@ -248,14 +249,13 @@ class MatchEngine:
             return rc
         return None
 
-    def create_unknown_service(self, connection: ConnectionMatch):
+    def create_unknown_service(self, match: ConnectionMatch):
         """Create an unknown service due observing reply from it"""
         system = self.system.system
-        m = connection
-        conn = m.connection
+        conn = match.connection
         target_h = conn.target
         assert isinstance(target_h, Host)
-        n_service_ep = m.target.address
+        n_service_ep = match.target.address
         assert conn not in target_h.connections, "Connection already added to target host"
         assert isinstance(n_service_ep, EndpointAddress), "Expected endpoint address from observation cache"
         # change connection to point the new service
