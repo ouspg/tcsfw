@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
-from tcsfw.address import AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName, Network
+from tcsfw.address import AddressAtNetwork, AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName, IPAddresses, Network, Networks
 from tcsfw.basics import ExternalActivity, Status
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
@@ -151,7 +151,7 @@ class MatchEngine:
     """Match engine, can have engines for different sources"""
     def __init__(self, system: SystemMatcher, source: EvidenceSource):
         self.system = system
-        self.endpoints: Dict[AnyAddress, List[MatchEndpoint]] = {}
+        self.endpoints: Dict[AddressAtNetwork, List[MatchEndpoint]] = {}
         self.observed: Dict[Flow, ConnectionMatch] = {}
         self.source = source if isinstance(source, EvidenceNetworkSource) else None
         for h in system.system.get_hosts():
@@ -159,15 +159,19 @@ class MatchEngine:
         if self.source:
             # load source-specific stuff
             for ad, ent in self.source.address_map.items():
-                ex_ent = self.endpoints.setdefault(ad, [])
-                for ex in ex_ent:
-                    if ex.entity == ent:
-                        ex.add_address(ad)  # entity has new address
-                        break
-                else:
-                    # no other addresses, but source-specific one
-                    ex_ent.append(self._add_host(ent).add_address(ad))
+                ad_networks = ent.get_networks_for(ad)
+                # add entity for corrent network(s)
+                for nw in ad_networks:
+                    ex_ent = self.endpoints.setdefault(AddressAtNetwork(ad, nw), [])
+                    for ex in ex_ent:
+                        if ex.entity == ent:
+                            ex.add_address(ad)  # entity has new address
+                            break
+                    else:
+                        # no other addresses, but source-specific one
+                        ex_ent.append(self._add_host(ent).add_address(ad))
             for me in itertools.chain(*self.endpoints.values()):
+                # check if exteranal activity changes for some entities
                 fs = self.source.activity_map.get(me.entity)
                 if fs is not None:
                     me.external_activity = fs
@@ -176,8 +180,11 @@ class MatchEngine:
         """Update addresses for a host"""
         # remove old mappings for the addresses
         for ad in old:
-            ends = self.endpoints.get(ad, [])
-            self.endpoints[ad] = [m for m in ends if m.entity != host]
+            ad_networks = host.get_networks_for(ad)
+            for nw in ad_networks:
+                key = AddressAtNetwork(ad, nw)
+                ends = self.endpoints.get(key, [])
+                self.endpoints[key] = [m for m in ends if m.entity != host]
         # add the host again
         self._add_host(host)
 
@@ -192,12 +199,15 @@ class MatchEngine:
             me = MatchEndpoint(entity, priority_services=True)
             for ad in ads:
                 # match service, may fallback to host and create unexpected services
-                self.endpoints.setdefault(ad, []).append(me)
+                ad_networks = entity.get_networks_for(ad)
+                for nw in ad_networks:
+                    self.endpoints.setdefault(AddressAtNetwork(ad, nw), []).append(me)
         else:
             # no addresses, but services -> match any with service ports
             # no addresses and no services -> match any flow
             me = MatchEndpoint(entity, match_no_service=not entity.children)
-            self.endpoints.setdefault(Addresses.ANY, []).append(me)
+            for nw in entity.get_networks():
+                self.endpoints.setdefault(AddressAtNetwork(Addresses.ANY, nw), []).append(me)
         return me
 
     def get_connection(self, flow: Flow) -> ConnectionMatch:
@@ -251,6 +261,10 @@ class MatchEngine:
 
     def create_unknown_service(self, match: ConnectionMatch):
         """Create an unknown service due observing reply from it"""
+
+        # FIXME: Not updated with new address scheme
+        assert False, "Not implemented"
+
         system = self.system.system
         conn = match.connection
         target_h = conn.target
@@ -344,7 +358,8 @@ class MatchEngine:
                             return m
 
         # 3. match <any address> + service
-        wild_ends = self.endpoints.get(Addresses.ANY, [])
+        wild_ends = self.endpoints.get(
+            AddressAtNetwork(Addresses.ANY, flow.network or self.system.system.get_default_network()), [])
         for target, match_ads in match_address.items():
             for end in wild_ends:
                 for ad in match_ads:
@@ -364,14 +379,18 @@ class MatchEngine:
                             return m
         return None
 
-    def _match_addresses(self, flow: Flow, target: bool) -> Tuple[AnyAddress]:
+    def _match_addresses(self, flow: Flow, target: bool) -> Tuple[AddressAtNetwork, ...]:
         """Resolve matching addresses for a flow"""
+
+        net = flow.network or self.system.system.get_default_network()
+
         if isinstance(flow, IPFlow):
             end = flow.target if target else flow.source
             if self.system.system.is_external(end[1]):
-                return end[1:2]  # only match by the global IP
-            return end[0:2]
-        return flow.stack(target)
+                return (AddressAtNetwork(end[1], net), )  # match by IP only (HW for gateway)
+            return tuple(AddressAtNetwork(e, net) for e in end[0:2]) # HW and IP
+
+        return tuple(AddressAtNetwork(e, net) for e in flow.stack(target))
 
     def new_endpoint(self, flow: Flow, target: bool) -> 'AddressMatch':
         """Create a new endpoint host"""
@@ -384,7 +403,7 @@ class MatchEngine:
                 break
             if use_ad.is_null() and not ad.is_null():
                 use_ad = ad  # prefer non-null address
-        host = system.get_endpoint(use_ad)
+        host = system.get_endpoint(use_ad, at_network=flow.network)
         # target address with port
         ad = EndpointAddress(use_ad, flow.protocol, flow.port(target))
         return AddressMatch(ad, self._add_host(host))

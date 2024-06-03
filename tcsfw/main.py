@@ -1,7 +1,7 @@
 """Model builder"""
 
 from typing import Dict, List, Optional, Self, Tuple, Type, Union
-from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses
+from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses, Network
 from tcsfw.selector import RequirementSelector
 from tcsfw.basics import ConnectionType, HostType, ExternalActivity
 from tcsfw.verdict import Verdict
@@ -205,6 +205,9 @@ class ConnectionBuilder:
 
 class NetworkBuilder:
     """Network or subnet builder"""
+    def __init__(self, network: Network):
+        self.network = network
+
     def mask(self, mask: str) -> Self:
         """Set network mask(s)"""
         raise NotImplementedError()

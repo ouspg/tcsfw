@@ -10,8 +10,8 @@ import shutil
 import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
-from tcsfw.address import (Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
-                           HWAddresses, IPAddress, IPAddresses, Network, Protocol)
+from tcsfw.address import (AddressAtNetwork, Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
+                           HWAddresses, IPAddress, IPAddresses, Network, Networks, Protocol)
 from tcsfw.address_resolver import AddressResolver
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
@@ -50,7 +50,7 @@ class SystemBackend(SystemBuilder):
     def __init__(self, name="Unnamed system"):
         self.system = IoTSystem(name)
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
-        self.entity_by_address: Dict[AnyAddress, 'NodeBackend'] = {}
+        self.entity_by_address: Dict[AddressAtNetwork, 'NodeBackend'] = {}
         self.claim_set = ClaimSetBackend(self)
         self.visualizer = Visualizer()
         self.loaders: List[EvidenceLoader] = []
@@ -217,10 +217,13 @@ class NodeBackend(NodeBuilder, NodeManipulator):
 
     def dns(self, name: str) -> Self:
         dn = DNSName(name)
-        if dn in self.system.entity_by_address:
-            raise ConfigurationException(f"Using name many times: {dn}")
-        self.system.entity_by_address[dn] = self
+        networks = self.entity.get_networks_for(dn)
+        assert len(networks) == 1, "DNS name must be in one network"
         self.entity.addresses.add(dn)
+        key = AddressAtNetwork(dn, networks[0])
+        if key in self.system.entity_by_address:
+            raise ConfigurationException(f"Using name many times: {dn}")
+        self.system.entity_by_address[key] = self
         return self
 
     def describe(self, text: str) -> Self:
@@ -233,6 +236,8 @@ class NodeBackend(NodeBuilder, NodeManipulator):
         return self
 
     def in_networks(self, *network: NetworkBuilder) -> Self:
+        if any(a.get_ip_address() for a in self.entity.addresses):
+            raise ConfigurationException(f"Cannot set network after IP addresses for {self.entity.name}")
         self.entity.networks = [n.network for n in network]
         return self
 
@@ -266,12 +271,17 @@ class NodeBackend(NodeBuilder, NodeManipulator):
 
     def new_address_(self, address: AnyAddress) -> AnyAddress:
         """Add new address to the entity"""
-        old = self.system.entity_by_address.get(address)
-        if old:
-            raise ConfigurationException(
-                f"Duplicate address {address}, reserved by: {old.entity.name}")
+        networks = self.entity.get_networks_for(address)
+        if not networks:
+            raise ConfigurationException(f"Address {address} not in any network range of {self.entity.name}")
         self.entity.addresses.add(address)
-        self.system.entity_by_address[address] = self
+        for nw in networks:
+            key = AddressAtNetwork(address, nw)
+            old = self.system.entity_by_address.get(key)
+            if old:
+                raise ConfigurationException(
+                    f"Duplicate address {address}, reserved by: {old.entity.name}")
+            self.system.entity_by_address[key] = self
         return address
 
     def new_service_(self, name: str, port=-1):
@@ -458,9 +468,9 @@ class ConnectionBackend(ConnectionBuilder):
 class NetworkBackend(NetworkBuilder):
     """Network or subnet backend"""
     def __init__(self, parent: SystemBackend, name=""):
+        super().__init__(Network(name) if name else parent.system.get_default_network())
         self.parent = parent
         self.name = name
-        self.network = Network(name) if name else parent.system.networks[0]
 
     def mask(self, mask: str) -> Self:
         self.network.ip_network = ipaddress.ip_network(mask)

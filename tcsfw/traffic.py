@@ -3,7 +3,7 @@
 import datetime
 from typing import Any, Callable, Tuple, Set, Optional, Self, Dict
 
-from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Protocol, EndpointAddress, \
+from tcsfw.address import HWAddress, IPAddress, HWAddresses, IPAddresses, Network, Protocol, EndpointAddress, \
     AnyAddress, Addresses
 from tcsfw.property import PropertyKey
 
@@ -160,6 +160,7 @@ class Flow(Event):
     def __init__(self, evidence: Evidence, protocol=Protocol.ANY):
         super().__init__(evidence)
         self.protocol = protocol
+        self.network: Optional[Network] = None  # non-default network
         self.reply = False  # Is this reply? Set by inspector
         self.timestamp: Optional[datetime.datetime] = None
         self.properties: Dict[PropertyKey, Any] = {}  # optional properties for the connection
@@ -174,6 +175,10 @@ class Flow(Event):
 
     def reverse(self) -> Self:
         """Reverse the flow"""
+        raise NotImplementedError()
+
+    def at_network(self, _network: Network) -> Self:
+        """Change nework"""
         raise NotImplementedError()
 
     def set_evidence(self, evidence: Evidence) -> Self:
@@ -210,7 +215,7 @@ class Flow(Event):
         return self.protocol.__hash__() ^ hash(self.properties)
 
     def __eq__(self, v) -> bool:
-        return self.protocol == v.protocol and self.properties == v.properties
+        return self.protocol == v.protocol and self.properties == v.properties and self.network == v.network
 
 
 class EthernetFlow(Flow):
@@ -262,8 +267,12 @@ class EthernetFlow(Flow):
         return EthernetFlow(NO_EVIDENCE, HWAddress.new(address), HWAddresses.NULL, protocol=protocol)
 
     def reverse(self) -> Self:
-        """Reverse the flow"""
         return EthernetFlow(self.evidence, self.target, self.source, self.payload, self.protocol)
+
+    def at_network(self, network: Network) -> Self:
+        f = EthernetFlow(self.evidence, self.source, self.target, self.payload)
+        f.network = network
+        return f
 
     def __rshift__(self, target: str) -> 'EthernetFlow':
         self.target = HWAddress.new(target)
@@ -281,7 +290,8 @@ class EthernetFlow(Flow):
         return f"{s} >> {t}{pt} {self.protocol.value.upper()}"
 
     def __hash__(self):
-        return self.source.__hash__() ^ self.target.__hash__() ^ self.payload ^ self.protocol.__hash__()
+        return self.source.__hash__() ^ self.target.__hash__() ^ self.payload ^ self.protocol.__hash__() \
+            ^ hash(self.network)
 
     def __eq__(self, other):
         if not isinstance(other, EthernetFlow):
@@ -342,6 +352,11 @@ class IPFlow(Flow):
     def reverse(self) -> Self:
         return IPFlow(self.evidence, self.target, self.source, self.protocol)
 
+    def at_network(self, network: Network) -> Self:
+        f = IPFlow(self.evidence, self.source, self.target, self.protocol)
+        f.network = network
+        return f
+
     def new_evidence(self, evidence: Evidence) -> Self:
         """New flow with new evidence"""
         flow = IPFlow(evidence, self.source, self.target, self.protocol)
@@ -401,7 +416,7 @@ class IPFlow(Flow):
         return f"{s[0]} {s[1]}:{s[2]} >> {t[0]} {t[1]}:{t[2]} {self.protocol.value.upper()}"
 
     def __hash__(self):
-        return self.source.__hash__() ^ self.target.__hash__() ^ self.protocol.__hash__()
+        return self.source.__hash__() ^ self.target.__hash__() ^ self.protocol.__hash__() ^ hash(self.network)
 
     def __eq__(self, other):
         if not isinstance(other, IPFlow):
@@ -442,8 +457,12 @@ class BLEAdvertisementFlow(Flow):
         return self.event_type if target else -1
 
     def reverse(self) -> Self:
-        """Reverse the flow"""
         return self
+
+    def at_network(self, network: Network) -> Self:
+        f = BLEAdvertisementFlow(self.evidence, self.source, self.event_type)
+        f.network = network
+        return f
 
     def get_source_address(self) -> AnyAddress:
         return (Addresses.BLE_Ad if self.reply else self.source)
@@ -472,7 +491,7 @@ class BLEAdvertisementFlow(Flow):
         return f"{self.source} >> 0x{self.event_type:02x} {self.protocol.value.upper()}"
 
     def __hash__(self):
-        return self.source.__hash__() ^ self.event_type ^ self.protocol.__hash__()
+        return self.source.__hash__() ^ self.event_type ^ self.protocol.__hash__() ^ hash(self.network)
 
     def __eq__(self, other):
         if not isinstance(other, BLEAdvertisementFlow):

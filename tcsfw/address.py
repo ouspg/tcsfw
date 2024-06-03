@@ -1,5 +1,6 @@
 """Addresses and protocols"""
 
+from dataclasses import dataclass
 import enum
 import ipaddress
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
@@ -496,12 +497,12 @@ class Network:
     def is_local(self, address: 'AnyAddress') -> bool:
         """Is local address for this network?"""
         h = address.get_host()
-        if h.is_global():
-            return False
         if h.is_multicast() or h.is_null() or not isinstance(h, IPAddress):
             return True
+        if h.data in self.ip_network:
+            return True
         # FIXME: Broadcast for IPv6 not implemented  pylint: disable=fixme
-        return h.data in self.ip_network
+        return False
 
     def __eq__(self, other) -> bool:
         return isinstance(other, Network) and self.name == other.name
@@ -518,8 +519,8 @@ class Network:
 
 class Networks:
     """Network constants"""
+    # FIXME: Nuke!
     Default = Network("Default")     # Default network
-    Internet = Network("Internet")   # Internet
 
 
 class AddressEnvelope(AnyAddress):
@@ -580,3 +581,13 @@ class AddressEnvelope(AnyAddress):
 
     def __repr__(self) -> str:
         return f"{self.address}({self.content})"
+
+
+@dataclass(frozen=True)
+class AddressAtNetwork:
+    """Address at network"""
+    address: AnyAddress
+    network: Network
+
+    def __repr__(self) -> str:
+        return f"{self.address}@{self.network}"

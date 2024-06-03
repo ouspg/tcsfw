@@ -447,7 +447,7 @@ def test_reply_misinterpretation():
 def test_pick_service_from_subnet():
     su = Setup()
     net1 = su.system.network("VPN", "169.254.0.0/16")
-    dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
+    dev1 = su.system.device().in_networks(net1, su.system.network()).ip("192.168.4.5")
 
     ins = su.get_inspector()
     addr = AddressEnvelope(
@@ -458,7 +458,7 @@ def test_pick_service_from_subnet():
 def test_unknown_service_in_subnet():
     su = Setup()
     net1 = su.system.network("VPN", "169.254.0.0/16")
-    dev1 = su.system.device().ip("192.168.4.5").in_networks(net1, su.system.network())
+    dev1 = su.system.device().in_networks(net1, su.system.network()).ip("192.168.4.5")
     ser1_1 = dev1 / TCP(8686).in_network(net1)
     system = su.get_system()
 

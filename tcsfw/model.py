@@ -6,7 +6,7 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Protocol, IPAddress, \
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Networks, Protocol, IPAddress, \
     HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
@@ -168,12 +168,19 @@ class NetworkNode(Entity):
     def is_admin(self) -> bool:
         return self.host_type == HostType.ADMINISTRATIVE
 
-    def get_ip_network(self, address: IPAddress) -> Network:
-        """Resolve IP network for IP address"""
+    def get_networks(self) -> List[Network]:
+        """Get effective networks"""
+        return self.networks
+
+    def get_networks_for(self, address: AnyAddress) -> List[Network]:
+        """Resolve network for an address"""
+        if address.get_ip_address() is None:
+            return [self.get_system().get_default_network()]
+        ns = []
         for nw in self.networks:
-            if nw.ip_network and (address.data in nw.ip_network):
-                return nw
-        return self.networks[0]  # the default
+            if nw.is_local(address):
+                ns.append(nw)
+        return ns
 
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant conneciions"""
@@ -234,7 +241,7 @@ class NetworkNode(Entity):
                 return c
         return None
 
-    def get_endpoint(self, address: AnyAddress) -> 'Addressable':
+    def get_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> 'Addressable':
         """Get or create a new endpoint, service or host"""
         raise NotImplementedError()
 
@@ -279,17 +286,15 @@ class Addressable(NetworkNode):
 
     def create_service(self, address: EndpointAddress) -> 'Service':
         s_name = Service.make_name(f"{address.protocol.value.upper()}", address.port)
-        nw = None
+        nw = []
         if address.get_ip_address():
-            nw = self.get_ip_network(address.get_ip_address())
+            nw = self.get_networks_for(address.get_ip_address())
             # update name with network, if non-default
-            if nw:
-                host_nws = self.get_system().networks
-                if nw != host_nws[0]:
-                    s_name = f"{s_name}@{nw.name}"
+            if nw and nw[0].name != "local":  # (just little bit of inside knowledge here)
+                s_name = f"{s_name}@{nw[0].name}"
         s = Service(s_name, self)
         if nw:
-            s.networks = [nw]  # specific network
+            s.networks = nw  # specific network
         s.addresses.add(address.change_host(Addresses.ANY))
         if self.status == Status.EXTERNAL:
             s.status = Status.EXTERNAL  # only external propagates, otherwise unexpected
@@ -308,11 +313,16 @@ class Addressable(NetworkNode):
             return True
         return self.addresses and any(a.is_multicast() for a in self.addresses)
 
-    def get_ip_network(self, address: IPAddress) -> Network:
-        """Resolve IP network for IP address"""
+    def get_networks(self) -> List[Network]:
+        """Get networks, possibly by address"""
+        if self.networks:
+            return self.networks
+        return self.parent.get_networks()
+
+    def get_networks_for(self, address: AnyAddress) -> List[Network]:
         if not self.networks:
-            return self.parent.get_ip_network(address)  # follow parent
-        return super().get_ip_network(address)
+            return self.parent.get_networks_for(address)  # follow parent
+        return super().get_networks_for(address)
 
     def get_addresses(self, ads: Set[AnyAddress] = None) -> Set[AnyAddress]:
         """Get all addresses"""
@@ -328,7 +338,8 @@ class Addressable(NetworkNode):
             c.get_addresses(ads)
         return ads
 
-    def get_endpoint(self, address: AnyAddress) -> 'Addressable':
+    def get_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> 'Addressable':
+        # assuming network matched on parent
         for c in self.children:
             if address in c.addresses:
                 return c  # exact address - match without network checks
@@ -602,11 +613,14 @@ class IoTSystem(NetworkNode):
     def get_system(self) -> 'IoTSystem':
         return self
 
-    def get_endpoint(self, address: AnyAddress) -> Addressable:
+    def get_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> Addressable:
         """Get or create a new endpoint, service or host"""
         h_add = address.get_host()
         e_add = address.open_envelope()  # scan from inside is in envelope
+        network = at_network or self.get_default_network()
         for e in self.children:
+            if e.networks and network not in e.networks:
+                continue  # not in the right network
             if h_add in e.addresses:
                 if isinstance(e_add, EndpointAddress):
                     e = e.get_endpoint(e_add) or e
@@ -645,6 +659,16 @@ class IoTSystem(NetworkNode):
         for c in self.children:
             c.get_addresses(ads)
         return ads
+
+    def get_networks_for(self, address: AnyAddress) -> List[Network]:
+        ns = super().get_networks_for(address)
+        if not ns:
+            return [self.get_default_network()]
+        return ns
+
+    def get_default_network(self) -> Network:
+        """Get default network for address type"""
+        return self.networks[0]
 
     def create_service(self, address: EndpointAddress) -> Service:
         return NotImplementedError()
