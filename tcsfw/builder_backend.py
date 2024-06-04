@@ -594,6 +594,8 @@ class ProtocolBackend:
         if pt_cre is None:
             raise ValueError(f"No backend mapped for {pt}")
         be = pt_cre(configurer)
+        be.networks = [n.network for n in configurer.networks]
+        be.specific_address = configurer.address or Addresses.ANY
         return be
 
     def __init__(self, transport: Optional[Protocol] = None, protocol: Protocol = Protocol.ANY, name="", port=-1):
@@ -606,6 +608,7 @@ class ProtocolBackend:
         self.con_type = ConnectionType.UNKNOWN
         self.authentication = False
         self.networks: List[Network] = []
+        self.specific_address: AnyAddress = Addresses.ANY
         self.external_activity: Optional[ExternalActivity.BANNED] = None
         self.critical_parameter: List[SensitiveData] = []
 
@@ -627,8 +630,8 @@ class ProtocolBackend:
         parent.entity.children.append(b.entity)
         if not b.entity.addresses:
             # E.g. DHCP service fills this oneself
-            b.entity.addresses.add(EndpointAddress(
-                Addresses.ANY, self.transport, self.service_port))
+            ep_add = EndpointAddress(self.specific_address, self.transport, self.service_port)
+            b.entity.addresses.add(ep_add)
         if self.critical_parameter:
             # critical protocol parameters
             parent.use_data(SensitiveDataBackend(
@@ -828,7 +831,6 @@ class TCPBackend(ProtocolBackend):
 
     def __init__(self, configurer: TCP):
         super().__init__(Protocol.TCP, port=configurer.port, name=configurer.name)
-        self.networks = [n.network for n in configurer.networks]
         if configurer.administrative:
             self.host_type = HostType.ADMINISTRATIVE
             self.con_type = ConnectionType.ADMINISTRATIVE

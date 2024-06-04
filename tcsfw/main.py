@@ -1,7 +1,7 @@
 """Model builder"""
 
 from typing import Dict, List, Optional, Self, Tuple, Type, Union
-from tcsfw.address import HWAddress, HWAddresses, IPAddress, IPAddresses, Network
+from tcsfw.address import AnyAddress, HWAddress, HWAddresses, IPAddress, IPAddresses, Network
 from tcsfw.selector import RequirementSelector
 from tcsfw.basics import ConnectionType, HostType, ExternalActivity
 from tcsfw.verdict import Verdict
@@ -266,10 +266,16 @@ class ProtocolConfigurer:
     def __init__(self, name: str):
         self.name = name
         self.networks = []
+        self.address: Optional[AnyAddress] = None
 
     def in_network(self, *network: NetworkBuilder) -> Self:
         """Specify networks for the service"""
         self.networks.extend(network)
+        return self
+
+    def at_address(self, address: str) -> Self:
+        """Service in a specific address"""
+        self.address = IPAddress.new(address)
         return self
 
     def __repr__(self) -> str:
