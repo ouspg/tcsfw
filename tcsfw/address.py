@@ -518,12 +518,6 @@ class Network:
         return self.name
 
 
-class Networks:
-    """Network constants"""
-    # FIXME: Nuke!
-    Default = Network("Default")     # Default network
-
-
 class AddressEnvelope(AnyAddress):
     """Address envelope carrying content address"""
     def __init__(self, address: AnyAddress, content: AnyAddress):

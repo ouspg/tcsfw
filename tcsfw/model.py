@@ -6,7 +6,7 @@ import re
 from typing import List, Set, Optional, Tuple, TypeVar, Callable, Dict, Any, Self, Iterable, Iterator, Union
 from urllib.parse import urlparse
 
-from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Networks, Protocol, IPAddress, \
+from tcsfw.address import AnyAddress, Addresses, EndpointAddress, EntityTag, Network, Protocol, IPAddress, \
     HWAddress, DNSName
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.entity import Entity
@@ -289,8 +289,10 @@ class Addressable(NetworkNode):
         nw = []
         if address.get_ip_address():
             nw = self.get_networks_for(address.get_ip_address())
+            if len(nw) == 1 and nw[0] == self.get_system().get_default_network():
+                nw = []  # default network not explicitlyt specified
             # update name with network, if non-default
-            if nw and nw[0].name != "local":  # (just little bit of inside knowledge here)
+            if len(nw) == 1:
                 s_name = f"{s_name}@{nw[0].name}"
         s = Service(s_name, self)
         if nw:

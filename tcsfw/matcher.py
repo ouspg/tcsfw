@@ -1,10 +1,9 @@
 """Match events into system model"""
 
-from dataclasses import dataclass
 import itertools
 from typing import Self, Tuple, Dict, Optional, Set, List, Iterable
 
-from tcsfw.address import AddressAtNetwork, AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName, IPAddresses, Network, Networks
+from tcsfw.address import AddressAtNetwork, AnyAddress, EndpointAddress, IPAddress, Addresses, DNSName
 from tcsfw.basics import ExternalActivity, Status
 from tcsfw.model import IoTSystem, Connection, Host, Addressable, Service, EvidenceNetworkSource, ModelListener
 from tcsfw.property import Properties
@@ -262,10 +261,6 @@ class MatchEngine:
 
     def create_unknown_service(self, match: ConnectionMatch):
         """Create an unknown service due observing reply from it"""
-
-        # FIXME: Not updated with new address scheme
-        assert False, "Not implemented"
-
         system = self.system.system
         conn = match.connection
         target_h = conn.target
@@ -279,9 +274,12 @@ class MatchEngine:
             # host is free to provide unlisted services
             n_service.status = Status.EXTERNAL
         target_h.connections.append(conn)
-        for ep in self.endpoints[n_service_ep.get_host()]:
-            if ep.entity == target_h:
-                ep.add_service(n_service)
+        networks = target_h.get_networks_for(n_service_ep.get_host())
+        for nw in networks:
+            # for each network, the host is in
+            for ep in self.endpoints[AddressAtNetwork(n_service_ep.get_host(), nw)]:
+                if ep.entity == target_h:
+                    ep.add_service(n_service)
         conn.target = n_service
         # create new connection for connections from same the source to the same target host, but different port
         new_c = None

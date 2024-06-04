@@ -11,7 +11,7 @@ import sys
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
 from tcsfw.address import (AddressAtNetwork, Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
-                           HWAddresses, IPAddress, IPAddresses, Network, Networks, Protocol)
+                           HWAddresses, IPAddress, IPAddresses, Network, Protocol)
 from tcsfw.address_resolver import AddressResolver
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
