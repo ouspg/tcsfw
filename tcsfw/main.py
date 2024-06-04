@@ -294,6 +294,11 @@ class DHCP(ProtocolConfigurer):
         ProtocolConfigurer.__init__(self, "DHCP")
         self.port = port
 
+    @classmethod
+    def client(cls, port=68) -> 'UDP':
+        """DHCP client port"""
+        return UDP(port, name="DHCP client", administrative=True)
+
 
 class DNS(ProtocolConfigurer):
     """DNS configurer"""
