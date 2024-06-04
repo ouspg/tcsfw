@@ -70,6 +70,7 @@ class MatchFlow:
 class AddressMatch:
     """A match to address and endpoint"""
     def __init__(self, address: AnyAddress, endpoint: 'MatchEndpoint'):
+        assert isinstance(address, EndpointAddress)
         self.address = address
         self.endpoint = endpoint
 
@@ -341,7 +342,7 @@ class MatchEngine:
             for ad in match_ads:
                 ends = self.endpoints.get(ad, [])
                 for end in ends:
-                    am = end.match_service(ad, flow, target)
+                    am = end.match_service(ad.address, flow, target)
                     m = finder.add_matches(am, target)
                     if m:
                         return m
@@ -352,7 +353,7 @@ class MatchEngine:
                 ends = self.endpoints.get(ad, [])
                 for end in ends:
                     if end.match_no_service:
-                        am = AddressMatch(EndpointAddress(ad, flow.protocol, flow.port(target)), end)
+                        am = AddressMatch(EndpointAddress(ad.address, flow.protocol, flow.port(target)), end)
                         m = finder.add_matches([am], target)
                         if m:
                             return m
@@ -363,7 +364,7 @@ class MatchEngine:
         for target, match_ads in match_address.items():
             for end in wild_ends:
                 for ad in match_ads:
-                    am = end.match_service(ad, flow, target)
+                    am = end.match_service(ad.address, flow, target)
                     m = finder.add_matches(am, target)
                     if m:
                         return m
@@ -373,7 +374,7 @@ class MatchEngine:
             for end in wild_ends:
                 if end.match_no_service:
                     for ad in match_ads:
-                        am = AddressMatch(EndpointAddress(ad, flow.protocol, flow.port(target)), end)
+                        am = AddressMatch(EndpointAddress(ad.address, flow.protocol, flow.port(target)), end)
                         m = finder.add_matches([am], target)
                         if m:
                             return m

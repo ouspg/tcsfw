@@ -406,6 +406,7 @@ class DNSName(AnyAddress):
 class EndpointAddress(AnyAddress):
     """Endpoint address made up from host, protocol, and port"""
     def __init__(self, host: AnyAddress, protocol: Protocol, port=-1):
+        assert isinstance(host, AnyAddress)
         self.host = host
         self.protocol = protocol
         self.port = port

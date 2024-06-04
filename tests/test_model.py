@@ -224,7 +224,8 @@ def test_host_merging():
 
     key = EndpointAddress(HWAddress.new("1:0:0:0:0:1"), Protocol.UDP, 1100), \
         EndpointAddress.ip("1.0.0.2", Protocol.UDP, 1234)
-    assert sb.system.connections[key] == cs
+    connections = sb.system.connections
+    assert connections[key] == cs
 
     # ...but we learn it is known
     sb.system.learn_named_address(DNSName("target.org"), IPAddress.new("1.0.0.2"))
