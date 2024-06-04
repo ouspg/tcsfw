@@ -80,7 +80,7 @@ class ToolFinderImplementation:
         self.ping = ToolDepiction("ping", PingCommand, extension="log")
         self.pcap = ToolDepiction(["capture", ""], PCAPReader, extension="pcap")  # Default tool - file_type ""
         self.pcap = ToolDepiction("capture-json", TSharkReader, extension="json")
-        self.pcap_flow = ToolDepiction("pcap-flow", SimpleFlowTool, extension="json")
+        self.pcap_flow = ToolDepiction("exp-flow", SimpleFlowTool, extension="json")
         self.setup = ToolDepiction("setup", SetupCSVReader, extension="csv")
         self.shell_ps = ToolDepiction("shell-ps", ShellCommandPs)
         self.shell_ss = ToolDepiction("shell-ss", ShellCommandSs)

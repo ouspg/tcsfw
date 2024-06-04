@@ -1,15 +1,37 @@
 import pathlib
 from tcsfw.address import HWAddress, IPAddress
-from tcsfw.batch_import import BatchImporter, FileMetaInfo
+from tcsfw.batch_import import BatchImporter, FileMetaInfo, LabelFilter
 from tcsfw.inspector import Inspector
-from tests.test_model import simple_setup_1
+from tests.test_model import Setup, simple_setup_1
+
+class Setup_1(Setup):
+    def __init__(self):
+        super().__init__()
+        self.device1 = self.system.device().hw("1:0:0:0:0:1")
 
 
 def test_import_batch_a():
-    sb = simple_setup_1()
-    im = BatchImporter(Inspector(sb.system))
-    im.import_batch(pathlib.Path("tests/samples/batch/batch-a"))
-    conn = sb.system.get_connections()
+    su = Setup_1()
+    BatchImporter(Inspector(su.get_system())).import_batch(pathlib.Path("tests/samples/batch/batch-a"))
+    conn = su.get_system().get_connections()
+    assert len(conn) == 2
+
+
+def test_import_batch_a_not():
+    su = Setup_1()
+    bi = BatchImporter(Inspector(su.get_system()))
+    bi.label_filter = LabelFilter("X")
+    bi.import_batch(pathlib.Path("tests/samples/batch/batch-a"))
+    conn = su.get_system().get_connections()
+    assert len(conn) == 0
+
+
+def test_import_batch_a_yes():
+    su = Setup_1()
+    bi = BatchImporter(Inspector(su.get_system()))
+    bi.label_filter = LabelFilter("X,batch-a")
+    bi.import_batch(pathlib.Path("tests/samples/batch/batch-a"))
+    conn = su.get_system().get_connections()
     assert len(conn) == 2
 
 
