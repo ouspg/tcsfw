@@ -202,19 +202,6 @@ class NetworkNode(Entity):
             c.external_activity = value
         return self
 
-    def merge_in(self, entity: 'NetworkNode', mappings: Dict['NetworkNode', 'NetworkNode']) -> Self:
-        """Merge an another entity here, return mapping to replace entities"""
-        mappings[entity] = self
-        c_map = {c.name: c for c in self.children}
-        for c in entity.children:
-            self_c = c_map.get(c.name)
-            if self_c:
-                self_c.merge_in(c, mappings)
-            else:
-                c.parent = self
-                self.children.append(c)
-        return self
-
     def create_service(self, address: EndpointAddress) -> 'Service':
         """Create a child service"""
         raise NotImplementedError()
