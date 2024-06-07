@@ -34,10 +34,12 @@ class Connection(Entity):
 
     def is_relevant(self, ignore_ends=False) -> bool:
         """Is this connection relevant, i.e. not placeholder or external?"""
-        if self.status in {Status.EXPECTED, Status.UNEXPECTED}:
-            return True
         if self.status == Status.PLACEHOLDER:
             return False  # placeholder is never relevant
+        if self.status in {Status.EXPECTED, Status.UNEXPECTED}:
+            return True
+        if self.get_expected_verdict() == Verdict.FAIL:
+            return True  # the dirt must be seen
         if ignore_ends:
             return False
         return self.source.is_relevant() or self.target.is_relevant()
