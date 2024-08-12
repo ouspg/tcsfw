@@ -8,6 +8,7 @@ from tcsfw.components import OperatingSystem
 from tcsfw.event_interface import EventInterface, PropertyEvent
 from tcsfw.model import IoTSystem
 from tcsfw.property import PropertyKey
+from tcsfw.services import NameEvent
 from tcsfw.tools import EndpointTool
 from tcsfw.traffic import Evidence, EvidenceSource, IPFlow, Protocol, ServiceScan
 from tcsfw.verdict import Verdict
@@ -148,15 +149,14 @@ class ShellCommandSs(EndpointTool):
                     if not tag:
                         continue  # no host address known, cannot send events
                     local_add = tag
+                local_ads.add(local_add)
                 if net_id == "udp" and state == "UNCONN":
                     # listening UDP port
-                    local_ads.add(local_add)
                     add = EndpointAddress(local_add or Addresses.ANY, Protocol.UDP, local_port)
                     services.add(add)
                     continue
                 if net_id == "tcp" and state == "LISTEN":
                     # listening TCP port
-                    local_ads.add(local_add)
                     add = EndpointAddress(local_add or Addresses.ANY, Protocol.TCP, local_port)
                     services.add(add)
                     continue
@@ -170,11 +170,21 @@ class ShellCommandSs(EndpointTool):
 
         if self.send_events:
             evidence = Evidence(source)
+
+            # name events
+            adds = sorted(local_ads)
+            if tag:
+                for a in adds:
+                    ev = NameEvent(evidence, service=None, tag=tag, address=a)
+                    interface.name(ev)
+
+            # service events
             for addr in sorted(services):
                 scan = ServiceScan(evidence, endpoint=AddressEnvelope(tag, addr) if tag else addr)
                 interface.service_scan(scan)
             # NOTE: Create host scan event to report missing services
 
+            # connection events
             for conn in sorted(conns):
                 s, t = conn
                 if s.host in local_ads:
