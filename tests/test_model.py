@@ -6,7 +6,7 @@ from tcsfw.builder_backend import SystemBackend
 from tcsfw.main import TCP, UDP, SSH
 from tcsfw.matcher import SystemMatcher
 from tcsfw.basics import ExternalActivity
-from tcsfw.traffic import NO_EVIDENCE, IPFlow, ServiceScan
+from tcsfw.traffic import IPFlow
 from tcsfw.basics import Status
 
 

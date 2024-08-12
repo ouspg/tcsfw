@@ -2,6 +2,7 @@
 
 import pathlib
 
+from tcsfw.address import EntityTag, IPAddress
 from tcsfw.basics import ExternalActivity, Status
 from tcsfw.batch_import import BatchImporter
 from tcsfw.main import DHCP, SSH, UDP, TCP
@@ -23,9 +24,10 @@ def test_shell_ss_mix():
     BatchImporter(su.get_inspector()).import_batch(pathlib.Path("tests/samples/shell-ss"))
     hs = su.get_hosts()
     # co = su.get_connections()
-    assert len(hs) == 7
+    assert len(hs) == 6
     h = hs[0]
     assert h.status_verdict() == (Status.EXPECTED, Verdict.PASS)
+    assert h.addresses == {IPAddress.new("169.254.255.255"), IPAddress.new("65.21.253.97"), EntityTag("Device")}
     assert len(h.children) == 6
     s = h.children[0]
     assert s.long_name() == "Device SSH:22"
