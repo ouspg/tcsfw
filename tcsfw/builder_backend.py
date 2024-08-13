@@ -52,6 +52,7 @@ class SystemBackend(SystemBuilder):
         self.hosts_by_name: Dict[str, 'HostBackend'] = {}
         self.entity_by_address: Dict[AddressAtNetwork, 'NodeBackend'] = {}
         self.claim_set = ClaimSetBackend(self)
+        self.attachments: List[pathlib.Path] = []
         self.visualizer = Visualizer()
         self.loaders: List[EvidenceLoader] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
@@ -130,6 +131,18 @@ class SystemBackend(SystemBuilder):
 
     def require(self, addresses_for: List['NodeBuilder']):
         self.address_resolver.addresses_for.extend(addresses_for)
+
+    def attach_file(self, file_path: str, relative_to: Optional[str] = None) -> Self:
+        if relative_to:
+            rel_to = pathlib.Path(relative_to)
+            if not rel_to.is_dir():
+                rel_to = rel_to.parent
+            p = rel_to / file_path
+        else:
+            p = pathlib.Path(file_path)
+        assert p.exists(), f"File not found: {p}"
+        self.attachments.append(p.absolute())
+        return self
 
     def visualize(self) -> 'VisualizerBackend':
         return VisualizerBackend(self.visualizer)

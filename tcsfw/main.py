@@ -69,6 +69,10 @@ class SystemBuilder:
         """Require definition of these addresses"""
         raise NotImplementedError()
 
+    def attach_file(self, file_path: str, relative_to: Optional[str] = None) -> Self:
+        """Attach a file to the model"""
+        raise NotImplementedError()
+
     def visualize(self) -> 'VisualizerBuilder':
         """Model visualization"""
         raise NotImplementedError()
