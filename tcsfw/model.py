@@ -24,6 +24,14 @@ class Connection(Entity):
         self.target = target
         self.con_type = ConnectionType.UNKNOWN
 
+    def get_tag(self) -> Optional[Tuple[AnyAddress, AnyAddress]]:
+        """Get tag addresses, if any"""
+        s = self.source.get_tag()
+        t = self.target.get_tag()
+        if s and t:
+            return s, t
+        return None
+
     def is_original(self) -> bool:
         """Is this entity originally defined in the model?"""
         system = self.source.get_system()
@@ -234,6 +242,10 @@ class NetworkNode(Entity):
         """Get or create a new endpoint, service or host"""
         raise NotImplementedError()
 
+    def find_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> Optional['Addressable']:
+        """Find existing endpoint, service or host"""
+        raise NotImplementedError()
+
     def add_component(self, component: 'NodeComponent') -> 'NodeComponent':
         """Add new component"""
         self.components.append(component)
@@ -272,6 +284,10 @@ class Addressable(NetworkNode):
         self.parent: Optional[NetworkNode] = None
         self.addresses: Set[AnyAddress] = set()
         self.any_host = False  # can be one or many hosts
+
+    def get_tag(self) -> Optional[AnyAddress]:
+        """Get tag address, if any"""
+        raise NotImplementedError()
 
     def create_service(self, address: EndpointAddress) -> 'Service':
         s_name = Service.make_name(f"{address.protocol.value.upper()}", address.port)
@@ -330,6 +346,13 @@ class Addressable(NetworkNode):
         return ads
 
     def get_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> 'Addressable':
+        ep = self.find_endpoint(address, at_network)
+        if ep:
+            return ep
+        assert isinstance(address, EndpointAddress), "Bad address for service"
+        return self.create_service(address)
+
+    def find_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> Optional['Addressable']:
         # assuming network matched on parent
         for c in self.children:
             if address in c.addresses:
@@ -343,8 +366,7 @@ class Addressable(NetworkNode):
                     ac = a.change_host(address.get_host())
                     if ac == address:
                         return c
-        assert isinstance(address, EndpointAddress), "Bad address for service"
-        return self.create_service(address)
+        return None
 
     def new_connection(self, connection: Connection, flow: Flow, target: bool):
         """New connection with this entity either as source or target"""
@@ -414,6 +436,9 @@ class Host(Addressable):
         cache[self] = rv
         return rv
 
+    def get_tag(self) -> Optional[EntityTag]:
+        return Addresses.get_tag(self.addresses)
+
 
 class Service(Addressable):
     """A service"""
@@ -445,6 +470,17 @@ class Service(Addressable):
         if self.parent.name != self.name:
             return f"{self.parent.name} {self.name}"
         return self.name
+
+    def get_tag(self) -> Optional[EndpointAddress]:
+        """Get tag and endpoint address, if any"""
+        tag = Addresses.get_tag(self.get_parent_host().addresses)
+        if tag is None:
+            return None
+        for a in self.addresses:
+            app = a.get_protocol_port()
+            if app:
+                return EndpointAddress(tag, app[0], app[1])
+        return None
 
     def is_tcp_service(self):
         """Is a TCP-based service"""
@@ -605,7 +641,6 @@ class IoTSystem(NetworkNode):
         return self
 
     def get_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> Addressable:
-        """Get or create a new endpoint, service or host"""
         h_add = address.get_host()
         e_add = address.open_envelope()  # scan from inside is in envelope
         network = at_network or self.get_default_network()
@@ -629,6 +664,21 @@ class IoTSystem(NetworkNode):
             self.children.append(e)
         if isinstance(e_add, EndpointAddress) and e.is_host():
             e = e.create_service(e_add)
+        return e
+
+    def find_endpoint(self, address: AnyAddress, at_network: Optional[Network] = None) -> Optional['Addressable']:
+        h_add = address.get_host()
+        e_add = address.open_envelope()  # scan from inside is in envelope
+        network = at_network or self.get_default_network()
+        for e in self.children:
+            if e.networks and network not in e.networks:
+                continue  # not in the right network
+            if h_add in e.addresses:
+                if isinstance(e_add, EndpointAddress):
+                    e = e.find_endpoint(e_add)
+                break
+        else:
+            e = None
         return e
 
     def new_connection(self, source: Tuple[Addressable, AnyAddress],

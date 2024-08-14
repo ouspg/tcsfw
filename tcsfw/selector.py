@@ -340,3 +340,35 @@ class Select:
 
     SYSTEM_SINGLE = SystemSelector()
     SOFTWARE_SINGLE = SoftwareSelector()
+
+
+class Finder:
+    """Find entities by specifiers"""
+
+    @classmethod
+    def find(cls, system: IoTSystem, specifier: Dict) -> Optional[Entity]:
+        """Find entity by JSON specifier"""
+        entity = None
+        addr_s = specifier.get("address")
+        if addr_s:
+            addr = Addresses.parse_endpoint(addr_s)
+            entity = system.find_endpoint(addr)
+        comp_s = specifier.get("software")
+        if comp_s and entity:
+            return Software.get_software(entity, comp_s)
+        return entity
+
+    @classmethod
+    def specify(cls, entity: Entity) -> Dict:
+        """Create JSON specifier for entity"""
+        r = {}
+        ent = entity
+        if isinstance(entity, NodeComponent):
+            ent = entity.entity
+            r[entity.concept_name] = entity.name
+        if isinstance(ent, Addressable):
+            tag = ent.get_tag()
+            if tag is None:
+                raise ValueError(f"Cannot address entity without tag: {ent}")
+            r["address"] = tag.get_parseable_value()
+        return r
