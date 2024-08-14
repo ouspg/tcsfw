@@ -8,7 +8,7 @@ from tcsfw.model import NodeComponent, Connection, NetworkNode, Host, SensitiveD
 
 
 class Software(NodeComponent):
-    """Software, firmware, etc."""
+    """Software, firmware, etc. Each real host has one or more software components."""
     def __init__(self, entity: NetworkNode, name: str = None):
         super().__init__(entity, self.default_name(entity) if name is None else name)
         self.concept_name = "software"
@@ -47,29 +47,26 @@ class Software(NodeComponent):
         return host.get_parent_host()
 
     @classmethod
-    def list_software(cls, entity: NetworkNode) -> List['Software']:
-        """List software components, non-recursively. Create to host, if none found"""
-        r = []
+    def ensure_default_software(cls, entity: Host):
+        """Ensure host has at least the default software"""
         for s in entity.components:
-            if not isinstance(s, Software):
-                continue
-            r.append(s)
-        if not r:
-            assert isinstance(entity, Host), "Can only add software for hosts"
-            r = [entity.add_component(Software(entity))]
+            if isinstance(s, Software):
+                return
+        entity.add_component(Software(entity))
+
+    @classmethod
+    def list_software(cls, entity: NetworkNode) -> List['Software']:
+        """List software components for an entity"""
+        r = [c for c in entity.components if isinstance(c, Software)]
         return r
 
     @classmethod
-    def get_software(cls, entity: NetworkNode, name: str) -> Optional['Software']:
-        """Find software by name"""
+    def get_software(cls, entity: NetworkNode, name="") -> Optional['Software']:
+        """Find software, first or by name"""
         for s in entity.components:
             if not isinstance(s, Software):
                 continue
-            if s.name == name:
-                return s
-        for c in entity.children:
-            s = cls.get_software(c, name)
-            if s:
+            if not name or s.name == name:
                 return s
         return None
 

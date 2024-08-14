@@ -190,10 +190,16 @@ class SystemBackend(SystemBuilder):
                 h.entity.name: h for h in self.hosts_by_name.values()}
         return n
 
-    def finish_(self):
+    def finish_(self, as_main=False):
         """Finish the model"""
-        # get the missing addresses
-        self.address_resolver.require()
+        if as_main:
+            # get the missing addresses
+            self.address_resolver.require()
+
+        # each real host must have software
+        for h in self.system.get_hosts():
+            if not h.any_host and h.host_type != HostType.BROWSER:
+                Software.ensure_default_software(h)
 
         # We want to have a authenticator related to each authenticated service
         # NOTE: Not ready to go into this level now...
@@ -1100,7 +1106,7 @@ class SystemBackendRunner(SystemBackend):
         if args.dns:
             self.any().serve(DNS)
 
-        self.finish_()
+        self.finish_(as_main=True)
 
         registry = Registry(Inspector(self.system))
         cc = RequirementClaimMapper(self.system)
