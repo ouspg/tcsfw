@@ -1,3 +1,4 @@
+import pytest
 from tcsfw.main import ARP, DHCP, TCP
 from tcsfw.selector import Finder
 from tests.test_model import Setup
@@ -20,8 +21,8 @@ def test_finder():
     f = Finder.find(su.system.system, sp)
     assert f.long_name() == "Device 2 DHCP"
 
-    f = Finder.find(su.system.system, {"address": "Doe_Hot|tag", "software": "Doe Hot SW"})
-    assert f is None
+    with pytest.raises(ValueError):
+        Finder.find(su.system.system, {"address": "Doe_Hot|tag", "software": "Doe Hot SW"})
     sw = dev3.software("Sw")
     f = Finder.find(su.system.system, {"address": "Doe_Hot|tag", "software": "Sw"})
     assert f == sw.sw

@@ -349,21 +349,32 @@ class Finder:
     def find(cls, system: IoTSystem, specifier: Dict) -> Optional[Entity]:
         """Find entity by JSON specifier"""
         entity = None
+        addr_s = specifier.get("system")
+        if addr_s:
+            return system
         addr_s = specifier.get("address")
         if addr_s:
             addr = Addresses.parse_endpoint(addr_s)
             entity = system.find_endpoint(addr)
+            if not entity:
+                raise ValueError(f"Cannot find entity: {addr_s}")
         add_r = specifier.get("connection")
         if add_r:
             addrs = [Addresses.parse_endpoint(a) for a in add_r]
             s = system.find_endpoint(addrs[0])
-            if s:
-                t = system.find_endpoint(addrs[1])
-                if t:
-                    entity = s.find_connection(t)
+            if not s:
+                raise ValueError(f"Cannot find connection source: {add_r}")
+            t = system.find_endpoint(addrs[1])
+            if not t:
+                raise ValueError(f"Cannot find connection target: {add_r}")
+            entity = s.find_connection(t)
         comp_s = specifier.get("software")
-        if comp_s and entity:
-            return Software.get_software(entity, comp_s)
+        if comp_s:
+            if not entity:
+                raise ValueError(f"Cannot find software without entity: {comp_s}")
+            entity = Software.get_software(entity, comp_s)
+            if not entity:
+                raise ValueError(f"Cannot find software: {comp_s}")
         # NOTE: OS and oter components - needs unified way to access
         return entity
 
@@ -375,14 +386,18 @@ class Finder:
         if isinstance(entity, NodeComponent):
             ent = entity.entity
             r[entity.concept_name] = entity.name
-        if isinstance(ent, Addressable):
+        if isinstance(entity, IoTSystem):
+            r["system"] = True
+        elif isinstance(ent, Addressable):
             tag = ent.get_tag()
             if tag is None:
                 raise ValueError(f"Cannot specify entity without tag: {ent}")
             r["address"] = tag.get_parseable_value()
-        if isinstance(ent, Connection):
+        elif isinstance(ent, Connection):
             tag = ent.get_tag()
             if tag is None:
                 raise ValueError(f"Cannot specify connection without both tags: {ent}")
             r["connection"] = [t.get_parseable_value() for t in tag]
+        else:
+            raise ValueError(f"Cannot specify entity: {entity}")
         return r
