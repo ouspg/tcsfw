@@ -86,6 +86,7 @@ class Cookies(NodeComponent):
     """Browser cookies"""
     def __init__(self, entity: NetworkNode, name="Cookies"):
         super().__init__(entity, name)
+        self.concept_name = "cookies"
         self.cookies: Dict[str, CookieData] = {}
 
     @classmethod
@@ -110,6 +111,7 @@ class OperatingSystem(NodeComponent):
     """Operating system"""
     def __init__(self, entity: NetworkNode):
         super().__init__(entity, "OS")
+        self.concept_name = "os"
         self.process_map: Dict[str, List[str]] = {}  # owner: process names
 
     @classmethod
