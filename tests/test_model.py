@@ -1,4 +1,4 @@
-from tcsfw.address import AddressEnvelope, EndpointAddress, Protocol, DNSName, IPAddress, HWAddress
+from tcsfw.address import AddressEnvelope, EndpointAddress, EntityTag, Protocol, DNSName, IPAddress, HWAddress
 from tcsfw.inspector import Inspector
 from tcsfw.model import Host, IoTSystem
 from tcsfw.verdict import Verdict
@@ -51,6 +51,26 @@ def simple_setup_2() -> SystemBackend:
     dev3 = sb.device()
     dev1 >> dev2 / UDP(port=1234)
     return sb
+
+
+def test_tags():
+    su = Setup()
+    dev1 = su.system.device().hw("1:0:0:0:0:1")
+    assert EntityTag("Device") in dev1.entity.addresses
+    assert dev1.entity.get_tag() == EntityTag("Device")
+
+    dev2 = su.system.device().hw("1:0:0:0:0:2")
+    assert EntityTag("Device") in dev1.entity.addresses
+    assert EntityTag("Device_2") in dev2.entity.addresses
+    assert dev2.entity.get_tag() == EntityTag("Device_2")
+
+    dev3 = su.system.device("Doe Hot")
+    assert EntityTag("Doe_Hot") in dev3.entity.addresses
+    assert dev3.entity.get_tag() == EntityTag("Doe_Hot")
+
+    c0 = dev1 >> dev3 / TCP(1234)
+    c0_tag = c0.connection.get_tag()
+    assert c0_tag == (EntityTag("Device"), EndpointAddress(EntityTag("Doe_Hot"), Protocol.TCP, 1234))
 
 
 def test_connection_match():

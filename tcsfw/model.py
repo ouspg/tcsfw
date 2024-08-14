@@ -408,6 +408,13 @@ class Host(Addressable):
         cs.extend(super().get_connections(relevant_only))
         return cs
 
+    def find_connection(self, target: 'Addressable') -> Optional[Connection]:
+        """Find connection to target"""
+        for c in self.connections:
+            if c.target == target:
+                return c
+        return None
+
     def get_parent_host(self) -> 'Host':
         return self
 

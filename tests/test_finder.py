@@ -25,6 +25,18 @@ def test_finder():
     sw = dev3.software("Sw")
     f = Finder.find(su.system.system, {"address": "Doe_Hot|tag", "software": "Sw"})
     assert f == sw.sw
+    sp = Finder.specify(sw.sw)
+    assert sp == {"address": "Doe_Hot|tag", "software": "Sw"}
+
+    sp = Finder.specify(c0.connection)
+    assert sp == {"connection": ["Device|tag", "Doe_Hot|tag/tcp:1234"]}
+    f = Finder.find(su.system.system, {"connection": ["Device|tag", "Doe_Hot|tag/tcp:1234"]})
+    assert f == c0.connection
+
+    # Not implemented
+    # os = dev3.os()
+    # sp = Finder.specify(os.component)
+    # assert sp == {"address": "Doe_Hot|tag", "os": "OS"}
 
     sp = Finder.specify((dev2 / ARP).entity)
     # assert sp == {"address": "Device_2|tag/arp"}  # Totally bogus
