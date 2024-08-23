@@ -386,7 +386,7 @@ class Finder:
         if isinstance(entity, NodeComponent):
             ent = entity.entity
             r[entity.concept_name] = entity.name
-        if isinstance(entity, IoTSystem):
+        if isinstance(ent, IoTSystem):
             r["system"] = True
         elif isinstance(ent, Addressable):
             tag = ent.get_tag()
