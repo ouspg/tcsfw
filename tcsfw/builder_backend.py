@@ -17,7 +17,7 @@ from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
 from tcsfw.client_api import APIRequest, ClientPrompt
-from tcsfw.components import CookieData, Cookies, DataReference, DataStorages, OperatingSystem, Software
+from tcsfw.components import CookieData, Cookies, DataReference, StoredData, OperatingSystem, Software
 from tcsfw.coverage_result import CoverageReport
 from tcsfw.entity import ClaimAuthority, Entity
 from tcsfw.event_interface import PropertyEvent
@@ -430,10 +430,8 @@ class HostBackend(NodeBackend, HostBuilder):
         return CookieBackend(self)
 
     def use_data(self, *data: 'SensitiveDataBackend') -> Self:
-        usage = DataStorages.get_storages(self.entity, add=True)
         for db in data:
-            for d in db.data:
-                usage.sub_components.append(DataReference(usage, d))
+            db.used_by(hosts=[self])
         return self
 
     def __truediv__(self, protocol: ProtocolType) -> ServiceBackend:
@@ -458,13 +456,20 @@ class SensitiveDataBackend(SensitiveDataBuilder):
         self.parent = parent
         self.data = data
         # all sensitive data lives at least in system
-        usage = DataStorages.get_storages(parent.system, add=True)
+        usage = StoredData.get_data(parent.system)
         for d in data:
-            usage.sub_components.append(DataReference(usage, d))
+            usage.sub_components.append(DataReference(parent.system, d))
+        self.default_location = True
 
-    def used_by(self, *host: HostBackend) -> Self:
-        for h in host:
-            h.use_data(self)
+    def used_by(self, hosts: List[HostBuilder]) -> Self:
+        if self.default_location:
+            # default location is overriden
+            self.default_location = False
+            StoredData.get_data(self.parent.system).sub_components = []
+        for h in hosts:
+            storage = StoredData.get_data(h.entity)
+            for d in self.data:
+                storage.sub_components.append(DataReference(h.entity, d))
         return self
 
 

@@ -195,7 +195,7 @@ class SensitiveDataBuilder:
     def __init__(self, parent: SystemBuilder):
         self.parent = parent
 
-    def used_by(self, *host: HostBuilder) -> Self:
+    def used_by(self, hosts: List[HostBuilder]) -> Self:
         """This data used/stored in a host"""
         raise NotImplementedError()
 

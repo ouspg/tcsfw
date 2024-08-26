@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Set
 
+from tcsfw.entity import Entity
 from tcsfw.release_info import ReleaseInfo
-from tcsfw.model import NodeComponent, Connection, NetworkNode, Host, SensitiveData, Addressable
+from tcsfw.model import IoTSystem, NodeComponent, Connection, NetworkNode, Host, SensitiveData, Addressable
 
 
 class Software(NodeComponent):
@@ -124,28 +125,37 @@ class OperatingSystem(NodeComponent):
         return c
 
 
-class DataStorages(NodeComponent):
-    """Data storages in IoT system or network node"""
-    def __init__(self, entity: NetworkNode, name="Sensitive data", data: List[SensitiveData] = None):
-        super().__init__(entity, name)
-        self.concept_name = "data"
-        self.sub_components: List[DataReference] = [DataReference(self, d) for d in (data or [])]
+class StoredData(NodeComponent):
+    """Critical data stored in IoT system or network node"""
+    def __init__(self, entity: NetworkNode):
+        super().__init__(entity, "Stored critical data")
+        self.concept_name = "stored-data"
+        self.sub_components: List[DataReference] = []
 
     @classmethod
-    def get_storages(cls, entity: NetworkNode, add=False) -> 'DataStorages':
-        """Get data storages for an entity, created and even added if needed"""
-        for c in entity.components:
-            if isinstance(c, DataStorages):
-                return c
-        c = DataStorages(entity)
-        if add:
+    def get_data(cls, entity: NetworkNode) -> 'StoredData':
+        """Get data store, create if not present"""
+        c = cls.find_data(entity)
+        if c is None:
+            c = StoredData(entity)
             entity.components.append(c)
         return c
 
+    @classmethod
+    def find_data(cls, entity: NetworkNode) -> Optional['StoredData']:
+        """Find data store, if defined"""
+        for c in entity.components:
+            if isinstance(c, StoredData):
+                return c
+        return None
+
 
 class DataReference(NodeComponent):
-    """Sensitive data reference"""
-    def __init__(self, usage: DataStorages, data: SensitiveData):
-        super().__init__(usage.entity, data.name)
+    """Critical data reference"""
+    def __init__(self, entity: NetworkNode, data: SensitiveData):
+        super().__init__(entity, data.name)
         self.concept_name = "data"
         self.data = data
+
+    def long_name(self) -> str:
+        return self.data.name + (f"@{self.entity.long_name()}" if not isinstance(self.entity, IoTSystem) else "")
