@@ -2,9 +2,9 @@
 
 from typing import Dict, List, Optional, TypeVar, Generic, Iterator
 
-from tcsfw.address import Addresses, EndpointAddress, Protocol
+from tcsfw.address import Addresses, Protocol
 from tcsfw.basics import HostType
-from tcsfw.components import StoredData, OperatingSystem, Software, DataReference
+from tcsfw.components import StoredData, Software, DataReference
 from tcsfw.entity import Entity, ExplainableClaim
 from tcsfw.model import Addressable, Host, IoTSystem, NetworkNode, NodeComponent, Service, Connection
 from tcsfw.property import Properties, PropertyKey

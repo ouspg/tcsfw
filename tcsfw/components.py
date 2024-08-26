@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Set
 
-from tcsfw.entity import Entity
 from tcsfw.release_info import ReleaseInfo
 from tcsfw.model import IoTSystem, NodeComponent, Connection, NetworkNode, Host, SensitiveData, Addressable
 
