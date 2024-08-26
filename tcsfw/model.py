@@ -399,6 +399,11 @@ class Host(Addressable):
         self.ignore_name_requests: Set[DNSName] = set()
         self.connections: List[Connection] = []  # connections initiated here
 
+    def is_concrete(self) -> bool:
+        """Is a concrete host, not any host, multicast or client side entity"""
+        return self.host_type not in {HostType.MOBILE, HostType.BROWSER} and not self.any_host \
+            and not self.is_multicast()
+
     def get_connections(self, relevant_only=True) -> List[Connection]:
         """Get relevant connections"""
         cs = []

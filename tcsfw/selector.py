@@ -67,6 +67,16 @@ class HostSelector(RequirementSelector):
             for c in entity.get_children():
                 yield from self.select(c, context)
 
+    def only_concrete(self) -> 'HostSelector':
+        """Select only concrete hosts"""
+        parent = self
+
+        class Selector(HostSelector):
+            """The modified selector"""
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Host]:
+                return (c for c in parent.select(entity, context) if c.is_concrete())
+        return Selector()
+
     def type_of(self, *host_type: HostType) -> 'HostSelector':
         """Select by host types"""
         parent = self
@@ -104,6 +114,16 @@ class ServiceSelector(RequirementSelector):
         elif entity.is_host_reachable():
             for c in entity.get_children():
                 yield from self.select(c, context)
+
+    def only_concrete(self) -> 'ServiceSelector':
+        """Select services only in concrete hosts"""
+        parent = self
+
+        class Selector(ServiceSelector):
+            """The modified selector"""
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Service]:
+                return (c for c in parent.select(entity, context) if c.get_parent_host().is_concrete())
+        return Selector()
 
     def authenticated(self, value=True) -> 'ServiceSelector':
         """Select authenticated services"""
