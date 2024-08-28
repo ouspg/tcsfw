@@ -53,21 +53,21 @@ class ClientTool:
         upload_parser.add_argument("--read", "-r", help="Path to file or directory to upload, default stdin")
         upload_parser.add_argument("--meta", "-m", help="Meta-data in JSON format")
         upload_parser.add_argument("--url", "-u", default="", help="Server URL")
-        upload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        upload_parser.add_argument("--api-key", help="API key for server (avoid providing by command line)")
         upload_parser.add_argument("--force-upload", "-f", action="store_true", help="Force upload for all files")
         upload_parser.add_argument("--dry-run", action="store_true", help="Only print files to be uploaded")
 
         # Subcommand: reload statement
         reload_parser = subparsers.add_parser("reload", help="Reset statement")
         reload_parser.add_argument("--url", "-u", help="Server URL")
-        reload_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        reload_parser.add_argument("--api-key", help="API key for server (avoid providing by command line)")
         reload_parser.add_argument("--param", help="Specify reload parameters by JSON")
 
         # Subcommand: views
         show_parser = subparsers.add_parser("show", help="Show view")
         show_parser.add_argument("view", help="Name of the view")
         show_parser.add_argument("--url", "-u", help="Server URL")
-        show_parser.add_argument("--api-key", help="API key for server (avoiding providing by command line)")
+        show_parser.add_argument("--api-key", help="API key for server (avoid providing by command line)")
 
         args = parser.parse_args()
         logging.basicConfig(format='%(message)s', level=getattr(
