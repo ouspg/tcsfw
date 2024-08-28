@@ -1053,7 +1053,7 @@ class ClaimSetBackend(ClaimSetBuilder):
 class SystemBackendRunner(SystemBackend):
     """Backend for system builder"""
 
-    def _parse_arguments(self) -> argparse.Namespace:
+    def _parse_arguments(self, custom_arguments: Optional[List[str]]) -> argparse.Namespace:
         """Parse command line arguments"""
         parser = argparse.ArgumentParser()
         parser.add_argument("--read", "-r", action="append",
@@ -1089,14 +1089,14 @@ class SystemBackendRunner(SystemBackend):
         parser.add_argument(
             "--log-events", action="store_true", help="Log events")
 
-        args = parser.parse_args()
+        args = parser.parse_args(custom_arguments)
         logging.basicConfig(format='%(message)s', level=getattr(
             logging, args.log_level or 'INFO'))
         return args
 
-    def run(self):
+    def run(self, custom_arguments: Optional[List[str]] = None):
         """Model is ready, run the checks"""
-        args = self._parse_arguments()
+        args = self._parse_arguments(custom_arguments)
         if args.dhcp:
             self.any().serve(DHCP)
         if args.dns:
@@ -1169,6 +1169,10 @@ class SystemBackendRunner(SystemBackend):
                 api_req = APIRequest.parse(res)
                 api_req.set_param("screen", f"{wid}x{hei}")
                 print(api.api_get(api_req, pretty=True))
+            return
+
+        if custom_arguments is not None:
+            # custom arguments, return without 'running' anything
             return
 
         out_form = args.output
