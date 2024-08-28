@@ -321,7 +321,7 @@ class Addressable(NetworkNode):
         return self.addresses and any(a.is_multicast() for a in self.addresses)
 
     def get_networks(self) -> List[Network]:
-        """Get networks, possibly by address"""
+        """Get networks"""
         if self.networks:
             return self.networks
         return self.parent.get_networks()
@@ -712,6 +712,17 @@ class IoTSystem(NetworkNode):
         for c in self.children:
             c.get_addresses(ads)
         return ads
+
+    def get_network_by_name(self, name: str) -> Network:
+        """Get network by its name"""
+        for nw in self.networks:
+            if nw.name == name:
+                return nw
+        for c in self.children:
+            for nw in c.networks:
+                if nw.name == name:
+                    return nw
+        raise ValueError(f"Network {name} not found")
 
     def get_networks_for(self, address: AnyAddress) -> List[Network]:
         ns = super().get_networks_for(address)
