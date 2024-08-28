@@ -65,10 +65,6 @@ class SystemBuilder:
         """Document online resource"""
         raise NotImplementedError()
 
-    def require(self, addresses_for: List['NodeBuilder']):
-        """Require definition of these addresses"""
-        raise NotImplementedError()
-
     def attach_file(self, file_path: str, relative_to: Optional[str] = None) -> Self:
         """Attach a file to the model"""
         raise NotImplementedError()

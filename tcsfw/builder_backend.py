@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, Self, Tuple, Union
 
 from tcsfw.address import (AddressAtNetwork, Addresses, AnyAddress, DNSName, EndpointAddress, EntityTag, HWAddress,
                            HWAddresses, IPAddress, IPAddresses, Network, Protocol)
-from tcsfw.address_resolver import AddressResolver
 from tcsfw.basics import ConnectionType, ExternalActivity, HostType, Status
 from tcsfw.batch_import import BatchImporter, LabelFilter
 from tcsfw.claim_coverage import RequirementClaimMapper
@@ -56,7 +55,6 @@ class SystemBackend(SystemBuilder):
         self.visualizer = Visualizer()
         self.loaders: List[EvidenceLoader] = []
         self.protocols: Dict[Any, 'ProtocolBackend'] = {}
-        self.address_resolver = AddressResolver()
 
     def network(self, subnet="", ip_mask: Optional[str] = None) -> 'NetworkBuilder':
         if subnet:
@@ -129,9 +127,6 @@ class SystemBackend(SystemBuilder):
         self.system.online_resources[key] = url
         return self
 
-    def require(self, addresses_for: List['NodeBuilder']):
-        self.address_resolver.addresses_for.extend(addresses_for)
-
     def attach_file(self, file_path: str, relative_to: Optional[str] = None) -> Self:
         if relative_to:
             rel_to = pathlib.Path(relative_to)
@@ -190,12 +185,8 @@ class SystemBackend(SystemBuilder):
                 h.entity.name: h for h in self.hosts_by_name.values()}
         return n
 
-    def finish_(self, as_main=False):
+    def finish_(self):
         """Finish the model"""
-        if as_main:
-            # get the missing addresses
-            self.address_resolver.require()
-
         # each real host must have software
         for h in self.system.get_hosts():
             if not h.any_host and h.host_type != HostType.BROWSER:
@@ -1111,7 +1102,7 @@ class SystemBackendRunner(SystemBackend):
         if args.dns:
             self.any().serve(DNS)
 
-        self.finish_(as_main=True)
+        self.finish_()
 
         registry = Registry(Inspector(self.system))
         cc = RequirementClaimMapper(self.system)
