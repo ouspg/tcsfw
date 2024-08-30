@@ -24,6 +24,7 @@ class BatchImporter:
         self.label_filter = label_filter or LabelFilter()
         self.logger = logging.getLogger("batch_importer")
         self.load_baseline = load_baseline  # True to load baseline, false to check it
+        self.meta_file_count = 0
 
         # collect evidence sources from visited tools
         self.evidence: Dict[str, List[EvidenceSource]] = {}
@@ -32,6 +33,8 @@ class BatchImporter:
         """Import a batch of files from a directory or zip file recursively."""
         if file.is_dir:
             self._import_batch(file)
+            if not self.meta_file_count:
+                self.logger.warning("No 00meta.json files found")
         else:
             raise ValueError(f"Expected directory, got {file.as_posix()}")
 
@@ -52,6 +55,7 @@ class BatchImporter:
                     except Exception as e:
                         raise ValueError(f"Error in {meta_file.as_posix()}") from e
                 self.evidence.setdefault(info.label, [])
+                self.meta_file_count += 1
             else:
                 info = FileMetaInfo()
 
