@@ -87,6 +87,10 @@ class Entity:
         """Is a host?"""
         return False
 
+    def is_service(self) -> bool:
+        """Is a service?"""
+        return False
+
     def is_host_reachable(self) -> bool:
         """Are hosts reachable from here"""
         return False

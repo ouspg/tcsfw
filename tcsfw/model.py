@@ -478,6 +478,9 @@ class Service(Addressable):
         """Get authentication flag for services or none"""
         return entity.authentication if isinstance(entity, Service) else None
 
+    def is_service(self) -> bool:
+        return True
+
     def long_name(self):
         if self.parent.name != self.name:
             return f"{self.parent.name} {self.name}"
