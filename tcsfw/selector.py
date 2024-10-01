@@ -77,6 +77,17 @@ class HostSelector(RequirementSelector):
                 return (c for c in parent.select(entity, context) if c.is_concrete())
         return Selector()
 
+    def only_server(self) -> 'HostSelector':
+        """Select only server hosts"""
+        parent = self
+
+        class Selector(HostSelector):
+            """The modified selector"""
+            def select(self, entity: Entity, context: SelectorContext) -> Iterator[Host]:
+                return (c for c in parent.select(entity, context) if c.host_type in {
+                    HostType.DEVICE, HostType.GENERIC, HostType.REMOTE})
+        return Selector()
+
     def type_of(self, *host_type: HostType) -> 'HostSelector':
         """Select by host types"""
         parent = self
