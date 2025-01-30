@@ -1,4 +1,8 @@
-# Tcsfw
+# Tcsfw [OBSOLETE]
+
+**Improved and maintained version 'Toolsaf' is available at**:<br/>
+https://github.com/testofthings/toolsaf
+---
 
 This is **early version** of the _Tool-driven security assessment_ (TDSA) framework.
 The framework is intended to support automated security assessment of _Internet of Things_ (IoT) and other systems by running common security tools.
